@@ -1,0 +1,4 @@
+LIBRARY	KeyCapture
+EXPORTS
+	LoadAndCaptureFromFile	@1
+	ShutdownCapture	@2
