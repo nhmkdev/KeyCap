@@ -16,3 +16,6 @@ This is an old project I used many years ago for remapping input. I still find i
 
 ## Warning
 This program does perform keyboard capture and is essentially the first component of a key logger. I humbly request you NOT use the information included in the source code to create a malicious application.
+
+## Visual Studio Notes
+* If you attempt to run from Visual Studio you will need to make sure the C# project is configured with *Enable Native Code Debugging*. If this is not enabled the dll will not create the necessary keyboard hook (works fine outside of Visual Studio). This was observed in every Visual Studio version up-to and including 2015.
