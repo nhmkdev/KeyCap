@@ -31,3 +31,10 @@ Byte array representation of each input/output pair:
 | Flags | Value | Outputs Count | Flags | Value | (repeats) Flag and value for all outputs |
 | --- | --- | --- | --- | --- | --- |
 
+#### Flags
+
+The flags indicate information that modifies the value (alt/shift/ctrl and special functionality when mapping to another output)
+
+#### Output Count
+
+This is limited to a byte, so 255 maximum.
