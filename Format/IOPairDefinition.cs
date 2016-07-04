@@ -22,6 +22,7 @@
 // SOFTWARE.
 ////////////////////////////////////////////////////////////////////////////////
 
+using System;
 using System.IO;
 using System.Text;
 
@@ -32,17 +33,31 @@ namespace KeyCap.Format
     /// </summary>
     public class IOPairDefinition
     {
+        /// <summary>
+        /// Format is a byte[] [flags][value][count of outputs]([flags][value])([flags][value])([flags][value])...
+        /// </summary>
         private readonly MemoryStream m_zStream = new MemoryStream();
 
-        public enum KeyDefinitionIndices // not inclusive out the output
+        private readonly int m_nHash;
+
+        /// <summary>
+        /// The byte indicies for the stream representation of the class
+        /// </summary>
+        public enum KeyDefinitionIndices
         {
             Flags,
             Value,
-            Count
+            Count // not applicable to the output definitions
         }
 
+        /// <summary>
+        /// Constructor based on input/output definitions
+        /// </summary>
+        /// <param name="zInputDef">the input definition</param>
+        /// <param name="zOutputDef">the output definition</param>
         public IOPairDefinition(IODefinition zInputDef, IODefinition zOutputDef)
         {
+            m_nHash = (int)(zInputDef.Flags & 0xFF) + (int)((zInputDef.Value & 0xFF) << 8);
             m_zStream.WriteByte(zInputDef.Flags);
             m_zStream.WriteByte(zInputDef.Value);
             m_zStream.WriteByte(0x01);
@@ -50,16 +65,48 @@ namespace KeyCap.Format
             m_zStream.WriteByte(zOutputDef.Value);
         }
 
-        public IOPairDefinition(byte[] arrayKeyDefinition)
+        /// <summary>
+        /// Constructor based on an input array
+        /// </summary>
+        /// <param name="arrayKeyDefinition">The array to base the definition off of</param>
+        public IOPairDefinition(FileStream zFileStream)
         {
-            m_zStream.Write(arrayKeyDefinition, 0, arrayKeyDefinition.Length);
+            var byFlags = readByteFromFileStream(zFileStream);
+            var byValue = readByteFromFileStream(zFileStream);
+            m_nHash = (int)(byFlags & 0xFF) + (int)((byValue & 0xFF) << 8);
+
+            m_zStream.WriteByte(byFlags);
+            m_zStream.WriteByte(byValue);
+
+            var nOutputDefinitions = zFileStream.ReadByte();
+            if (0 >= nOutputDefinitions)
+            {
+                throw new Exception("Output definition length must be > 0. Invalid File!");
+            }
+
+            m_zStream.WriteByte((byte)nOutputDefinitions);
+
+            for (var nIdx = 0; nIdx < nOutputDefinitions; nIdx++)
+            {
+                byFlags = readByteFromFileStream(zFileStream);
+                byValue = readByteFromFileStream(zFileStream);
+                m_zStream.WriteByte(byFlags);
+                m_zStream.WriteByte(byValue);
+            }
+
         }
 
+        /// <summary>
+        /// Appends an output definition
+        /// </summary>
+        /// <param name="zOutputDef"></param>
+        /// <returns></returns>
         public bool AddOutputDefinition(IODefinition zOutputDef)
         {
             m_zStream.Seek((int)KeyDefinitionIndices.Count, SeekOrigin.Begin);
             byte byCount = (byte)m_zStream.ReadByte();
-            if (byCount == 0xFF) // 255 output max!
+            // don't allow more than 255 outputs
+            if (byCount == 0xFF)
             {
                 return false;
             }
@@ -71,20 +118,34 @@ namespace KeyCap.Format
             return true;
         }
 
+        /// <summary>
+        /// Returns the byte[] representation
+        /// </summary>
+        /// <returns></returns>
         public byte[] ToArray()
         {
             return m_zStream.ToArray();
         }
 
+        /// <summary>
+        /// Returns the input string representation
+        /// </summary>
+        /// <returns>string representation</returns>
         public string GetInputString()
         {
+#warning this could just use stream seeking
             byte[] arrayDescription = ToArray();
             return IODefinition.GetDescription(arrayDescription[(int)KeyDefinitionIndices.Flags],
                 arrayDescription[(int)KeyDefinitionIndices.Value]);
         }
 
+        /// <summary>
+        /// Returns the output string representation
+        /// </summary>
+        /// <returns>string representation</returns>
         public string GetOutputString()
         {
+#warning this could just use stream seeking
             byte[] arrayDescription = ToArray();
             StringBuilder zBuilder = new StringBuilder();
             int nIdx = (int)KeyDefinitionIndices.Count + 1; // start with the first output key definition
@@ -101,12 +162,24 @@ namespace KeyCap.Format
             return zBuilder.ToString();
         }
 
-        public bool InputMatches(IOPairDefinition zKeyDef)
+        public override int GetHashCode()
         {
-            byte[] arrayInputThis = ToArray();
-            byte[] arrayInputThat = zKeyDef.ToArray();
-            return (arrayInputThis[(int)KeyDefinitionIndices.Flags] == arrayInputThat[(int)KeyDefinitionIndices.Flags]) &&
-                (arrayInputThis[(int)KeyDefinitionIndices.Value] == arrayInputThat[(int)KeyDefinitionIndices.Value]);
+            return m_nHash;
+        }
+
+        /// <summary>
+        /// Reads a single byte from the file stream
+        /// </summary>
+        /// <param name="zFileStream">The file stream to read from</param>
+        /// <returns>The byte value read (throws exception otherwise)</returns>
+        private static byte readByteFromFileStream(FileStream zFileStream)
+        {
+            var nReadByte = zFileStream.ReadByte();
+            if (-1 == nReadByte)
+            {
+                throw new Exception("Hit the end of the stream unexpectedly. Invalid File!");
+            }
+            return (byte)nReadByte;
         }
     }
 }

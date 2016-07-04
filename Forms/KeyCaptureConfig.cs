@@ -212,19 +212,27 @@ namespace KeyCap.Forms
         {
             txtKeyIn.Text = string.Empty;
             txtKeyOut.Text = string.Empty;
-            FileStream zReader = new FileStream(sFileName, FileMode.Open, FileAccess.Read, FileShare.Read);
-            // NOTE: this assumes the key file is less than int.max... 
-            byte[] arrayKeyDefinitions = new byte[zReader.Length];
-            zReader.Read(arrayKeyDefinitions, 0, (int)zReader.Length);
-            zReader.Close();
+            FileStream zReader = null;
+            try
+            {
+                zReader = new FileStream(sFileName, FileMode.Open, FileAccess.Read, FileShare.Read);
+                AddListViewItems(zReader);
+            }
+            catch (Exception e)
+            {
+                MessageBox.Show(e.Message);
+            }
+            finally
+            {
+                zReader?.Close();
+            }
             UpdateProjectsList(sFileName);
-            AddListViewItems(arrayKeyDefinitions);
             return true;
         }
 
-        #endregion
+#endregion
 
-        #region Menu Events
+#region Menu Events
 
         private void loadToolStripMenuItem_Click(object sender, EventArgs e)
         {
@@ -263,9 +271,9 @@ namespace KeyCap.Forms
             InitOpen(zItem.Text);
         }
 
-        #endregion
+#endregion
 
-        #region Control Events
+#region Control Events
 
         private void listViewKeys_SelectedIndexChanged(object sender, EventArgs e)
         {
@@ -324,11 +332,12 @@ namespace KeyCap.Forms
 
             var zPairDef = new IOPairDefinition(zInput, zOutput);
 
+            // TODO: is it worth keeping a hashset of these to cut the time from o(n) to o(1)?
             // verify this is not already defined
             foreach (ListViewItem zListItem in listViewKeys.Items)
             {
                 var zKeyOldDef = (IOPairDefinition)zListItem.Tag;
-                if (!zPairDef.InputMatches(zKeyOldDef))
+                if (zPairDef.GetHashCode() != zKeyOldDef.GetHashCode())
                 {
                     continue;
                 }
@@ -336,6 +345,7 @@ namespace KeyCap.Forms
                 MessageBox.Show(this, "Duplicate inputs are not allowed!", "Error!", MessageBoxButtons.OK, MessageBoxIcon.Exclamation);
                 return;
             }
+
             var zItem = new ListViewItem(new string[] { 
                 zPairDef.GetInputString(), 
                 zPairDef.GetOutputString() });
@@ -419,9 +429,9 @@ namespace KeyCap.Forms
             }
         }
 
-        #endregion
+#endregion
 
-        #region Support Methods
+#region Support Methods
 
         /// <summary>
         /// Updates the recent loaded file list
@@ -480,24 +490,18 @@ namespace KeyCap.Forms
         /// </summary>
         /// <param name="arrayKeyDefinitions">The key definition information</param>
         /// <returns></returns>
-        private void AddListViewItems(byte[] arrayKeyDefinitions)
+        private void AddListViewItems(FileStream zStream)
         {
             listViewKeys.Items.Clear();
-            var nIdx = 0;
-            while (nIdx + (int)IOPairDefinition.KeyDefinitionIndices.Count < arrayKeyDefinitions.Length)
+            while (zStream.Position < zStream.Length )
             {
-                var bOutputSize = arrayKeyDefinitions[nIdx + (int)IOPairDefinition.KeyDefinitionIndices.Count];
-                var arrayKeyDef = new byte[(int)IOPairDefinition.KeyDefinitionIndices.Count + 1 +
-                    (bOutputSize * (int)IOPairDefinition.KeyDefinitionIndices.Count)];
-                Array.Copy(arrayKeyDefinitions, nIdx, arrayKeyDef, 0, arrayKeyDef.Length);
-                var zKeyDef = new IOPairDefinition(arrayKeyDef);
+                var zKeyDef = new IOPairDefinition(zStream);
                 var zItem = new ListViewItem(new string[] {
                     zKeyDef.GetInputString(),
                     zKeyDef.GetOutputString()
                     });
                 zItem.Tag = zKeyDef;
                 listViewKeys.Items.Add(zItem);
-                nIdx += arrayKeyDef.Length;
             }
         }
 
@@ -525,6 +529,6 @@ namespace KeyCap.Forms
             this.InvokeAction(() => Close());
         }
 
-        #endregion
+#endregion
     }
 }
