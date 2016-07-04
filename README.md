@@ -19,3 +19,22 @@ This program does perform keyboard capture and is essentially the first componen
 
 ## Visual Studio Notes
 * If you attempt to run from Visual Studio you will need to make sure the C# project is configured with *Enable Native Code Debugging*. If this is not enabled the dll will not create the necessary keyboard hook (works fine outside of Visual Studio). This was observed in every Visual Studio version up-to and including 2015.
+
+## Technical Documentation
+
+### File Format
+
+The file is a repeated sequence of the following information.
+
+Byte array representation of each input/output pair:
+
+| Flags | Value | Outputs Count | Flags | Value | (repeats) Flag and value for all outputs |
+| --- | --- | --- | --- | --- | --- |
+
+#### Flags
+
+The flags indicate information that modifies the value (alt/shift/ctrl and special functionality when mapping to another output)
+
+#### Output Count
+
+This is limited to a byte, so 255 maximum.
