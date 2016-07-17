@@ -66,13 +66,13 @@ namespace KeyCap.Format
         }
 
         /// <summary>
-        /// Constructor based on an input array
+        /// Constructor based on an input stream
         /// </summary>
-        /// <param name="arrayKeyDefinition">The array to base the definition off of</param>
+        /// <param name="zFileStream">The file stream to read the definition from</param>
         public IOPairDefinition(FileStream zFileStream)
         {
-            var byFlags = readByteFromFileStream(zFileStream);
-            var byValue = readByteFromFileStream(zFileStream);
+            var byFlags = ReadByteFromFileStream(zFileStream);
+            var byValue = ReadByteFromFileStream(zFileStream);
             m_nHash = (int)(byFlags & 0xFF) + (int)((byValue & 0xFF) << 8);
 
             m_zStream.WriteByte(byFlags);
@@ -88,8 +88,8 @@ namespace KeyCap.Format
 
             for (var nIdx = 0; nIdx < nOutputDefinitions; nIdx++)
             {
-                byFlags = readByteFromFileStream(zFileStream);
-                byValue = readByteFromFileStream(zFileStream);
+                byFlags = ReadByteFromFileStream(zFileStream);
+                byValue = ReadByteFromFileStream(zFileStream);
                 m_zStream.WriteByte(byFlags);
                 m_zStream.WriteByte(byValue);
             }
@@ -133,8 +133,7 @@ namespace KeyCap.Format
         /// <returns>string representation</returns>
         public string GetInputString()
         {
-#warning this could just use stream seeking
-            byte[] arrayDescription = ToArray();
+            var arrayDescription = ToArray();
             return IODefinition.GetDescription(arrayDescription[(int)KeyDefinitionIndices.Flags],
                 arrayDescription[(int)KeyDefinitionIndices.Value]);
         }
@@ -145,10 +144,9 @@ namespace KeyCap.Format
         /// <returns>string representation</returns>
         public string GetOutputString()
         {
-#warning this could just use stream seeking
-            byte[] arrayDescription = ToArray();
-            StringBuilder zBuilder = new StringBuilder();
-            int nIdx = (int)KeyDefinitionIndices.Count + 1; // start with the first output key definition
+            var arrayDescription = ToArray();
+            var zBuilder = new StringBuilder();
+            var nIdx = (int)KeyDefinitionIndices.Count + 1; // start with the first output key definition
             while (nIdx < arrayDescription.Length)
             {
                 zBuilder.Append(IODefinition.GetDescription(arrayDescription[(int)KeyDefinitionIndices.Flags + nIdx],
@@ -172,7 +170,7 @@ namespace KeyCap.Format
         /// </summary>
         /// <param name="zFileStream">The file stream to read from</param>
         /// <returns>The byte value read (throws exception otherwise)</returns>
-        private static byte readByteFromFileStream(FileStream zFileStream)
+        private static byte ReadByteFromFileStream(FileStream zFileStream)
         {
             var nReadByte = zFileStream.ReadByte();
             if (-1 == nReadByte)

@@ -32,7 +32,7 @@ namespace KeyCap.Format
     public class IODefinition
     {
         /// <summary>
-        /// Flags applied to a given input key
+        /// Flags applied to a given input/output key
         /// </summary>
         public enum IOFlags
         {
@@ -49,7 +49,7 @@ namespace KeyCap.Format
         /// <summary>
         /// Mapping to windows necessary for firing mouse input
         /// </summary>
-        public enum MouseEventID
+        public enum MouseEventId
         {
             // from winuser.h
             MouseLeftDown = 0x02, /* left button down */
@@ -121,7 +121,7 @@ namespace KeyCap.Format
             // mouse (every other flag ignored)
             if (IsFlaggedAs(IOFlags.MouseOut, byFlags))
             {
-                return "[" + ((MouseEventID)byValue).ToString() + "]";
+                return "[" + ((MouseEventId)byValue).ToString() + "]";
             }
             // delay (every other flag ignored)
             if (IsFlaggedAs(IOFlags.Delay, byFlags))

@@ -44,12 +44,18 @@ namespace KeyCap.Forms
         private readonly IniManager m_zIniManager = new IniManager(Application.ProductName, false, true, false);
         private bool m_bRun = true;
 
+        /// <summary>
+        /// Text to display on the button to start/stop capturing
+        /// </summary>
         private enum ActionText
         {
             Start,
             Stop
         }
 
+        /// <summary>
+        /// Used to determine where to get the flags from
+        /// </summary>
         private enum FlagsFromEnum
         {
             Input,
@@ -62,7 +68,7 @@ namespace KeyCap.Forms
         /// Constructs a new dialog
         /// </summary>
         /// <param name="args">The command line arguments (if a file is specified it is loaded)</param>
-        public KeyCaptureConfig(string[] args)
+        public KeyCaptureConfig(IReadOnlyList<string> args)
         {
             InitializeComponent();
             m_sBaseTitle = Application.ProductName + " Configuration " + Application.ProductVersion;
@@ -70,7 +76,7 @@ namespace KeyCap.Forms
             Text = m_sBaseTitle;
             
             // load the input file
-            if (1 == args.Length)
+            if (1 == args.Count)
             {
                 // existence already checked in program.cs
                 InitOpen(args[0]);
@@ -84,16 +90,19 @@ namespace KeyCap.Forms
             // must be in the load event to avoid the location being incorrect
             IniManager.RestoreState(this, m_zIniManager.GetValue(Name));
 
+            // setup the various mouse output options
             comboBoxMouseOut.Items.Add("None");
-            foreach (IODefinition.MouseEventID sName in Enum.GetValues(typeof(IODefinition.MouseEventID)))
+            foreach (IODefinition.MouseEventId sName in Enum.GetValues(typeof(IODefinition.MouseEventId)))
             {
                 comboBoxMouseOut.Items.Add(sName);
             }
-
             comboBoxMouseOut.SelectedIndex = 0;
+
+            // set the notification icon accordingly
             notifyIcon.Icon = Resources.KeyCapIdle;
             Icon = notifyIcon.Icon;
 
+            // populate the previously loaded configurations
             var arrayFiles = m_zIniManager.GetValue(IniSettings.PreviousFiles).Split(new char[] { KeyCapConstants.CharFileSplit }, StringSplitOptions.RemoveEmptyEntries);
             if (0 < arrayFiles.Length)
             {
@@ -142,28 +151,31 @@ namespace KeyCap.Forms
             else
             {
                 SaveOnClose(e);
-                if (!e.Cancel)
+                if (e.Cancel)
                 {
-                    var zBuilder = new StringBuilder();
-                    var dictionaryFilenames = new Dictionary<string, object>();
-                    foreach (string sFile in m_listRecentFiles)
-                    {
-                        var sLowerFile = sFile.ToLower();
-                        if (dictionaryFilenames.ContainsKey(sLowerFile))
-                            continue;
-                        dictionaryFilenames.Add(sLowerFile, null);
-                        zBuilder.Append(sFile + KeyCapConstants.CharFileSplit);
-                    }
-                    m_zIniManager.SetValue(IniSettings.PreviousFiles, zBuilder.ToString());
-                    m_zIniManager.FlushIniSettings();
+                    return;
                 }
+                var zBuilder = new StringBuilder();
+                var dictionaryFilenames = new Dictionary<string, object>();
+                foreach (var sFile in m_listRecentFiles)
+                {
+                    var sLowerFile = sFile.ToLower();
+                    if (dictionaryFilenames.ContainsKey(sLowerFile))
+                        continue;
+                    dictionaryFilenames.Add(sLowerFile, null);
+                    zBuilder.Append(sFile + KeyCapConstants.CharFileSplit);
+                }
+                m_zIniManager.SetValue(IniSettings.PreviousFiles, zBuilder.ToString());
+                m_zIniManager.FlushIniSettings();
             }
         }
 
         private void KeyCaptureConfig_Resize(object sender, EventArgs e)
         {
             if (WindowState != FormWindowState.Minimized)
+            {
                 m_ePrevWindowState = WindowState;
+            }
         }
 
         #endregion
@@ -230,9 +242,9 @@ namespace KeyCap.Forms
             return true;
         }
 
-#endregion
+        #endregion
 
-#region Menu Events
+        #region Menu Events
 
         private void loadToolStripMenuItem_Click(object sender, EventArgs e)
         {
@@ -259,7 +271,7 @@ namespace KeyCap.Forms
         private void previousConfigurationsToolStripMenuItem_DropDownOpening(object sender, EventArgs e)
         {
             previousConfigurationsToolStripMenuItem.DropDownItems.Clear();
-            foreach (string sFile in m_listRecentFiles)
+            foreach (var sFile in m_listRecentFiles)
             {
                 previousConfigurationsToolStripMenuItem.DropDownItems.Add(sFile, null, recentConfiguration_Click);
             }
@@ -271,9 +283,9 @@ namespace KeyCap.Forms
             InitOpen(zItem.Text);
         }
 
-#endregion
+        #endregion
 
-#region Control Events
+        #region Control Events
 
         private void listViewKeys_SelectedIndexChanged(object sender, EventArgs e)
         {
@@ -292,7 +304,7 @@ namespace KeyCap.Forms
             {
                 var zIODefinition = new IODefinition(
                     (byte)IODefinition.IOFlags.MouseOut,
-                    (byte)(IODefinition.MouseEventID)comboBoxMouseOut.SelectedItem);
+                    (byte)(IODefinition.MouseEventId)comboBoxMouseOut.SelectedItem);
                 var zDisplay = txtKeyOut;
                 zDisplay.Text = zIODefinition.GetDescription();
                 zDisplay.Tag = zIODefinition;
@@ -421,7 +433,7 @@ namespace KeyCap.Forms
                         case CaptureMessage.InputMissing:
                         case CaptureMessage.InputZero:
                         default:
-                            Console.WriteLine("Error: " + eReturn.ToString());
+                            Console.WriteLine("Error: " + eReturn);
                             ConfigureControls(false);
                             break;
                     }
@@ -429,9 +441,9 @@ namespace KeyCap.Forms
             }
         }
 
-#endregion
+        #endregion
 
-#region Support Methods
+        #region Support Methods
 
         /// <summary>
         /// Updates the recent loaded file list
@@ -488,7 +500,7 @@ namespace KeyCap.Forms
         /// <summary>
         /// Adds a new list view item representation of the key in/out
         /// </summary>
-        /// <param name="arrayKeyDefinitions">The key definition information</param>
+        /// <param name="zStream">The stream to read the key definitions from</param>
         /// <returns></returns>
         private void AddListViewItems(FileStream zStream)
         {
@@ -529,6 +541,6 @@ namespace KeyCap.Forms
             this.InvokeAction(() => Close());
         }
 
-#endregion
+        #endregion
     }
 }

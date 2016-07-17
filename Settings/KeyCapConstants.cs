@@ -24,6 +24,9 @@
 
 namespace KeyCap.Settings
 {
+    /// <summary>
+    /// Constants for use across the application
+    /// </summary>
     static class KeyCapConstants
     {
         public static readonly char CharFileSplit = ';';

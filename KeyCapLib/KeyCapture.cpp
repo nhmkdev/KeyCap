@@ -102,6 +102,14 @@ KeyTranslation* g_KeyTranslationHead = NULL;
 void* g_KeyTranslationEnd = NULL; // pointer indicating the end of the input file data
 HHOOK g_hookMain = NULL;
 
+/*
+Performs the load file operation and initiates the keyboard capture process
+
+hInstance: The HINSTANCE of the KeyCapture application
+sFile: The file to load
+
+returns: A HOOK_RESULT value depending on the outcome of the file load and keyboard hook intiailization
+*/
 __declspec(dllexport) int LoadAndCaptureFromFile(HINSTANCE hInstance, char* sFile)
 {
 	assert(2 == sizeof(KeyDefinition)); // if this is invalid the configuration tool and kfg files will not be valid
@@ -220,6 +228,9 @@ __declspec(dllexport) int LoadAndCaptureFromFile(HINSTANCE hInstance, char* sFil
 	}
 }
 
+/*
+Shuts down the key capture hook and frees any allocated memory
+*/
 __declspec(dllexport) void ShutdownCapture()
 {
 	// disable the hook
@@ -261,6 +272,13 @@ __declspec(dllexport) void ShutdownCapture()
 	printf("Capture Shutdown\n");
 }
 
+/*
+Implementation of the win32 LowLevelKeyboardProc (see docs for information)
+
+This is a special implementation to avoid sending the actual keyup/keydown 
+messages (as those are the keys being captured). A separate thread is 
+created to send out the key(s) to send to the os.
+*/
 LRESULT CALLBACK LowLevelKeyboardProc(int nCode, WPARAM wParam, LPARAM lParam)
 {
 	KBDLLHOOKSTRUCT  *pHook = reinterpret_cast<KBDLLHOOKSTRUCT*>(lParam);
@@ -324,6 +342,9 @@ LRESULT CALLBACK LowLevelKeyboardProc(int nCode, WPARAM wParam, LPARAM lParam)
 	return bSentInput ? 1 : CallNextHookEx( NULL, nCode, wParam, lParam );  
 }
 
+/*
+Thread responsible for sending the desired inputs to the OS (see standard win32 definition)
+*/
 DWORD WINAPI SendInputThread( LPVOID lpParam ) 
 {
 	KeyTranslation* pItem = static_cast<KeyTranslation*>(lpParam);
@@ -341,6 +362,7 @@ DWORD WINAPI SendInputThread( LPVOID lpParam )
 		pKeyDef++; // move the pointer forward one KeyDefinition
 	}
 
+	// iterate over the target inputs
 	while(pKeyDef < pEndDef)
 	{
 		// mouse input
@@ -389,6 +411,11 @@ DWORD WINAPI SendInputThread( LPVOID lpParam )
 	return 0;
 }
 
+/*
+Sends the desired mouse input
+
+pKeyDef: pointer to a key definition for a mouse input
+*/
 void SendInputMouse(KeyDefinition *pKeyDef)
 {
 	memset(&g_keyboardInput, 0, sizeof(INPUT)); // only clear the one that will be used
@@ -405,6 +432,13 @@ void SendInputMouse(KeyDefinition *pKeyDef)
 	SendInput(1, g_keyboardInput, sizeof(INPUT));
 }
 
+/*
+Sends the desired keyboard input in the necessary order to achieve the desired input (or at least try)
+
+pKeyDef: pointer to a key definition for a keyboard input to send
+pTriggerDefinition: The definition of the triggering key. Modifiers like shift/alt/ctrl require special handling under
+certain circumstances
+*/
 void SendInputKey(KeyDefinition* pKeyDef, KeyDefinition* pTriggerDefinition)
 {
 	memset(&g_keyboardInput, 0, sizeof(INPUT) * MAX_KEY_INPUT_PER_STROKE);
@@ -475,6 +509,13 @@ void SendInputKey(KeyDefinition* pKeyDef, KeyDefinition* pTriggerDefinition)
 	SendInput(nIndex, g_keyboardInput, sizeof(INPUT));
 }
 
+/*
+Assigns the desired keyboard input to send (see win32 INPUT documentation as it relates to SendInput)
+
+keyScan: the virtual key value to set
+inputChar: The scan value to set
+dwFlags: The flags value to set
+*/
 void AppendSingleKey(short keyScan, INPUT* inputChar, DWORD dwFlags)
 {
 	inputChar->type = INPUT_KEYBOARD;
