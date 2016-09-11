@@ -91,7 +91,7 @@ namespace KeyCap.Forms
             IniManager.RestoreState(this, m_zIniManager.GetValue(Name));
 
             // setup the various mouse output options
-            comboBoxMouseOut.Items.Add("None");
+            comboBoxMouseOut.Items.Add("No Mouse Action");
             foreach (IODefinition.MouseEventId sName in Enum.GetValues(typeof(IODefinition.MouseEventId)))
             {
                 comboBoxMouseOut.Items.Add(sName);
@@ -464,7 +464,7 @@ namespace KeyCap.Forms
         /// </summary>
         /// <param name="zIODef">the io definition</param>
         /// <param name="eFlag">the type of io</param>
-        /// <returns></returns>
+        /// <returns>New flags value based on the settings of the ui (any prior flags are lost)</returns>
         private byte GetFlags(IODefinition zIODef, FlagsFromEnum eFlag)
         {
             // get the flags from the check boxes (always, both mouse and keyboard support them in some fashion)
@@ -472,6 +472,8 @@ namespace KeyCap.Forms
             var bControl = false;
             var bShift = false;
             var bNone = false;
+            var bDown = false;
+            var bUp = false;
             switch (eFlag)
             {
                 case FlagsFromEnum.Input:
@@ -484,17 +486,29 @@ namespace KeyCap.Forms
                     bControl = checkOutputControl.Checked;
                     bShift = checkOutputShift.Checked;
                     bNone = checkOutputNone.Checked;
+                    bDown = checkOutputKeyDown.Checked;
+                    bUp = checkOutputKeyUp.Checked;
                     break;
             }
 
-            return (byte)(
-                (bAlt ? (byte)IODefinition.IOFlags.Alt : (byte)0) |
-                (bControl ? (byte)IODefinition.IOFlags.Control : (byte)0) |
-                (bShift ? (byte)IODefinition.IOFlags.Shift : (byte)0) |
-                (bNone ? (byte)IODefinition.IOFlags.DoNothing : (byte)0) |
-                (zIODef.IsFlaggedAs(IODefinition.IOFlags.MouseOut) ? (byte)IODefinition.IOFlags.MouseOut : (byte)0) |
-                (zIODef.IsFlaggedAs(IODefinition.IOFlags.Delay) ? (byte)IODefinition.IOFlags.Delay : (byte)0) |
-                zIODef.Flags);
+            byte byFlags = 0;
+            byFlags = UpdateFlag(byFlags, bAlt, (byte) IODefinition.IOFlags.Alt);
+            byFlags = UpdateFlag(byFlags, bControl, (byte)IODefinition.IOFlags.Control);
+            byFlags = UpdateFlag(byFlags, bShift, (byte)IODefinition.IOFlags.Shift);
+
+            byFlags = UpdateFlag(byFlags, bNone, (byte)IODefinition.IOFlags.DoNothing);
+
+            byFlags = UpdateFlag(byFlags, bDown, (byte)IODefinition.IOFlags.KeyDown);
+            byFlags = UpdateFlag(byFlags, bUp, (byte)IODefinition.IOFlags.KeyUp);
+
+            byFlags = UpdateFlag(byFlags, zIODef.IsFlaggedAs(IODefinition.IOFlags.MouseOut), (byte)IODefinition.IOFlags.MouseOut);
+            byFlags = UpdateFlag(byFlags, zIODef.IsFlaggedAs(IODefinition.IOFlags.Delay), (byte)IODefinition.IOFlags.Delay);
+            return byFlags;
+        }
+
+        private byte UpdateFlag(byte byFlag, bool bFlagSetting, byte byFlagBit)
+        {
+            return (byte)(byFlag | (byte)(bFlagSetting ? byFlagBit : (byte)0));
         }
 
         /// <summary>

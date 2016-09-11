@@ -40,6 +40,8 @@ const int KEYCAP_ALT		= 1 << 2;
 const int KEYCAP_DONOTHING	= 1 << 3;
 const int KEYCAP_MOUSEOUT	= 1 << 4;
 const int KEYCAP_DELAY		= 1 << 5;
+const int KEYCAP_KEYDOWN	= 1 << 6;
+const int KEYCAP_KEYUP		= 1 << 7; // maxed out, need more than a byte if more are needed
 
 const int HASH_TABLE_SIZE	= 256;
 
@@ -63,7 +65,9 @@ struct KeyDefinition
 	unsigned char bDoNothing	: 1;
 	unsigned char bMouseOut		: 1;
 	unsigned char bDelay		: 1;
-	unsigned char pad			: 2;
+	unsigned char bKeyDown		: 1;
+	unsigned char bKeyUp		: 1;
+	//unsigned char pad			: 2;
 	unsigned char nVkKey		: 8;
 };
 
@@ -91,7 +95,8 @@ extern "C"
 LRESULT CALLBACK LowLevelKeyboardProc(int nCode,WPARAM wParam,LPARAM lParam);
 DWORD WINAPI SendInputThread( LPVOID lpParam );
 void SendInputMouse(KeyDefinition *pKeyDef);
-void SendInputKey(KeyDefinition* pKeyDef, KeyDefinition* pTriggerDefinition);
+void SendTriggerEndInputKeys(KeyDefinition* pTriggerDefinition);
+void SendInputKeys(KeyDefinition* pKeyDef);
 void AppendSingleKey(short keyScan, INPUT* inputChar, DWORD dwFlags); 
 bool CheckKeyFlags(char nFlags, bool bAlt, bool bControl, bool bShift);
 
@@ -355,12 +360,8 @@ DWORD WINAPI SendInputThread( LPVOID lpParam )
 		return 0; // done!
 	}
 
-	if(!pKeyDef->bMouseOut) // On input that uses alt but triggers the mouse... is this correct?
-	{
-		// trigger any necessary release of shift/control/alt by passing the trigger key definition
-		SendInputKey(pKeyDef, &pItem->kDef);
-		pKeyDef++; // move the pointer forward one KeyDefinition
-	}
+	// trigger any necessary release of shift/control/alt by passing the trigger key definition
+	SendTriggerEndInputKeys(&pItem->kDef);
 
 	// iterate over the target inputs
 	while(pKeyDef < pEndDef)
@@ -378,7 +379,7 @@ DWORD WINAPI SendInputThread( LPVOID lpParam )
 		// keyboard input
 		else
 		{
-			SendInputKey(pKeyDef, NULL);
+			SendInputKeys(pKeyDef);
 		}
 		pKeyDef++; // move the pointer forward one KeyDefinition
 	}
@@ -432,22 +433,17 @@ void SendInputMouse(KeyDefinition *pKeyDef)
 	SendInput(1, g_keyboardInput, sizeof(INPUT));
 }
 
-/*
-Sends the desired keyboard input in the necessary order to achieve the desired input (or at least try)
-
-pKeyDef: pointer to a key definition for a keyboard input to send
-pTriggerDefinition: The definition of the triggering key. Modifiers like shift/alt/ctrl require special handling under
-certain circumstances
-*/
-void SendInputKey(KeyDefinition* pKeyDef, KeyDefinition* pTriggerDefinition)
+void SendTriggerEndInputKeys(KeyDefinition* pTriggerDefinition)
 {
-	memset(&g_keyboardInput, 0, sizeof(INPUT) * MAX_KEY_INPUT_PER_STROKE);
-	int nIndex = 0;
-	if(pKeyDef->bShift)
+	if(!pTriggerDefinition)
 	{
-		AppendSingleKey(VK_SHIFT, &g_keyboardInput[nIndex++], 0);
+		return;
 	}
-	else if(pTriggerDefinition && pTriggerDefinition->bShift)
+	int nIndex = 0;
+	// max of 5 inputs may exist
+	memset(&g_keyboardInput, 0, sizeof(INPUT) * 5);
+
+	if (pTriggerDefinition->bShift)
 	{
 		// check the required input key to see if this was pressed and force a keyup to eliminate it being passed on
 		// example: Shift + S >> f (without the keyup Shift + S >> F because shift is technically down)
@@ -456,51 +452,94 @@ void SendInputKey(KeyDefinition* pKeyDef, KeyDefinition* pTriggerDefinition)
 		AppendSingleKey(VK_SHIFT, &g_keyboardInput[nIndex++], KEYEVENTF_KEYUP);
 	}
 
-	if(pKeyDef->bControl)
-	{
-		AppendSingleKey(VK_CONTROL, &g_keyboardInput[nIndex++], 0);
-	}
-	else if(pTriggerDefinition && pTriggerDefinition->bControl)
+	if (pTriggerDefinition->bControl)
 	{
 		AppendSingleKey(VK_CONTROL, &g_keyboardInput[nIndex++], KEYEVENTF_KEYUP);
 	}
 
-	if(pKeyDef->bAlt)
-	{
-		AppendSingleKey(VK_MENU, &g_keyboardInput[nIndex++], 0);
-	}
-	else if(pTriggerDefinition && pTriggerDefinition->bAlt)
+	if (pTriggerDefinition->bAlt)
 	{
 		// Note: Application menus become active with ALT is pressed, to get out of the menu alt must be "pressed" a second time
 		AppendSingleKey(VK_MENU, &g_keyboardInput[nIndex++], KEYEVENTF_KEYUP);
 		AppendSingleKey(VK_MENU, &g_keyboardInput[nIndex++], 0);
 		AppendSingleKey(VK_MENU, &g_keyboardInput[nIndex++], KEYEVENTF_KEYUP);
 	}
-
 #ifdef _DEBUG
 	char outputchar[256];
-	sprintf_s(outputchar, "---- Appended %d\n", pKeyDef->nVkKey);
-	OutputDebugStringA(outputchar);
+	for (int nTemp = 0; nTemp < nIndex; nTemp++)
+	{
+		sprintf_s(outputchar, "Sending: (flags)%x %d\n", g_keyboardInput[nTemp].ki.dwFlags, g_keyboardInput[nTemp].ki.wVk);
+		OutputDebugStringA(outputchar);
+	}
 #endif
-	AppendSingleKey(pKeyDef->nVkKey, &g_keyboardInput[nIndex++], 0);
-	AppendSingleKey(pKeyDef->nVkKey, &g_keyboardInput[nIndex++], KEYEVENTF_KEYUP);
+	SendInput(nIndex, g_keyboardInput, sizeof(INPUT));
+}
 
-	// setup any necessary key event up messages
-	if(pKeyDef->bShift)
-	{
-		AppendSingleKey(VK_SHIFT, &g_keyboardInput[nIndex++], KEYEVENTF_KEYUP);
-	}
-	if(pKeyDef->bControl)
-	{
-		AppendSingleKey(VK_CONTROL, &g_keyboardInput[nIndex++], KEYEVENTF_KEYUP);
-	}
-	if(pKeyDef->bAlt)
-	{
-		AppendSingleKey(VK_MENU, &g_keyboardInput[nIndex++], KEYEVENTF_KEYUP);
-	}
+/*
+Sends the desired keyboard input in the necessary order to achieve the desired input (or at least try)
 
+pKeyDef: pointer to a key definition for a keyboard input to send
+pTriggerDefinition: The definition of the triggering key. Modifiers like shift/alt/ctrl require special handling under
+certain circumstances
+*/
+void SendInputKeys(KeyDefinition* pKeyDef)
+{
 #ifdef _DEBUG
-	for(int nTemp = 0; nTemp < nIndex; nTemp++)
+	char outputchar[256];
+#endif
+
+	memset(&g_keyboardInput, 0, sizeof(INPUT) * MAX_KEY_INPUT_PER_STROKE);
+	int nIndex = 0;
+	if (pKeyDef->bKeyDown)
+	{
+		if (pKeyDef->bShift)
+		{
+			AppendSingleKey(VK_SHIFT, &g_keyboardInput[nIndex++], 0);
+		}
+
+		if (pKeyDef->bControl)
+		{
+			AppendSingleKey(VK_CONTROL, &g_keyboardInput[nIndex++], 0);
+		}
+
+		if (pKeyDef->bAlt)
+		{
+			AppendSingleKey(VK_MENU, &g_keyboardInput[nIndex++], 0);
+		}
+
+		// output the actual key
+#ifdef _DEBUG
+		sprintf_s(outputchar, "---- Appended (down) %d\n", pKeyDef->nVkKey);
+		OutputDebugStringA(outputchar);
+#endif
+		AppendSingleKey(pKeyDef->nVkKey, &g_keyboardInput[nIndex++], 0);
+	}
+
+	if (pKeyDef->bKeyUp)
+	{
+#ifdef _DEBUG
+		sprintf_s(outputchar, "---- Appended (up) %d\n", pKeyDef->nVkKey);
+		OutputDebugStringA(outputchar);
+#endif
+
+		AppendSingleKey(pKeyDef->nVkKey, &g_keyboardInput[nIndex++], KEYEVENTF_KEYUP);
+
+		// setup any necessary key event up messages
+		if (pKeyDef->bShift)
+		{
+			AppendSingleKey(VK_SHIFT, &g_keyboardInput[nIndex++], KEYEVENTF_KEYUP);
+		}
+		if (pKeyDef->bControl)
+		{
+			AppendSingleKey(VK_CONTROL, &g_keyboardInput[nIndex++], KEYEVENTF_KEYUP);
+		}
+		if (pKeyDef->bAlt)
+		{
+			AppendSingleKey(VK_MENU, &g_keyboardInput[nIndex++], KEYEVENTF_KEYUP);
+		}
+	}
+#ifdef _DEBUG
+	for (int nTemp = 0; nTemp < nIndex; nTemp++)
 	{
 		sprintf_s(outputchar, "Sending: (flags)%x %d\n", g_keyboardInput[nTemp].ki.dwFlags, g_keyboardInput[nTemp].ki.wVk);
 		OutputDebugStringA(outputchar);

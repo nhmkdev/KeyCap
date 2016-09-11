@@ -42,7 +42,9 @@ namespace KeyCap.Format
             // <---- flags below only apply as input to send to windows ---->
             DoNothing = 1 << 3,
             MouseOut = 1 << 4,
-            Delay = 1 << 5
+            Delay = 1 << 5,
+            KeyDown = 1 << 6,
+            KeyUp = 1 << 7
             //MAX         = 1 << 7, // it's a byte! (aka if you need 8 you'll need more space)
         }
 
@@ -133,8 +135,10 @@ namespace KeyCap.Format
                 ((Keys)byValue).ToString() +
                 (((byte)IOFlags.Shift == (byFlags & (byte)IOFlags.Shift)) ? "+Shift" : string.Empty) +
                 (((byte)IOFlags.Alt == (byFlags & (byte)IOFlags.Alt)) ? "+Alt" : string.Empty) +
-                (((byte)IOFlags.Control == (byFlags & (byte)IOFlags.Control)) ? "+Control" : string.Empty)
-                    + "]";
+                (((byte)IOFlags.Control == (byFlags & (byte)IOFlags.Control)) ? "+Control" : string.Empty)+
+                (((byte)IOFlags.KeyDown == (byFlags & (byte)IOFlags.KeyDown)) ? "+Down" : string.Empty) +
+                (((byte)IOFlags.KeyUp == (byFlags & (byte)IOFlags.KeyUp)) ? "+Up" : string.Empty) +
+                    "]";
         }
 
         /// <summary>
