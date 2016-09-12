@@ -40,26 +40,19 @@ namespace KeyCap.Format
             Control = 1 << 1,
             Alt = 1 << 2,
             // <---- flags below only apply as input to send to windows ---->
-            DoNothing = 1 << 3,
-            MouseOut = 1 << 4,
+            DoNothing = 1 << 3, // no action whatsoever
+            MouseOut = 1 << 4, // mouse output -- see MouseButton
             Delay = 1 << 5,
-            KeyDown = 1 << 6,
-            KeyUp = 1 << 7
+            Toggle = 1 << 6
             //MAX         = 1 << 7, // it's a byte! (aka if you need 8 you'll need more space)
         }
 
-        /// <summary>
-        /// Mapping to windows necessary for firing mouse input
-        /// </summary>
-        public enum MouseEventId
+        public enum MouseButton
         {
-            // from winuser.h
-            MouseLeftDown = 0x02, /* left button down */
-            MouseLeftUp = 0x04, /* left button up */
-            MouseRightDown = 0x08, /* right button down */
-            MouseRightUp = 0x10, /* right button up */
-            MouseMiddleDown = 0x20, /* middle button down */
-            MouseMiddleUp = 0x40, /* middle button up */
+            MouseNone = 0x00,
+            MouseLeft = 0x01,
+            MouseRight = 0x02,
+            MouseMiddle = 0x03
         }
 
         public byte Flags { get; set; }
@@ -123,7 +116,10 @@ namespace KeyCap.Format
             // mouse (every other flag ignored)
             if (IsFlaggedAs(IOFlags.MouseOut, byFlags))
             {
-                return "[" + ((MouseEventId)byValue).ToString() + "]";
+                return "[" + 
+                    ((MouseButton)byValue) +
+                    (((byte)IOFlags.Toggle == (byFlags & (byte)IOFlags.Toggle)) ? "+Toggle" : string.Empty) +
+                    "]";
             }
             // delay (every other flag ignored)
             if (IsFlaggedAs(IOFlags.Delay, byFlags))
@@ -136,8 +132,7 @@ namespace KeyCap.Format
                 (((byte)IOFlags.Shift == (byFlags & (byte)IOFlags.Shift)) ? "+Shift" : string.Empty) +
                 (((byte)IOFlags.Alt == (byFlags & (byte)IOFlags.Alt)) ? "+Alt" : string.Empty) +
                 (((byte)IOFlags.Control == (byFlags & (byte)IOFlags.Control)) ? "+Control" : string.Empty)+
-                (((byte)IOFlags.KeyDown == (byFlags & (byte)IOFlags.KeyDown)) ? "+Down" : string.Empty) +
-                (((byte)IOFlags.KeyUp == (byFlags & (byte)IOFlags.KeyUp)) ? "+Up" : string.Empty) +
+                (((byte)IOFlags.Toggle == (byFlags & (byte)IOFlags.Toggle)) ? "+Toggle" : string.Empty) +
                     "]";
         }
 

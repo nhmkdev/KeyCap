@@ -92,7 +92,7 @@ namespace KeyCap.Forms
 
             // setup the various mouse output options
             comboBoxMouseOut.Items.Add("No Mouse Action");
-            foreach (IODefinition.MouseEventId sName in Enum.GetValues(typeof(IODefinition.MouseEventId)))
+            foreach (IODefinition.MouseButton sName in Enum.GetValues(typeof(IODefinition.MouseButton)))
             {
                 comboBoxMouseOut.Items.Add(sName);
             }
@@ -304,7 +304,7 @@ namespace KeyCap.Forms
             {
                 var zIODefinition = new IODefinition(
                     (byte)IODefinition.IOFlags.MouseOut,
-                    (byte)(IODefinition.MouseEventId)comboBoxMouseOut.SelectedItem);
+                    (byte)(IODefinition.MouseButton)comboBoxMouseOut.SelectedItem);
                 var zDisplay = txtKeyOut;
                 zDisplay.Text = zIODefinition.GetDescription();
                 zDisplay.Tag = zIODefinition;
@@ -472,8 +472,7 @@ namespace KeyCap.Forms
             var bControl = false;
             var bShift = false;
             var bNone = false;
-            var bDown = false;
-            var bUp = false;
+            var bToggle = false;
             switch (eFlag)
             {
                 case FlagsFromEnum.Input:
@@ -486,8 +485,7 @@ namespace KeyCap.Forms
                     bControl = checkOutputControl.Checked;
                     bShift = checkOutputShift.Checked;
                     bNone = checkOutputNone.Checked;
-                    bDown = checkOutputKeyDown.Checked;
-                    bUp = checkOutputKeyUp.Checked;
+                    bToggle = checkOutputToggle.Checked;
                     break;
             }
 
@@ -498,8 +496,7 @@ namespace KeyCap.Forms
 
             byFlags = UpdateFlag(byFlags, bNone, (byte)IODefinition.IOFlags.DoNothing);
 
-            byFlags = UpdateFlag(byFlags, bDown, (byte)IODefinition.IOFlags.KeyDown);
-            byFlags = UpdateFlag(byFlags, bUp, (byte)IODefinition.IOFlags.KeyUp);
+            byFlags = UpdateFlag(byFlags, bToggle, (byte)IODefinition.IOFlags.Toggle);
 
             byFlags = UpdateFlag(byFlags, zIODef.IsFlaggedAs(IODefinition.IOFlags.MouseOut), (byte)IODefinition.IOFlags.MouseOut);
             byFlags = UpdateFlag(byFlags, zIODef.IsFlaggedAs(IODefinition.IOFlags.Delay), (byte)IODefinition.IOFlags.Delay);
