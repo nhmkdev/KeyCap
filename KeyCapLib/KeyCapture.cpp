@@ -22,21 +22,13 @@
 // SOFTWARE.
 ////////////////////////////////////////////////////////////////////////////////
 
-// KeyCapture.cpp : Defines the entirety of the key capture... (probably should be broken up a bit)
+// KeyCapture.cpp : Defines the entry point for key capture and re-map
 //
 
 #include "stdafx.h"
-#include <stdlib.h>
-#include <stdio.h>
-#include <assert.h>
-#include <winuser.h>
-
-// === consts and defines
-
-const int MAX_KEY_INPUT_PER_STROKE = 9; // control, alt (OR alt-up alt-down alt-up), shift, key, key-up, shift-up,  alt-up, control-up
-
-const int HASH_TABLE_SIZE	= 256;
-const int MAX_VKEY = 256;
+#include "KeyCapture.h"
+#include "MouseInput.h"
+#include "KeyboardInput.h"
 
 // === enums
 
@@ -49,51 +41,9 @@ enum HOOK_RESULT
 	INPUT_BAD
 };
 
-enum MOUSE_BUTTON
-{
-	MOUSE_NONE = 0x00,
-	MOUSE_LEFT = 0x01,
-	MOUSE_RIGHT = 0x02,
-	MOUSE_MIDDLE = 0x03,
-	MOUSE_BUTTON_COUNT
-};
+// === consts and defines
 
-// === structs
-struct KeyDefinition
-{
-#if 0
-	const int KEYCAP_SHIFT = 1 << 0;
-	const int KEYCAP_CONTROL = 1 << 1;
-	const int KEYCAP_ALT = 1 << 2;
-	const int KEYCAP_DONOTHING = 1 << 3;
-	const int KEYCAP_MOUSEOUT = 1 << 4;
-	const int KEYCAP_DELAY = 1 << 5;
-	const int KEYCAP_TOGGLE = 1 << 6;
-#endif
-	unsigned char bShift		: 1;
-	unsigned char bControl		: 1;
-	unsigned char bAlt			: 1;
-	unsigned char bDoNothing	: 1;
-	unsigned char bMouseOut		: 1;
-	unsigned char bDelay		: 1;
-	unsigned char bToggle		: 1;
-	unsigned char pad			: 1;
-	unsigned char nVkKey		: 8; // this stores mouse input too... TODO better name
-};
-
-struct KeyTranslation
-{
-	KeyDefinition kDef;
-
-	char nKDefOutput; // count of output key definitions
-	// KeyDefintion[nKDefOutput]
-};
-
-struct KeyTranslationListItem
-{
-	KeyTranslation* pTrans;
-	KeyTranslationListItem* pNext;
-};
+const int HASH_TABLE_SIZE = 256;
 
 // === prototypes
 // avoid mangling the function names (necessary for export and usage in C#)
@@ -102,25 +52,15 @@ extern "C"
 	__declspec(dllexport) int LoadAndCaptureFromFile(HINSTANCE hInstance, char* sFile);
 	__declspec(dllexport) void ShutdownCapture();
 }
+
 LRESULT CALLBACK LowLevelKeyboardProc(int nCode,WPARAM wParam,LPARAM lParam);
 DWORD WINAPI SendInputThread( LPVOID lpParam );
-void SendInputMouse(KeyDefinition *pKeyDef);
 void SendTriggerEndInputKeys(KeyDefinition* pTriggerDefinition);
-void SendInputKeys(KeyDefinition* pKeyDef);
-void AppendSingleKey(short keyScan, INPUT* inputChar, DWORD dwFlags); 
-void AppendSingleMouse(INPUT* inputChar, unsigned char nVkKey);
 bool CheckKeyFlags(char nFlags, bool bAlt, bool bControl, bool bShift);
 
 // === sweet globals
-unsigned char g_MouseDownMap[] = { 0, MOUSEEVENTF_LEFTDOWN, MOUSEEVENTF_RIGHTDOWN, MOUSEEVENTF_MIDDLEDOWN };
-unsigned char g_MouseUpMap[] = { 0, MOUSEEVENTF_LEFTUP, MOUSEEVENTF_RIGHTUP, MOUSEEVENTF_MIDDLEUP };
 KeyTranslationListItem* g_KeyTranslationTable[HASH_TABLE_SIZE];
 
-// input histories for toggle usage
-bool g_MouseToggleHistory[MOUSE_BUTTON_COUNT];
-bool g_KeyToggleHistory[MAX_VKEY];
-
-INPUT g_inputBuffer[MAX_KEY_INPUT_PER_STROKE]; // keyboard output table (named input as it has the INPUT structs)
 KeyTranslation* g_KeyTranslationHead = NULL;
 void* g_KeyTranslationEnd = NULL; // pointer indicating the end of the input file data
 HHOOK g_hookMain = NULL;
@@ -433,228 +373,4 @@ DWORD WINAPI SendInputThread( LPVOID lpParam )
 	OutputDebugStringA("\nSendInputThread: DEAD\n");
 #endif
 	return 0;
-}
-
-/*
-Sends the desired mouse input
-
-pKeyDef: pointer to a key definition for a mouse input
-*/
-void SendInputMouse(KeyDefinition *pKeyDef)
-{
-	if(pKeyDef->nVkKey == MOUSE_NONE)
-	{
-		return;
-	}
-
-	int nIndex = 0;
-
-	if (pKeyDef->bToggle)
-	{
-		if (g_MouseToggleHistory[pKeyDef->nVkKey])
-		{
-			AppendSingleMouse(&g_inputBuffer[nIndex++], g_MouseUpMap[pKeyDef->nVkKey]);
-		}
-		else
-		{
-			AppendSingleMouse(&g_inputBuffer[nIndex++], g_MouseDownMap[pKeyDef->nVkKey]);
-		}
-		g_MouseToggleHistory[pKeyDef->nVkKey] = !g_MouseToggleHistory[pKeyDef->nVkKey];
-	}
-	else
-	{
-		AppendSingleMouse(&g_inputBuffer[nIndex++], g_MouseDownMap[pKeyDef->nVkKey]);
-		AppendSingleMouse(&g_inputBuffer[nIndex++], g_MouseUpMap[pKeyDef->nVkKey]);
-		g_MouseToggleHistory[pKeyDef->nVkKey] = false;
-	}
-#ifdef _DEBUG
-	char outputchar[256];
-	for (int nTemp = 0; nTemp < nIndex; nTemp++)
-	{
-		sprintf_s(outputchar, "SendingMouse: (flags)%x %d\n", g_inputBuffer[nTemp].ki.dwFlags, g_inputBuffer[0].mi.dwFlags);
-		OutputDebugStringA(outputchar);
-	}
-#endif
-	SendInput(nIndex, g_inputBuffer, sizeof(INPUT));
-}
-
-/*
-Sends the necessary inputs to complete the trigger (modifier keys)
-
-pTriggerDefinition: pointer to a key definition for the trigger
-*/
-void SendTriggerEndInputKeys(KeyDefinition* pTriggerDefinition)
-{
-	if(!pTriggerDefinition)
-	{
-		return;
-	}
-	int nIndex = 0;
-
-	if (pTriggerDefinition->bShift)
-	{
-		// check the required input key to see if this was pressed and force a keyup to eliminate it being passed on
-		// example: Shift + S >> f (without the keyup Shift + S >> F because shift is technically down)
-		// problem: multiple key up messages (?) ... does it matter?
-		// yes: slightly, Control + S >> x requires Control to be pressed again due to the keyup message (possible new flag?)
-		AppendSingleKey(VK_SHIFT, &g_inputBuffer[nIndex++], KEYEVENTF_KEYUP);
-	}
-
-	if (pTriggerDefinition->bControl)
-	{
-		AppendSingleKey(VK_CONTROL, &g_inputBuffer[nIndex++], KEYEVENTF_KEYUP);
-	}
-
-	if (pTriggerDefinition->bAlt)
-	{
-		// Note: Application menus become active with ALT is pressed, to get out of the menu alt must be "pressed" a second time
-		AppendSingleKey(VK_MENU, &g_inputBuffer[nIndex++], KEYEVENTF_KEYUP);
-		AppendSingleKey(VK_MENU, &g_inputBuffer[nIndex++], 0);
-		AppendSingleKey(VK_MENU, &g_inputBuffer[nIndex++], KEYEVENTF_KEYUP);
-	}
-
-	if(nIndex == 0)
-	{
-		// no keys to send nothing to do
-		return;
-	}
-
-#ifdef _DEBUG
-	char outputchar[256];
-	for (int nTemp = 0; nTemp < nIndex; nTemp++)
-	{
-		sprintf_s(outputchar, "Sending: (flags)%x %d\n", g_inputBuffer[nTemp].ki.dwFlags, g_inputBuffer[nTemp].ki.wVk);
-		OutputDebugStringA(outputchar);
-	}
-#endif
-	SendInput(nIndex, g_inputBuffer, sizeof(INPUT));
-}
-
-/*
-Sends the desired keyboard input in the necessary order to achieve the desired input (or at least try)
-
-pKeyDef: pointer to a key definition for a keyboard input to send
-pTriggerDefinition: The definition of the triggering key. Modifiers like shift/alt/ctrl require special handling under
-certain circumstances
-*/
-void SendInputKeys(KeyDefinition* pKeyDef)
-{
-#ifdef _DEBUG
-	char outputchar[256];
-#endif
-
-	int nIndex = 0;
-
-	bool bSendKeyDown = true;
-	bool bSendKeyUp = true;
-
-	if(pKeyDef->bToggle)
-	{
-		if(pKeyDef->nVkKey >= MAX_VKEY)
-		{
-			sprintf_s(outputchar, "---- ERROR Cannot have a vkey value over 255: %d\n", pKeyDef->nVkKey);
-			OutputDebugStringA(outputchar);
-		}
-
-		if(g_KeyToggleHistory[pKeyDef->nVkKey])
-		{
-			bSendKeyDown = false;
-		}
-		else
-		{
-			bSendKeyUp = false;
-		}
-		g_KeyToggleHistory[pKeyDef->nVkKey] = !g_KeyToggleHistory[pKeyDef->nVkKey];
-	}
-
-	if (bSendKeyDown)
-	{
-		if (pKeyDef->bShift)
-		{
-			AppendSingleKey(VK_SHIFT, &g_inputBuffer[nIndex++], 0);
-		}
-
-		if (pKeyDef->bControl)
-		{
-			AppendSingleKey(VK_CONTROL, &g_inputBuffer[nIndex++], 0);
-		}
-
-		if (pKeyDef->bAlt)
-		{
-			AppendSingleKey(VK_MENU, &g_inputBuffer[nIndex++], 0);
-		}
-
-		// output the actual key
-#ifdef _DEBUG
-		sprintf_s(outputchar, "---- Appended (down) %d\n", pKeyDef->nVkKey);
-		OutputDebugStringA(outputchar);
-#endif
-		AppendSingleKey(pKeyDef->nVkKey, &g_inputBuffer[nIndex++], 0);
-	}
-
-	if (bSendKeyUp)
-	{
-#ifdef _DEBUG
-		sprintf_s(outputchar, "---- Appended (up) %d\n", pKeyDef->nVkKey);
-		OutputDebugStringA(outputchar);
-#endif
-
-		AppendSingleKey(pKeyDef->nVkKey, &g_inputBuffer[nIndex++], KEYEVENTF_KEYUP);
-
-		// setup any necessary key event up messages
-		if (pKeyDef->bShift)
-		{
-			AppendSingleKey(VK_SHIFT, &g_inputBuffer[nIndex++], KEYEVENTF_KEYUP);
-		}
-		if (pKeyDef->bControl)
-		{
-			AppendSingleKey(VK_CONTROL, &g_inputBuffer[nIndex++], KEYEVENTF_KEYUP);
-		}
-		if (pKeyDef->bAlt)
-		{
-			AppendSingleKey(VK_MENU, &g_inputBuffer[nIndex++], KEYEVENTF_KEYUP);
-		}
-	}
-#ifdef _DEBUG
-	for (int nTemp = 0; nTemp < nIndex; nTemp++)
-	{
-		sprintf_s(outputchar, "Sending: (flags)%x %d\n", g_inputBuffer[nTemp].ki.dwFlags, g_inputBuffer[nTemp].ki.wVk);
-		OutputDebugStringA(outputchar);
-	}
-#endif
-	SendInput(nIndex, g_inputBuffer, sizeof(INPUT));
-}
-
-/*
-Assigns the desired keyboard input to send (see win32 INPUT documentation as it relates to SendInput)
-
-keyScan: the virtual key value to set
-inputChar: The scan value to set
-dwFlags: The flags value to set
-*/
-void AppendSingleKey(short keyScan, INPUT* inputChar, DWORD dwFlags)
-{
-	memset(inputChar, 0, sizeof(INPUT));
-
-	inputChar->type = INPUT_KEYBOARD;
-	inputChar->ki.wVk = LOBYTE(keyScan); 
-	inputChar->ki.wScan = MapVirtualKey(LOBYTE(keyScan), 0); 
-	inputChar->ki.dwFlags = dwFlags;
-}
-
-/*
-Assigns the desired mouse input to send (see win32 INPUT documentation as it relates to SendInput)
-
-inputChar: The scan value to set
-nVkKey: The key to set/send as input
-*/
-void AppendSingleMouse(INPUT* inputChar, unsigned char nVkKey)
-{
-	memset(inputChar, 0, sizeof(INPUT));
-
-	inputChar->type = INPUT_MOUSE;
-	inputChar->mi.dwExtraInfo = 0;
-	inputChar->mi.mouseData = 0;
-	inputChar->mi.dwExtraInfo = 0;
-	inputChar->mi.dwFlags = nVkKey;
 }

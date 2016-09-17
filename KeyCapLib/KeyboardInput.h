@@ -22,19 +22,18 @@
 // SOFTWARE.
 ////////////////////////////////////////////////////////////////////////////////
 
-// stdafx.h : include file for standard system include files,
-// or project specific include files that are used frequently, but
-// are changed infrequently
-//
+#ifndef KEYBOARD_INPUT_H_     // equivalently, #if !defined HEADER_H_
+#define KEYBOARD_INPUT_H_
 
-#pragma once
+#include "stdafx.h"
+#include "KeyCapture.h"
 
-#include "targetver.h"
+void SendInputKeys(KeyDefinition* pKeyDef);
+void AppendSingleKey(short keyScan, INPUT* inputChar, DWORD dwFlags);
 
-#define WIN32_LEAN_AND_MEAN             // Exclude rarely-used stuff from Windows headers
-// Windows Header Files:
-#include <windows.h>
-#include <stdlib.h>
-#include <stdio.h>
-#include <assert.h>
-#include <winuser.h>
+const int MAX_VKEY = 256;
+
+// input histories for toggle usage
+extern bool g_KeyToggleHistory[];
+
+#endif // KEYBOARD_INPUT_H_

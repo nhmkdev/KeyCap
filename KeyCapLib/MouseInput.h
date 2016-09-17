@@ -22,19 +22,27 @@
 // SOFTWARE.
 ////////////////////////////////////////////////////////////////////////////////
 
-// stdafx.h : include file for standard system include files,
-// or project specific include files that are used frequently, but
-// are changed infrequently
-//
+#ifndef MOUSE_INPUT_H_     // equivalently, #if !defined HEADER_H_
+#define MOUSE_INPUT_H_
 
-#pragma once
+#include "stdafx.h"
+#include "KeyCapture.h"
 
-#include "targetver.h"
+enum MOUSE_BUTTON
+{
+	MOUSE_NONE = 0x00,
+	MOUSE_LEFT = 0x01,
+	MOUSE_RIGHT = 0x02,
+	MOUSE_MIDDLE = 0x03,
+	MOUSE_BUTTON_COUNT
+};
 
-#define WIN32_LEAN_AND_MEAN             // Exclude rarely-used stuff from Windows headers
-// Windows Header Files:
-#include <windows.h>
-#include <stdlib.h>
-#include <stdio.h>
-#include <assert.h>
-#include <winuser.h>
+static bool g_MouseToggleHistory[MOUSE_BUTTON_COUNT];
+
+extern unsigned char g_MouseDownMap[];
+extern unsigned char g_MouseUpMap[];
+
+void SendInputMouse(KeyDefinition *pKeyDef);
+void AppendSingleMouse(INPUT* inputChar, unsigned char nVkKey);
+
+#endif // MOUSE_INPUT_H_
