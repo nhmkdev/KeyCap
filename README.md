@@ -8,6 +8,11 @@ This is an old project I used many years ago for remapping input. I still find i
 * mouse input
 * nothing at all
 
+## Example Uses
+* (original inspiration) Shortcutting a sequence of shortcuts. I originally created the application long ago to help with a sequence of keyboard shortcuts necessary to perform file merges when integrating a branch with [Perforce](https://www.perforce.com/) + [Araxis Merge](https://www.araxis.com/)
+* [Starbound](http://playstarbound.com/) Keyboard shortcuts to toggle off/on mouse buttons. This makes extensive mining in the game a lot less painful. [Mass Effect 2](http://masseffect.bioware.com/me2/) planet scanning also can be a lot easier...
+* [Dreamfall Chapters](http://redthreadgames.com/games/chapters/) has a run button though it can be nice to have a button that toggles whether you are running or not instead of holding one down.
+
 ## TODO:
 * Add a new release (currently available here: [Download Key2Key](https://www.nhmk.com/tools.php)
 * Code comments
