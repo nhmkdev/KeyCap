@@ -7,6 +7,7 @@ This is an old project I used many years ago for remapping input. I still find i
 * another key or sequence of keys
 * mouse input
 * nothing at all
+* on/off toggles for keys and inputs (this allows a single keystroke to initiate a hold and a second keystroke to end the hold)
 
 ## Example Uses
 * (original inspiration) Shortcutting a sequence of shortcuts. I originally created the application long ago to help with a sequence of keyboard shortcuts necessary to perform file merges when integrating a branch with [Perforce](https://www.perforce.com/) + [Araxis Merge](https://www.araxis.com/)
@@ -15,6 +16,7 @@ This is an old project I used many years ago for remapping input. I still find i
 
 ## TODO:
 * Add a new release (currently available here: [Download Key2Key](https://www.nhmk.com/tools.php)
+** This release is the older version and does not support the toggle action.
 * Code comments
 * Code cleanup
 * Proper description for how it all works! I have forgotten some of the details...
