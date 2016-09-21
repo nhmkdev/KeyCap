@@ -35,6 +35,7 @@ namespace KeyCap.Forms
             this.txtKeyOut = new System.Windows.Forms.TextBox();
             this.menuStripMain = new System.Windows.Forms.MenuStrip();
             this.fileToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+            this.newToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.loadToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.saveToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.saveAsToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
@@ -62,6 +63,10 @@ namespace KeyCap.Forms
             this.exitToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.panelKeySetup = new System.Windows.Forms.Panel();
             this.groupBoxOutputKey = new System.Windows.Forms.GroupBox();
+            this.panel1 = new System.Windows.Forms.Panel();
+            this.btnAddExtra = new System.Windows.Forms.Button();
+            this.btnAppendExtra = new System.Windows.Forms.Button();
+            this.label2 = new System.Windows.Forms.Label();
             this.checkOutputToggle = new System.Windows.Forms.CheckBox();
             this.label1 = new System.Windows.Forms.Label();
             this.numericUpDownDelay = new System.Windows.Forms.NumericUpDown();
@@ -72,6 +77,7 @@ namespace KeyCap.Forms
             this.contextMenuStripNotify.SuspendLayout();
             this.panelKeySetup.SuspendLayout();
             this.groupBoxOutputKey.SuspendLayout();
+            this.panel1.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)(this.numericUpDownDelay)).BeginInit();
             this.groupBoxInputKey.SuspendLayout();
             this.panelKeySetupControls.SuspendLayout();
@@ -124,6 +130,7 @@ namespace KeyCap.Forms
             // fileToolStripMenuItem
             // 
             this.fileToolStripMenuItem.DropDownItems.AddRange(new System.Windows.Forms.ToolStripItem[] {
+            this.newToolStripMenuItem,
             this.loadToolStripMenuItem,
             this.saveToolStripMenuItem,
             this.saveAsToolStripMenuItem,
@@ -131,6 +138,14 @@ namespace KeyCap.Forms
             this.fileToolStripMenuItem.Name = "fileToolStripMenuItem";
             this.fileToolStripMenuItem.Size = new System.Drawing.Size(35, 20);
             this.fileToolStripMenuItem.Text = "File";
+            // 
+            // newToolStripMenuItem
+            // 
+            this.newToolStripMenuItem.Name = "newToolStripMenuItem";
+            this.newToolStripMenuItem.ShortcutKeys = ((System.Windows.Forms.Keys)((System.Windows.Forms.Keys.Control | System.Windows.Forms.Keys.N)));
+            this.newToolStripMenuItem.Size = new System.Drawing.Size(164, 22);
+            this.newToolStripMenuItem.Text = "New";
+            this.newToolStripMenuItem.Click += new System.EventHandler(this.newToolStripMenuItem_Click);
             // 
             // loadToolStripMenuItem
             // 
@@ -377,6 +392,8 @@ namespace KeyCap.Forms
             // 
             this.groupBoxOutputKey.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left) 
             | System.Windows.Forms.AnchorStyles.Right)));
+            this.groupBoxOutputKey.Controls.Add(this.panel1);
+            this.groupBoxOutputKey.Controls.Add(this.label2);
             this.groupBoxOutputKey.Controls.Add(this.checkOutputToggle);
             this.groupBoxOutputKey.Controls.Add(this.label1);
             this.groupBoxOutputKey.Controls.Add(this.numericUpDownDelay);
@@ -392,6 +409,49 @@ namespace KeyCap.Forms
             this.groupBoxOutputKey.TabIndex = 19;
             this.groupBoxOutputKey.TabStop = false;
             this.groupBoxOutputKey.Text = "Output Key";
+            // 
+            // panel1
+            // 
+            this.panel1.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Right)));
+            this.panel1.Controls.Add(this.btnAddExtra);
+            this.panel1.Controls.Add(this.btnAppendExtra);
+            this.panel1.Location = new System.Drawing.Point(218, 41);
+            this.panel1.Name = "panel1";
+            this.panel1.Size = new System.Drawing.Size(172, 23);
+            this.panel1.TabIndex = 19;
+            // 
+            // btnAddExtra
+            // 
+            this.btnAddExtra.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Right)));
+            this.btnAddExtra.Location = new System.Drawing.Point(16, 0);
+            this.btnAddExtra.Name = "btnAddExtra";
+            this.btnAddExtra.Size = new System.Drawing.Size(75, 23);
+            this.btnAddExtra.TabIndex = 7;
+            this.btnAddExtra.Text = "Add";
+            this.btnAddExtra.UseVisualStyleBackColor = true;
+            this.btnAddExtra.Click += new System.EventHandler(this.btnAdd_Click);
+            // 
+            // btnAppendExtra
+            // 
+            this.btnAppendExtra.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Right)));
+            this.btnAppendExtra.Enabled = false;
+            this.btnAppendExtra.Location = new System.Drawing.Point(97, 0);
+            this.btnAppendExtra.Name = "btnAppendExtra";
+            this.btnAppendExtra.Size = new System.Drawing.Size(75, 23);
+            this.btnAppendExtra.TabIndex = 8;
+            this.btnAppendExtra.Text = "Append";
+            this.btnAppendExtra.UseVisualStyleBackColor = true;
+            this.btnAppendExtra.Click += new System.EventHandler(this.btnAppend_Click);
+            // 
+            // label2
+            // 
+            this.label2.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Right)));
+            this.label2.Location = new System.Drawing.Point(597, 19);
+            this.label2.Name = "label2";
+            this.label2.Size = new System.Drawing.Size(69, 20);
+            this.label2.TabIndex = 21;
+            this.label2.Text = "Mouse:";
+            this.label2.TextAlign = System.Drawing.ContentAlignment.MiddleRight;
             // 
             // checkOutputToggle
             // 
@@ -432,9 +492,9 @@ namespace KeyCap.Forms
             this.comboBoxMouseOut.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
             this.comboBoxMouseOut.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
             this.comboBoxMouseOut.FormattingEnabled = true;
-            this.comboBoxMouseOut.Location = new System.Drawing.Point(622, 18);
+            this.comboBoxMouseOut.Location = new System.Drawing.Point(672, 18);
             this.comboBoxMouseOut.Name = "comboBoxMouseOut";
-            this.comboBoxMouseOut.Size = new System.Drawing.Size(140, 21);
+            this.comboBoxMouseOut.Size = new System.Drawing.Size(90, 21);
             this.comboBoxMouseOut.TabIndex = 17;
             this.comboBoxMouseOut.SelectedIndexChanged += new System.EventHandler(this.comboBoxSpecialOut_SelectedIndexChanged);
             // 
@@ -486,6 +546,7 @@ namespace KeyCap.Forms
             this.panelKeySetup.ResumeLayout(false);
             this.groupBoxOutputKey.ResumeLayout(false);
             this.groupBoxOutputKey.PerformLayout();
+            this.panel1.ResumeLayout(false);
             ((System.ComponentModel.ISupportInitialize)(this.numericUpDownDelay)).EndInit();
             this.groupBoxInputKey.ResumeLayout(false);
             this.groupBoxInputKey.PerformLayout();
@@ -534,6 +595,11 @@ namespace KeyCap.Forms
         private System.Windows.Forms.NumericUpDown numericUpDownDelay;
         private System.Windows.Forms.ToolStripMenuItem previousConfigurationsToolStripMenuItem;
         private System.Windows.Forms.CheckBox checkOutputToggle;
+        private System.Windows.Forms.ToolStripMenuItem newToolStripMenuItem;
+        private System.Windows.Forms.Label label2;
+        private System.Windows.Forms.Panel panel1;
+        private System.Windows.Forms.Button btnAddExtra;
+        private System.Windows.Forms.Button btnAppendExtra;
     }
 }
 

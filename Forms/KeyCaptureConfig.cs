@@ -24,6 +24,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.Drawing;
 using System.IO;
 using System.Text;
@@ -91,7 +92,7 @@ namespace KeyCap.Forms
             IniManager.RestoreState(this, m_zIniManager.GetValue(Name));
 
             // setup the various mouse output options
-            comboBoxMouseOut.Items.Add("No Mouse Action");
+            comboBoxMouseOut.Items.Add("No Action");
             foreach (IODefinition.MouseButton sName in Enum.GetValues(typeof(IODefinition.MouseButton)))
             {
                 comboBoxMouseOut.Items.Add(sName);
@@ -130,6 +131,18 @@ namespace KeyCap.Forms
             KeyCaptureLib.Shutdown();
             m_zIniManager.SetValue(Name, IniManager.GetFormSettings(this));
             Close();
+        }
+
+        private void newToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            var zCancelEvent = new CancelEventArgs();
+            SaveOnClose(zCancelEvent);
+            if (zCancelEvent.Cancel)
+            {
+                return;
+            }
+            listViewKeys.Items.Clear();
+            InitNew();
         }
 
         private void KeyCaptureConfig_FormClosing(object sender, FormClosingEventArgs e)
