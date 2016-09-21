@@ -1,5 +1,7 @@
 # KeyCap
 
+Download the [Latest Release](https://github.com/nhmkdev/KeyCap/releases/latest)
+
 ## Description
 *Windows only* application for capture keyboard input and remapping it to:
 * another key or sequence of keys
