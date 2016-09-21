@@ -1,7 +1,5 @@
 # KeyCap
 
-This is an old project I used many years ago for remapping input. I still find it useful sometimes.
-
 ## Description
 *Windows only* application for capture keyboard input and remapping it to:
 * another key or sequence of keys
@@ -45,3 +43,7 @@ The flags indicate information that modifies the value (alt/shift/ctrl and speci
 #### Output Count
 
 This is limited to a byte, so 255 maximum.
+
+## History
+
+This is an old project I used many years ago for remapping input. I still find it useful sometimes.
