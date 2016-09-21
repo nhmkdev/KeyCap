@@ -15,11 +15,7 @@ Download the [Latest Release](https://github.com/nhmkdev/KeyCap/releases/latest)
 * [Dreamfall Chapters](http://redthreadgames.com/games/chapters/) has a run button though it can be nice to have a button that toggles whether you are running or not instead of holding one down.
 
 ## TODO:
-* Add a new release (currently available here: [Download Key2Key](https://www.nhmk.com/tools.php)
-** This release is the older version and does not support the toggle action.
-* Code comments
-* Code cleanup
-* Proper description for how it all works! I have forgotten some of the details...
+* Fix bugs!
 
 ## Warning
 This program does perform keyboard capture and is essentially the first component of a key logger. I humbly request you NOT use the information included in the source code to create a malicious application.
