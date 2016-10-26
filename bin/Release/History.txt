@@ -1,0 +1,7 @@
+KeyCap Version History
+--------------------------
+0.0.0.14
+- Replaced old text on the status icon to be KeyCap
+
+0.0.0.13
+- Initial Version! (well... on GitHub)

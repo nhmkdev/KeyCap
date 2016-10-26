@@ -333,7 +333,7 @@ namespace KeyCap.Forms
             // notifyIcon
             // 
             this.notifyIcon.ContextMenuStrip = this.contextMenuStripNotify;
-            this.notifyIcon.Text = "Key2Key";
+            this.notifyIcon.Text = "KeyCap";
             this.notifyIcon.Visible = true;
             this.notifyIcon.DoubleClick += new System.EventHandler(this.restoreConfigurationToolStripMenuItem_Click);
             // 
