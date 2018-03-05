@@ -303,6 +303,7 @@ namespace KeyCap.Forms
         private void listViewKeys_SelectedIndexChanged(object sender, EventArgs e)
         {
             btnAppend.Enabled = (1 == listViewKeys.SelectedIndices.Count);
+            btnAppendExtra.Enabled = (1 == listViewKeys.SelectedIndices.Count);
             btnRemove.Enabled = (0 < listViewKeys.SelectedIndices.Count);
         }
 
@@ -337,7 +338,7 @@ namespace KeyCap.Forms
         private void btnAdd_Click(object sender, EventArgs e)
         {
             var zInput = (IODefinition)txtKeyIn.Tag;
-            var zOutput = (IODefinition)txtKeyOut.Tag;
+            var zOutput = getCurrentOutputDefinition();
 
             if (null == zInput || null == zOutput)
             {
@@ -346,14 +347,6 @@ namespace KeyCap.Forms
             }
 
             zInput.Flags = GetFlags(zInput, FlagsFromEnum.Input);
-            if (checkOutputNone.Checked) // if output is set to none change zOutput keyarg
-            {
-                zOutput = new IODefinition((byte)IODefinition.IOFlags.DoNothing, 0x00);
-            }
-            else
-            {
-                zOutput.Flags = GetFlags(zOutput, FlagsFromEnum.Output);
-            }
 
             var zPairDef = new IOPairDefinition(zInput, zOutput);
 
@@ -404,7 +397,7 @@ namespace KeyCap.Forms
 
             var zItem = listViewKeys.SelectedItems[0];
             var zPairDef = (IOPairDefinition)zItem.Tag;
-            var zOutDef = (IODefinition)txtKeyOut.Tag;
+            var zOutDef = getCurrentOutputDefinition();
             var bSuccess = zPairDef.AddOutputDefinition(zOutDef);
             if (bSuccess)
             {
@@ -417,6 +410,25 @@ namespace KeyCap.Forms
                 MessageBox.Show(this, "Failed to append item. The maximum number of outputs allowed is 255.", "Append Error!",
                     MessageBoxButtons.OK, MessageBoxIcon.Exclamation);
             }
+        }
+
+        private IODefinition getCurrentOutputDefinition()
+        {
+            var zOutput = (IODefinition)txtKeyOut.Tag;
+            if (zOutput == null)
+            {
+                return null;
+            }
+
+            if (checkOutputNone.Checked) // if output is set to none change zOutput keyarg
+            {
+                zOutput = new IODefinition((byte)IODefinition.IOFlags.DoNothing, 0x00);
+            }
+            else
+            {
+                zOutput.Flags = GetFlags(zOutput, FlagsFromEnum.Output);
+            }
+            return zOutput;
         }
 
         private void btnStart_Click(object sender, EventArgs e)
