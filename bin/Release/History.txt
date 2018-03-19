@@ -1,6 +1,7 @@
 KeyCap Version History
 --------------------------
-0.0.0.14
+1.0.0.0
+- Fixed bug with appending outputs with flags
 - Replaced old text on the status icon to be KeyCap
 
 0.0.0.13
