@@ -21,7 +21,7 @@
     <OutputPath>bin\Debug\</OutputPath>
     <DefineConstants>DEBUG;TRACE</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
-    <WarningLevel>4</WarningLevel>
+    <WarningLevel>2</WarningLevel>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
     <PlatformTarget>AnyCPU</PlatformTarget>
@@ -110,7 +110,7 @@
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <PropertyGroup>
     <PostBuildEvent>DEL "$(SolutionDir)$(OutDir)*.zip"
-"C:\Program Files\7-Zip\7z" a "$(TargetDir)KeyCap_X.X.X.X.zip" "$(TargetDir)KeyCap.exe" "$(TargetDir)KeyCapLib.dll" "$(TargetDir)KeyCap.pdf" "$(TargetDir)Readme.txt" "$(TargetDir)History.txt" -tzip -mx5</PostBuildEvent>
+"C:\Program Files\7-Zip\7z" a "$(TargetDir)KeyCap_X.X.X.X.zip" "$(TargetDir)KeyCap.exe" "$(TargetDir)KeyCapLib.dll" "$(TargetDir)KeyCap*.pdf" "$(TargetDir)Readme*.txt" "$(TargetDir)History*.txt" -tzip -mx5</PostBuildEvent>
   </PropertyGroup>
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
        Other similar extension points exist, see Microsoft.Common.targets.

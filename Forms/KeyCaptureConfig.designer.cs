@@ -136,14 +136,14 @@ namespace KeyCap.Forms
             this.saveAsToolStripMenuItem,
             this.exitMainToolStripMenuItem});
             this.fileToolStripMenuItem.Name = "fileToolStripMenuItem";
-            this.fileToolStripMenuItem.Size = new System.Drawing.Size(35, 20);
+            this.fileToolStripMenuItem.Size = new System.Drawing.Size(37, 20);
             this.fileToolStripMenuItem.Text = "File";
             // 
             // newToolStripMenuItem
             // 
             this.newToolStripMenuItem.Name = "newToolStripMenuItem";
             this.newToolStripMenuItem.ShortcutKeys = ((System.Windows.Forms.Keys)((System.Windows.Forms.Keys.Control | System.Windows.Forms.Keys.N)));
-            this.newToolStripMenuItem.Size = new System.Drawing.Size(164, 22);
+            this.newToolStripMenuItem.Size = new System.Drawing.Size(165, 22);
             this.newToolStripMenuItem.Text = "New";
             this.newToolStripMenuItem.Click += new System.EventHandler(this.newToolStripMenuItem_Click);
             // 
@@ -151,7 +151,7 @@ namespace KeyCap.Forms
             // 
             this.loadToolStripMenuItem.Name = "loadToolStripMenuItem";
             this.loadToolStripMenuItem.ShortcutKeys = ((System.Windows.Forms.Keys)((System.Windows.Forms.Keys.Control | System.Windows.Forms.Keys.O)));
-            this.loadToolStripMenuItem.Size = new System.Drawing.Size(164, 22);
+            this.loadToolStripMenuItem.Size = new System.Drawing.Size(165, 22);
             this.loadToolStripMenuItem.Text = "&Open...";
             this.loadToolStripMenuItem.Click += new System.EventHandler(this.loadToolStripMenuItem_Click);
             // 
@@ -159,7 +159,7 @@ namespace KeyCap.Forms
             // 
             this.saveToolStripMenuItem.Name = "saveToolStripMenuItem";
             this.saveToolStripMenuItem.ShortcutKeys = ((System.Windows.Forms.Keys)((System.Windows.Forms.Keys.Control | System.Windows.Forms.Keys.S)));
-            this.saveToolStripMenuItem.Size = new System.Drawing.Size(164, 22);
+            this.saveToolStripMenuItem.Size = new System.Drawing.Size(165, 22);
             this.saveToolStripMenuItem.Text = "&Save";
             this.saveToolStripMenuItem.Click += new System.EventHandler(this.saveToolStripMenuItem_Click);
             // 
@@ -167,21 +167,21 @@ namespace KeyCap.Forms
             // 
             this.saveAsToolStripMenuItem.Name = "saveAsToolStripMenuItem";
             this.saveAsToolStripMenuItem.ShortcutKeys = ((System.Windows.Forms.Keys)((System.Windows.Forms.Keys.Control | System.Windows.Forms.Keys.A)));
-            this.saveAsToolStripMenuItem.Size = new System.Drawing.Size(164, 22);
+            this.saveAsToolStripMenuItem.Size = new System.Drawing.Size(165, 22);
             this.saveAsToolStripMenuItem.Text = "Save &As...";
             this.saveAsToolStripMenuItem.Click += new System.EventHandler(this.saveAsToolStripMenuItem_Click);
             // 
             // exitMainToolStripMenuItem
             // 
             this.exitMainToolStripMenuItem.Name = "exitMainToolStripMenuItem";
-            this.exitMainToolStripMenuItem.Size = new System.Drawing.Size(164, 22);
+            this.exitMainToolStripMenuItem.Size = new System.Drawing.Size(165, 22);
             this.exitMainToolStripMenuItem.Text = "&Exit";
             this.exitMainToolStripMenuItem.Click += new System.EventHandler(this.exitMainToolStripMenuItem_Click);
             // 
             // previousConfigurationsToolStripMenuItem
             // 
             this.previousConfigurationsToolStripMenuItem.Name = "previousConfigurationsToolStripMenuItem";
-            this.previousConfigurationsToolStripMenuItem.Size = new System.Drawing.Size(126, 20);
+            this.previousConfigurationsToolStripMenuItem.Size = new System.Drawing.Size(137, 20);
             this.previousConfigurationsToolStripMenuItem.Text = "Recent Configurations";
             this.previousConfigurationsToolStripMenuItem.DropDownOpening += new System.EventHandler(this.previousConfigurationsToolStripMenuItem_DropDownOpening);
             // 
@@ -347,31 +347,31 @@ namespace KeyCap.Forms
             this.contextMenuStripNotify.Name = "contextMenuStripNotify";
             this.contextMenuStripNotify.RenderMode = System.Windows.Forms.ToolStripRenderMode.System;
             this.contextMenuStripNotify.ShowImageMargin = false;
-            this.contextMenuStripNotify.Size = new System.Drawing.Size(156, 76);
+            this.contextMenuStripNotify.Size = new System.Drawing.Size(166, 76);
             // 
             // toggleToolStripMenuItem
             // 
             this.toggleToolStripMenuItem.Name = "toggleToolStripMenuItem";
-            this.toggleToolStripMenuItem.Size = new System.Drawing.Size(155, 22);
+            this.toggleToolStripMenuItem.Size = new System.Drawing.Size(165, 22);
             this.toggleToolStripMenuItem.Text = "Toggle";
             this.toggleToolStripMenuItem.Click += new System.EventHandler(this.btnStart_Click);
             // 
             // restoreConfigurationToolStripMenuItem
             // 
             this.restoreConfigurationToolStripMenuItem.Name = "restoreConfigurationToolStripMenuItem";
-            this.restoreConfigurationToolStripMenuItem.Size = new System.Drawing.Size(155, 22);
+            this.restoreConfigurationToolStripMenuItem.Size = new System.Drawing.Size(165, 22);
             this.restoreConfigurationToolStripMenuItem.Text = "Restore Configuration";
             this.restoreConfigurationToolStripMenuItem.Click += new System.EventHandler(this.restoreConfigurationToolStripMenuItem_Click);
             // 
             // toolStripMenuItem1
             // 
             this.toolStripMenuItem1.Name = "toolStripMenuItem1";
-            this.toolStripMenuItem1.Size = new System.Drawing.Size(152, 6);
+            this.toolStripMenuItem1.Size = new System.Drawing.Size(162, 6);
             // 
             // exitToolStripMenuItem
             // 
             this.exitToolStripMenuItem.Name = "exitToolStripMenuItem";
-            this.exitToolStripMenuItem.Size = new System.Drawing.Size(155, 22);
+            this.exitToolStripMenuItem.Size = new System.Drawing.Size(165, 22);
             this.exitToolStripMenuItem.Text = "Exit";
             this.exitToolStripMenuItem.Click += new System.EventHandler(this.exitMainToolStripMenuItem_Click);
             // 
@@ -536,6 +536,7 @@ namespace KeyCap.Forms
             this.MainMenuStrip = this.menuStripMain;
             this.MinimumSize = new System.Drawing.Size(800, 500);
             this.Name = "KeyCaptureConfig";
+            this.ShowInTaskbar = false;
             this.Text = "KeyCap Configuration";
             this.FormClosing += new System.Windows.Forms.FormClosingEventHandler(this.KeyCaptureConfig_FormClosing);
             this.Load += new System.EventHandler(this.KeyCaptureConfig_Load);

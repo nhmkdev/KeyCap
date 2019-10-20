@@ -4,6 +4,7 @@
 *.user
 *.db
 *.opendb
+.vs/
 packages/
 obj/
 bin/Debug/

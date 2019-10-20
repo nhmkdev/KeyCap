@@ -1,5 +1,9 @@
 KeyCap Version History
 --------------------------
+1.0.0.1
+- Upgraded project to SDK 10.x
+- Removed display in taskbar (notification icon only now)
+
 1.0.0.0
 - Fixed bug with appending outputs with flags
 - Replaced old text on the status icon to be KeyCap
