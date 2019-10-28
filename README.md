@@ -14,6 +14,19 @@ Download the [Latest Release](https://github.com/nhmkdev/KeyCap/releases/latest)
 * [Starbound](http://playstarbound.com/) Keyboard shortcuts to toggle off/on mouse buttons. This makes extensive mining in the game a lot less painful. [Mass Effect 2](http://masseffect.bioware.com/me2/) planet scanning also can be a lot easier...
 * [Dreamfall Chapters](http://redthreadgames.com/games/chapters/) has a run button though it can be nice to have a button that toggles whether you are running or not instead of holding one down.
 
+## Run on Startup
+
+With Registry Editor, add a new StringValue to `HKCU\Software\Microsoft\Windows\CurrentVersion\Run` with the full path to `KeyCap.exe` followed by the full path to your `.kfg` file.  KeyCap will load the config file, start it and then minimize to the tray.
+
+Alternatively, copy the following to a text file named `KeyCap.reg` and then edit it to match your setup.  Save it, right click-it and selct **Merge**.  Follow the prompts and then the next time you reboot, KeyCap will start automatically.
+
+```regedit
+Windows Registry Editor Version 5.00
+
+[HKEY_CURRENT_USER\Software\Microsoft\Windows\CurrentVersion\Run]
+"KeyCap"="D:\\Util\\KeyCap\\KeyCap.exe D:\\Util\\KeyCap\\Config.kfg"
+```
+
 ## TODO:
 * Fix bugs!
 
