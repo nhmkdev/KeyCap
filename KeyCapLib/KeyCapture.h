@@ -25,8 +25,26 @@
 #ifndef KEY_CAPTURE_H_     // equivalently, #if !defined HEADER_H_
 #define KEY_CAPTURE_H_
 
+#include "KeyCaptureUtil.h"
+
 // === structs
-struct KeyDefinition
+struct InputFlag
+{
+#if 0
+	const int KEYCAP_SHIFT = 1 << 0;
+	const int KEYCAP_CONTROL = 1 << 1;
+	const int KEYCAP_ALT = 1 << 2;
+#endif
+	BYTE bShift : 1;
+	BYTE bControl : 1;
+	BYTE bAlt : 1;
+	BYTE padOne : 5;
+	BYTE padTwo : 8;
+	BYTE padThree : 8;
+	BYTE padFour : 8;
+};
+
+struct OutputFlag
 {
 #if 0
 	const int KEYCAP_SHIFT = 1 << 0;
@@ -37,29 +55,50 @@ struct KeyDefinition
 	const int KEYCAP_DELAY = 1 << 5;
 	const int KEYCAP_TOGGLE = 1 << 6;
 #endif
-	unsigned char bShift : 1;
-	unsigned char bControl : 1;
-	unsigned char bAlt : 1;
-	unsigned char bDoNothing : 1;
-	unsigned char bMouseOut : 1;
-	unsigned char bDelay : 1;
-	unsigned char bToggle : 1;
-	unsigned char pad : 1;
-	unsigned char nVkKey : 8; // this stores mouse input too... TODO better name
+	BYTE bShift : 1;
+	BYTE bControl : 1;
+	BYTE bAlt : 1;
+	BYTE bDoNothing : 1;
+	BYTE bMouseOut : 1;
+	BYTE bDelay : 1;
+	BYTE bToggle : 1;
+	BYTE padOne : 1;
+	BYTE padTwo : 8;
+	BYTE padThree : 8;
+	BYTE padFour : 8;
 };
 
-struct KeyTranslation
+struct InputConfig
 {
-	KeyDefinition kDef;
-
-	char nKDefOutput; // count of output key definitions
-					  // KeyDefintion[nKDefOutput]
+	InputFlag inputFlag;
+	BYTE virtualKey;
+	BYTE padOne : 8;
+	BYTE padTwo : 8;
+	BYTE padThree : 8;
+	unsigned int parameter;
 };
 
-struct KeyTranslationListItem
+struct OutputConfig
 {
-	KeyTranslation* pTrans;
-	KeyTranslationListItem* pNext;
+	OutputFlag outputFlag;
+	BYTE virtualKey; // also stores mouse output
+	BYTE padOne : 8;
+	BYTE padTwo : 8;
+	BYTE padThree : 8;
+	unsigned int parameter;
+};
+
+struct RemapEntry
+{
+	InputConfig inputConfig;
+	BYTE outputCount;
+	// KeyDefintion[outputCount]
+};
+
+struct RemapEntryListItem
+{
+	RemapEntry* pEntry;
+	RemapEntryListItem* pNext;
 };
 
 // TODO: this is no longer applicable...
@@ -67,5 +106,10 @@ const int MAX_KEY_INPUT_PER_STROKE = 9; // control, alt (OR alt-up alt-down alt-
 
 // TODO: completely NOT thread safe
 static INPUT g_inputBuffer[MAX_KEY_INPUT_PER_STROKE]; // keyboard output table (named input as it has the INPUT structs)
+
+char* GetInputConfigDescription(InputConfig inputConfig);
+char* GetOutputConfigDescription(OutputConfig outputConfig);
+
+char* GetFlagsString(DWORD dwFlags);
 
 #endif // KEY_CAPTURE_H_

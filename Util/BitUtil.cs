@@ -1,4 +1,4 @@
-////////////////////////////////////////////////////////////////////////////////
+﻿////////////////////////////////////////////////////////////////////////////////
 // The MIT License (MIT)
 //
 // Copyright (c) 2019 Tim Stair
@@ -22,27 +22,27 @@
 // SOFTWARE.
 ////////////////////////////////////////////////////////////////////////////////
 
-#ifndef MOUSE_INPUT_H_     // equivalently, #if !defined HEADER_H_
-#define MOUSE_INPUT_H_
+using System;
 
-#include "stdafx.h"
-#include "KeyCapture.h"
-
-enum MOUSE_BUTTON
+namespace KeyCap.Util
 {
-	MOUSE_NONE = 0x00,
-	MOUSE_LEFT = 0x01,
-	MOUSE_RIGHT = 0x02,
-	MOUSE_MIDDLE = 0x03,
-	MOUSE_BUTTON_COUNT
-};
+    public static class BitUtil
+    {
+        /// <summary>
+        /// Determines if the input type is flagged (as the there are multiple flags)
+        /// </summary>
+        /// <param name="eFlagBit">Flag to check for (assumes this is a bit index)</param>
+        /// <param name="byFlags">byte to check for the flag within</param>
+        /// <returns>true if the flag bit is 1, false otherwise</returns>
+        public static bool IsFlagged(int nFlags, Enum eFlagBit)
+        {
+            var nEnumFlag = Convert.ToInt32(eFlagBit);
+            return nEnumFlag == (nFlags & nEnumFlag);
+        }
 
-static bool g_MouseToggleHistory[MOUSE_BUTTON_COUNT];
-
-extern unsigned char g_MouseDownMap[];
-extern unsigned char g_MouseUpMap[];
-
-void SendInputMouse(OutputConfig *pKeyDef);
-void AppendSingleMouse(INPUT* inputChar, unsigned char nVkKey);
-
-#endif // MOUSE_INPUT_H_
+        public static int UpdateFlag(int nFlag, bool bFlagSetting, Enum eFlagBit)
+        {
+            return nFlag | (bFlagSetting ? Convert.ToInt32(eFlagBit) : 0);
+        }
+    }
+}

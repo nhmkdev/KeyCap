@@ -32,41 +32,37 @@ Sends the desired mouse input
 
 pKeyDef: pointer to a key definition for a mouse input
 */
-void SendInputMouse(KeyDefinition *pKeyDef)
+void SendInputMouse(OutputConfig *pKeyDef)
 {
-	if (pKeyDef->nVkKey == MOUSE_NONE)
+	if (pKeyDef->virtualKey == MOUSE_NONE)
 	{
 		return;
 	}
 
 	int nIndex = 0;
 
-	if (pKeyDef->bToggle)
+	if (pKeyDef->outputFlag.bToggle)
 	{
-		if (g_MouseToggleHistory[pKeyDef->nVkKey])
+		if (g_MouseToggleHistory[pKeyDef->virtualKey])
 		{
-			AppendSingleMouse(&g_inputBuffer[nIndex++], g_MouseUpMap[pKeyDef->nVkKey]);
+			AppendSingleMouse(&g_inputBuffer[nIndex++], g_MouseUpMap[pKeyDef->virtualKey]);
 		}
 		else
 		{
-			AppendSingleMouse(&g_inputBuffer[nIndex++], g_MouseDownMap[pKeyDef->nVkKey]);
+			AppendSingleMouse(&g_inputBuffer[nIndex++], g_MouseDownMap[pKeyDef->virtualKey]);
 		}
-		g_MouseToggleHistory[pKeyDef->nVkKey] = !g_MouseToggleHistory[pKeyDef->nVkKey];
+		g_MouseToggleHistory[pKeyDef->virtualKey] = !g_MouseToggleHistory[pKeyDef->virtualKey];
 	}
 	else
 	{
-		AppendSingleMouse(&g_inputBuffer[nIndex++], g_MouseDownMap[pKeyDef->nVkKey]);
-		AppendSingleMouse(&g_inputBuffer[nIndex++], g_MouseUpMap[pKeyDef->nVkKey]);
-		g_MouseToggleHistory[pKeyDef->nVkKey] = false;
+		AppendSingleMouse(&g_inputBuffer[nIndex++], g_MouseDownMap[pKeyDef->virtualKey]);
+		AppendSingleMouse(&g_inputBuffer[nIndex++], g_MouseUpMap[pKeyDef->virtualKey]);
+		g_MouseToggleHistory[pKeyDef->virtualKey] = false;
 	}
-#ifdef _DEBUG
-	char outputchar[256];
 	for (int nTemp = 0; nTemp < nIndex; nTemp++)
 	{
-		sprintf_s(outputchar, "SendingMouse: (flags)%x %d\n", g_inputBuffer[nTemp].ki.dwFlags, g_inputBuffer[0].mi.dwFlags);
-		OutputDebugStringA(outputchar);
+		LogDebugMessage("Sending Mouse: (flags)0x%02x %d\n", g_inputBuffer[nTemp].ki.dwFlags, g_inputBuffer[0].mi.dwFlags);
 	}
-#endif
 	SendInput(nIndex, g_inputBuffer, sizeof(INPUT));
 }
 
@@ -85,4 +81,8 @@ void AppendSingleMouse(INPUT* inputChar, unsigned char nVkKey)
 	inputChar->mi.mouseData = 0;
 	inputChar->mi.dwExtraInfo = 0;
 	inputChar->mi.dwFlags = nVkKey;
+	LogDebugMessage("Append Mouse Action: %d 0x%02x",
+		inputChar->ki.wVk,
+		inputChar->ki.wVk
+	);
 }

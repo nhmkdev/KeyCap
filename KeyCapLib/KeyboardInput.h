@@ -28,7 +28,7 @@
 #include "stdafx.h"
 #include "KeyCapture.h"
 
-void SendInputKeys(KeyDefinition* pKeyDef);
+void SendInputKeys(OutputConfig* pKeyDef);
 void AppendSingleKey(short keyScan, INPUT* inputChar, DWORD dwFlags);
 
 const int MAX_VKEY = 256;

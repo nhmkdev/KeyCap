@@ -96,7 +96,7 @@ namespace KeyCap.Forms
             this.txtKeyIn.Size = new System.Drawing.Size(384, 20);
             this.txtKeyIn.TabIndex = 0;
             this.txtKeyIn.Enter += new System.EventHandler(this.txtKey_Enter);
-            this.txtKeyIn.KeyDown += new System.Windows.Forms.KeyEventHandler(this.textBox_KeyDown);
+            this.txtKeyIn.KeyDown += new System.Windows.Forms.KeyEventHandler(this.txtKeyIn_KeyDown);
             this.txtKeyIn.Leave += new System.EventHandler(this.txtKey_Leave);
             // 
             // txtKeyOut
@@ -112,7 +112,7 @@ namespace KeyCap.Forms
             this.txtKeyOut.Size = new System.Drawing.Size(384, 20);
             this.txtKeyOut.TabIndex = 1;
             this.txtKeyOut.Enter += new System.EventHandler(this.txtKey_Enter);
-            this.txtKeyOut.KeyDown += new System.Windows.Forms.KeyEventHandler(this.textBox_KeyDown);
+            this.txtKeyOut.KeyDown += new System.Windows.Forms.KeyEventHandler(this.txtKeyOut_KeyDown);
             this.txtKeyOut.Leave += new System.EventHandler(this.txtKey_Leave);
             // 
             // menuStripMain
@@ -534,10 +534,11 @@ namespace KeyCap.Forms
             this.Controls.Add(this.btnStart);
             this.Controls.Add(this.menuStripMain);
             this.MainMenuStrip = this.menuStripMain;
+            this.MinimizeBox = false;
             this.MinimumSize = new System.Drawing.Size(800, 500);
             this.Name = "KeyCaptureConfig";
             this.ShowInTaskbar = false;
-            this.Text = "KeyCap Configuration";
+            this.Text = "KeyCap Configuration UNTESTED WIP V2";
             this.FormClosing += new System.Windows.Forms.FormClosingEventHandler(this.KeyCaptureConfig_FormClosing);
             this.Load += new System.EventHandler(this.KeyCaptureConfig_Load);
             this.Resize += new System.EventHandler(this.KeyCaptureConfig_Resize);

@@ -49,8 +49,13 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="Format\IODefinition.cs" />
-    <Compile Include="Format\IOPairDefinition.cs" />
+    <Compile Include="Format\BaseIOConfig.cs" />
+    <Compile Include="Format\ConfigFileManager.cs" />
+    <Compile Include="Format\OutputConfig.cs" />
+    <Compile Include="Format\InputConfig.cs" />
+    <Compile Include="Format\RemapEntry.cs" />
+    <Compile Include="Util\BitUtil.cs" />
+    <Compile Include="Util\StreamUtil.cs" />
     <Compile Include="Forms\KeyCaptureConfig.cs">
       <SubType>Form</SubType>
     </Compile>

@@ -22,27 +22,8 @@
 // SOFTWARE.
 ////////////////////////////////////////////////////////////////////////////////
 
-#ifndef MOUSE_INPUT_H_     // equivalently, #if !defined HEADER_H_
-#define MOUSE_INPUT_H_
+#ifndef KEY_CAPTURE_UTIL_H_     // equivalently, #if !defined HEADER_H_
+#define KEY_CAPTURE_UTIL_H_
 
-#include "stdafx.h"
-#include "KeyCapture.h"
-
-enum MOUSE_BUTTON
-{
-	MOUSE_NONE = 0x00,
-	MOUSE_LEFT = 0x01,
-	MOUSE_RIGHT = 0x02,
-	MOUSE_MIDDLE = 0x03,
-	MOUSE_BUTTON_COUNT
-};
-
-static bool g_MouseToggleHistory[MOUSE_BUTTON_COUNT];
-
-extern unsigned char g_MouseDownMap[];
-extern unsigned char g_MouseUpMap[];
-
-void SendInputMouse(OutputConfig *pKeyDef);
-void AppendSingleMouse(INPUT* inputChar, unsigned char nVkKey);
-
-#endif // MOUSE_INPUT_H_
+void LogDebugMessage(const char *format, ...);
+#endif

@@ -31,15 +31,15 @@ Sends the necessary inputs to complete the trigger (modifier keys)
 
 pTriggerDefinition: pointer to a key definition for the trigger
 */
-void SendTriggerEndInputKeys(KeyDefinition* pTriggerDefinition)
+void SendTriggerEndInputKeys(InputConfig* pInputConfig)
 {
-	if (!pTriggerDefinition)
+	if (!pInputConfig)
 	{
 		return;
 	}
 	int nIndex = 0;
 
-	if (pTriggerDefinition->bShift)
+	if (pInputConfig->inputFlag.bShift)
 	{
 		// check the required input key to see if this was pressed and force a keyup to eliminate it being passed on
 		// example: Shift + S >> f (without the keyup Shift + S >> F because shift is technically down)
@@ -48,12 +48,12 @@ void SendTriggerEndInputKeys(KeyDefinition* pTriggerDefinition)
 		AppendSingleKey(VK_SHIFT, &g_inputBuffer[nIndex++], KEYEVENTF_KEYUP);
 	}
 
-	if (pTriggerDefinition->bControl)
+	if (pInputConfig->inputFlag.bControl)
 	{
 		AppendSingleKey(VK_CONTROL, &g_inputBuffer[nIndex++], KEYEVENTF_KEYUP);
 	}
 
-	if (pTriggerDefinition->bAlt)
+	if (pInputConfig->inputFlag.bAlt)
 	{
 		// Note: Application menus become active with ALT is pressed, to get out of the menu alt must be "pressed" a second time
 		AppendSingleKey(VK_MENU, &g_inputBuffer[nIndex++], KEYEVENTF_KEYUP);
@@ -68,11 +68,11 @@ void SendTriggerEndInputKeys(KeyDefinition* pTriggerDefinition)
 	}
 
 #ifdef _DEBUG
-	char outputchar[256];
 	for (int nTemp = 0; nTemp < nIndex; nTemp++)
 	{
-		sprintf_s(outputchar, "Sending: (flags)%x %d\n", g_inputBuffer[nTemp].ki.dwFlags, g_inputBuffer[nTemp].ki.wVk);
-		OutputDebugStringA(outputchar);
+		LogDebugMessage("Sending Trigger End: (flags)%s VKey: %d\n", GetFlagsString(g_inputBuffer[nTemp].ki.dwFlags), g_inputBuffer[nTemp].ki.wVk);
+		//sprintf_s(outputchar, "Sending Trigger End: (flags)%s VKey: %d\n", getFlagsString(g_inputBuffer[nTemp].ki.dwFlags), g_inputBuffer[nTemp].ki.wVk);
+		//OutputDebugStringA(outputchar);
 	}
 #endif
 	SendInput(nIndex, g_inputBuffer, sizeof(INPUT));
@@ -85,29 +85,22 @@ pKeyDef: pointer to a key definition for a keyboard input to send
 pTriggerDefinition: The definition of the triggering key. Modifiers like shift/alt/ctrl require special handling under
 certain circumstances
 */
-void SendInputKeys(KeyDefinition* pKeyDef)
+void SendInputKeys(OutputConfig* pKeyDef)
 {
-#ifdef _DEBUG
-	char outputchar[256];
-#endif
-
 	int nIndex = 0;
 
 	bool bSendKeyDown = true;
 	bool bSendKeyUp = true;
 
-	if (pKeyDef->bToggle)
+	if (pKeyDef->outputFlag.bToggle)
 	{
-		if (pKeyDef->nVkKey >= MAX_VKEY)
+		if (pKeyDef->virtualKey >= MAX_VKEY)
 		{
-#ifdef _DEBUG
-			sprintf_s(outputchar, "---- ERROR Cannot have a vkey value over 255: %d\n", pKeyDef->nVkKey);
-			OutputDebugStringA(outputchar);
-#endif
+			LogDebugMessage("---- ERROR Cannot have a vkey value over 255: %d\n", pKeyDef->virtualKey);
 			return;
 		}
 
-		if (g_KeyToggleHistory[pKeyDef->nVkKey])
+		if (g_KeyToggleHistory[pKeyDef->virtualKey])
 		{
 			bSendKeyDown = false;
 		}
@@ -115,64 +108,54 @@ void SendInputKeys(KeyDefinition* pKeyDef)
 		{
 			bSendKeyUp = false;
 		}
-		g_KeyToggleHistory[pKeyDef->nVkKey] = !g_KeyToggleHistory[pKeyDef->nVkKey];
+		g_KeyToggleHistory[pKeyDef->virtualKey] = !g_KeyToggleHistory[pKeyDef->virtualKey];
 	}
 
 	if (bSendKeyDown)
 	{
-		if (pKeyDef->bShift)
+		// flags first then key
+		if (pKeyDef->outputFlag.bShift)
 		{
 			AppendSingleKey(VK_SHIFT, &g_inputBuffer[nIndex++], 0);
 		}
 
-		if (pKeyDef->bControl)
+		if (pKeyDef->outputFlag.bControl)
 		{
 			AppendSingleKey(VK_CONTROL, &g_inputBuffer[nIndex++], 0);
 		}
 
-		if (pKeyDef->bAlt)
+		if (pKeyDef->outputFlag.bAlt)
 		{
 			AppendSingleKey(VK_MENU, &g_inputBuffer[nIndex++], 0);
 		}
 
-		// output the actual key
-#ifdef _DEBUG
-		sprintf_s(outputchar, "---- Appended (down) %d\n", pKeyDef->nVkKey);
-		OutputDebugStringA(outputchar);
-#endif
-		AppendSingleKey(pKeyDef->nVkKey, &g_inputBuffer[nIndex++], 0);
+		AppendSingleKey(pKeyDef->virtualKey, &g_inputBuffer[nIndex++], 0);
 	}
 
 	if (bSendKeyUp)
 	{
-#ifdef _DEBUG
-		sprintf_s(outputchar, "---- Appended (up) %d\n", pKeyDef->nVkKey);
-		OutputDebugStringA(outputchar);
-#endif
+		// key first then flags
+		AppendSingleKey(pKeyDef->virtualKey, &g_inputBuffer[nIndex++], KEYEVENTF_KEYUP);
 
-		AppendSingleKey(pKeyDef->nVkKey, &g_inputBuffer[nIndex++], KEYEVENTF_KEYUP);
-
-		// setup any necessary key event up messages
-		if (pKeyDef->bShift)
+		if (pKeyDef->outputFlag.bShift)
 		{
 			AppendSingleKey(VK_SHIFT, &g_inputBuffer[nIndex++], KEYEVENTF_KEYUP);
 		}
-		if (pKeyDef->bControl)
+		if (pKeyDef->outputFlag.bControl)
 		{
 			AppendSingleKey(VK_CONTROL, &g_inputBuffer[nIndex++], KEYEVENTF_KEYUP);
 		}
-		if (pKeyDef->bAlt)
+		if (pKeyDef->outputFlag.bAlt)
 		{
 			AppendSingleKey(VK_MENU, &g_inputBuffer[nIndex++], KEYEVENTF_KEYUP);
 		}
 	}
-#ifdef _DEBUG
 	for (int nTemp = 0; nTemp < nIndex; nTemp++)
 	{
-		sprintf_s(outputchar, "Sending: (flags)%x %d\n", g_inputBuffer[nTemp].ki.dwFlags, g_inputBuffer[nTemp].ki.wVk);
-		OutputDebugStringA(outputchar);
+		// TODO: support Shift+W toggle (the toggle ends up requiring detection of the shift key)
+		LogDebugMessage("Sending Input Keys: (flags)%s VKey: %d\n", GetFlagsString(g_inputBuffer[nTemp].ki.dwFlags), g_inputBuffer[nTemp].ki.wVk);
 	}
-#endif
+	// DOES this free up the g_inputBuffer if requested? Could a stack pointer to memory work? this would eliminate the dumb static
 	SendInput(nIndex, g_inputBuffer, sizeof(INPUT));
 }
 
@@ -191,4 +174,18 @@ void AppendSingleKey(short keyScan, INPUT* inputChar, DWORD dwFlags)
 	inputChar->ki.wVk = LOBYTE(keyScan);
 	inputChar->ki.wScan = MapVirtualKey(LOBYTE(keyScan), 0);
 	inputChar->ki.dwFlags = dwFlags;
+	LogDebugMessage("Append Action: %d 0x%02x (%s)", 
+		inputChar->ki.wVk,
+		inputChar->ki.wVk,
+		GetFlagsString(dwFlags)
+	);
+}
+
+char* GetFlagsString(DWORD dwFlags)
+{
+	if ((dwFlags & KEYEVENTF_KEYUP) == KEYEVENTF_KEYUP)
+	{
+		return "KeyUp";
+	}
+	return "KeyDown";
 }

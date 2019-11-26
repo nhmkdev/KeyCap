@@ -42,8 +42,7 @@ enum HOOK_RESULT
 };
 
 // === consts and defines
-
-const int HASH_TABLE_SIZE = 256;
+const int WIN_KEY_COUNT = 256;
 
 // === prototypes
 // avoid mangling the function names (necessary for export and usage in C#)
@@ -55,13 +54,14 @@ extern "C"
 
 LRESULT CALLBACK LowLevelKeyboardProc(int nCode,WPARAM wParam,LPARAM lParam);
 DWORD WINAPI SendInputThread( LPVOID lpParam );
-void SendTriggerEndInputKeys(KeyDefinition* pTriggerDefinition);
+void SendTriggerEndInputKeys(InputConfig* pTriggerDefinition);
 bool CheckKeyFlags(char nFlags, bool bAlt, bool bControl, bool bShift);
 
 // === sweet globals
-KeyTranslationListItem* g_KeyTranslationTable[HASH_TABLE_SIZE];
+RemapEntryListItem* g_KeyTranslationTable[WIN_KEY_COUNT];
 
-KeyTranslation* g_KeyTranslationHead = NULL;
+// TODO: this is strange
+RemapEntry* g_KeyTranslationHead = NULL;
 void* g_KeyTranslationEnd = NULL; // pointer indicating the end of the input file data
 HHOOK g_hookMain = NULL;
 
@@ -75,7 +75,17 @@ returns: A HOOK_RESULT value depending on the outcome of the file load and keybo
 */
 __declspec(dllexport) int LoadAndCaptureFromFile(HINSTANCE hInstance, char* sFile)
 {
-	assert(2 == sizeof(KeyDefinition)); // if this is invalid the configuration tool and kfg files will not be valid
+	// TODO: need to have a constant somewhere...
+	LogDebugMessage("InputConfig: %d", sizeof(InputConfig));
+	LogDebugMessage("OutputConfig: %d", sizeof(OutputConfig));
+	LogDebugMessage("InputFlag: %d", sizeof(InputFlag));
+	LogDebugMessage("OutputFlag: %d", sizeof(OutputFlag));
+	LogDebugMessage("RemapEntry: %d", sizeof(RemapEntry));
+	assert(12 == sizeof(InputConfig)); // if this is invalid the configuration tool and kfg files will not be valid
+	assert(12 == sizeof(OutputConfig)); // if this is invalid the configuration tool and kfg files will not be valid
+	assert(4 == sizeof(InputFlag));
+	assert(4 == sizeof(OutputFlag));
+	assert(16 == sizeof(RemapEntry));
 
 	// convert to wide string for CreateFile
 	wchar_t wPath[MAX_PATH + 1];
@@ -106,15 +116,33 @@ __declspec(dllexport) int LoadAndCaptureFromFile(HINSTANCE hInstance, char* sFil
 
 	if(lpFileInformation.nFileSizeLow)
 	{
-		g_KeyTranslationHead = (KeyTranslation*)malloc(lpFileInformation.nFileSizeLow);
+		// TODO: read only the non-header
+		g_KeyTranslationHead = (RemapEntry*)malloc(lpFileInformation.nFileSizeLow);
 		DWORD dwBytesRead = 0;
+		unsigned int headerBuffer[2];
+		// READ THE HEADER
+		if (ReadFile(hFile, headerBuffer, sizeof(headerBuffer), &dwBytesRead, NULL))
+		{
+			if (dwBytesRead == sizeof(headerBuffer))
+			{
+				LogDebugMessage("Header read...");
+			}
+			else
+			{
+				LogDebugMessage("Header read failed...");
+			}
+		}
+
+		const DWORD dwBytesRemaining = lpFileInformation.nFileSizeLow - sizeof(headerBuffer);
+
 		// read the entire file into memory
 		// NOTE: This assumes the file is less than DWORD max in size(!)
-		if(ReadFile(hFile, g_KeyTranslationHead, lpFileInformation.nFileSizeLow, &dwBytesRead, NULL)) 
+		if(ReadFile(hFile, g_KeyTranslationHead, dwBytesRemaining, &dwBytesRead, NULL))
 		{
-			if(dwBytesRead == lpFileInformation.nFileSizeLow) // verify everything was read in...
+			if(dwBytesRead == dwBytesRemaining) // verify everything was read in...
 			{
-				g_KeyTranslationEnd = (char*)g_KeyTranslationHead + lpFileInformation.nFileSizeLow;
+				LogDebugMessage("Loaded file: %s [%d]", sFile, dwBytesRemaining);
+				g_KeyTranslationEnd = (char*)g_KeyTranslationHead + dwBytesRemaining;
 			}
 		}
 	} // 0 < file size
@@ -127,48 +155,53 @@ __declspec(dllexport) int LoadAndCaptureFromFile(HINSTANCE hInstance, char* sFil
 		return INPUT_BAD;
 	}
 	// validate file (and compile the "hash" table g_KeyTranslationTable)
-	memset(g_KeyTranslationTable, 0, HASH_TABLE_SIZE * sizeof(KeyTranslationListItem*));
+	memset(g_KeyTranslationTable, 0, WIN_KEY_COUNT * sizeof(RemapEntryListItem*));
 
 	// wipe the histories
 	memset(g_MouseToggleHistory, FALSE, MOUSE_BUTTON_COUNT);
 	memset(g_KeyToggleHistory, FALSE, MAX_VKEY);
 
-	KeyTranslation* pKey = g_KeyTranslationHead;
+	RemapEntry* pEntry = g_KeyTranslationHead;
 	bool bValidTranslationSet = false;
 		
-	while(NULL != pKey)
+	// The translation table contains linked lists of all the output sets for a given key due to the flag keys (shift/alt/ctrl)
+	while(NULL != pEntry)
 	{
-		if(0 == pKey->nKDefOutput)
+		if(0 == pEntry->outputCount)
 		{
 			ShutdownCapture();
 			return INPUT_BAD;
 		}
-			
-		if(NULL == g_KeyTranslationTable[pKey->kDef.nVkKey])
+		// TODO: just get a pointer to g_KeyTranslationTable[pKey->inputConfig.virtualKey] ?
+
+		LogDebugMessage("Loading %s Outputs: %d", GetInputConfigDescription(pEntry->inputConfig), pEntry->outputCount);
+
+		if(NULL == g_KeyTranslationTable[pEntry->inputConfig.virtualKey])
 		{
-			g_KeyTranslationTable[pKey->kDef.nVkKey] = (KeyTranslationListItem*)malloc(sizeof(KeyTranslationListItem));
-			g_KeyTranslationTable[pKey->kDef.nVkKey]->pTrans = pKey;
-			g_KeyTranslationTable[pKey->kDef.nVkKey]->pNext = NULL;
+			g_KeyTranslationTable[pEntry->inputConfig.virtualKey] = (RemapEntryListItem*)malloc(sizeof(RemapEntryListItem));
+			g_KeyTranslationTable[pEntry->inputConfig.virtualKey]->pEntry = pEntry;
+			g_KeyTranslationTable[pEntry->inputConfig.virtualKey]->pNext = NULL;
 		}
 		else
 		{
-			KeyTranslationListItem* pKeyItem = g_KeyTranslationTable[pKey->kDef.nVkKey];
+			RemapEntryListItem* pKeyItem = g_KeyTranslationTable[pEntry->inputConfig.virtualKey];
 			while(NULL != pKeyItem->pNext)
 			{
 				pKeyItem = pKeyItem->pNext;
 			}
-			pKeyItem->pNext = (KeyTranslationListItem*)malloc(sizeof(KeyTranslationListItem));
+			pKeyItem->pNext = (RemapEntryListItem*)malloc(sizeof(RemapEntryListItem));
 			pKeyItem = pKeyItem->pNext;
-			pKeyItem->pTrans = pKey;
+			pKeyItem->pEntry = pEntry;
 			pKeyItem->pNext = NULL;
 		}
-		pKey = (KeyTranslation*)(&pKey->nKDefOutput + (1 + (pKey->nKDefOutput * sizeof(KeyDefinition))));
-		if(pKey > g_KeyTranslationEnd)
+		pEntry = (RemapEntry*)(&pEntry->outputCount + (sizeof(unsigned int) + (pEntry->outputCount * sizeof(OutputConfig))));
+		if(pEntry > g_KeyTranslationEnd)
 		{
+			LogDebugMessage("Load Failed. Attempted to read bytes beyond file boundary.");
 			ShutdownCapture();
 			return INPUT_BAD;
 		}
-		else if(pKey == g_KeyTranslationEnd)
+		else if(pEntry == g_KeyTranslationEnd)
 		{
 			bValidTranslationSet = true;
 			break;
@@ -204,7 +237,7 @@ __declspec(dllexport) void ShutdownCapture()
 	// disable the hook
 	if(NULL != g_hookMain)
 	{
-		printf("Unhooked\n");
+		LogDebugMessage("Unhooked\n");
 		UnhookWindowsHookEx(g_hookMain);
 		g_hookMain = NULL;
 	}
@@ -212,32 +245,31 @@ __declspec(dllexport) void ShutdownCapture()
 	// memory clean up
 	if(NULL != g_KeyTranslationHead)
 	{
-		printf("Cleared Memory!\n");
+		LogDebugMessage("Cleared Memory!\n");
 		free(g_KeyTranslationHead);
 		g_KeyTranslationHead = NULL;
 	}
 
 	// clean up "hash" table
-	for(int nIdx = 0; nIdx < HASH_TABLE_SIZE; nIdx++)
+	for(int nIdx = 0; nIdx < WIN_KEY_COUNT; nIdx++)
 	{
 		if(NULL != g_KeyTranslationTable[nIdx])
 		{
-			KeyTranslationListItem* pKeyItem = g_KeyTranslationTable[nIdx];
-			KeyTranslationListItem* pKeyNextItem = NULL;
+			RemapEntryListItem* pKeyItem = g_KeyTranslationTable[nIdx];
+			RemapEntryListItem* pKeyNextItem = NULL;
 			while(NULL != pKeyItem)
 			{
 				pKeyNextItem = pKeyItem->pNext;
 				free(pKeyItem);
 				pKeyItem = pKeyNextItem;
 			}
-			// NULL entries out
 			g_KeyTranslationTable[nIdx] = NULL;
 		}
 	}
 
 	g_KeyTranslationEnd = NULL; 
 
-	printf("Capture Shutdown\n");
+	LogDebugMessage("Capture Shutdown\n");
 }
 
 /*
@@ -260,6 +292,7 @@ LRESULT CALLBACK LowLevelKeyboardProc(int nCode, WPARAM wParam, LPARAM lParam)
 	// don't catch injected keys
 	if(!(pHook->flags & LLKHF_INJECTED))
 	{
+		// NOTE: these are in while loops because a key may have multiple mappings due to the flag keys (shift/alt/ctrl)
 		if (HC_ACTION == nCode)  
 		{  
 			switch (wParam)  
@@ -268,15 +301,16 @@ LRESULT CALLBACK LowLevelKeyboardProc(int nCode, WPARAM wParam, LPARAM lParam)
 				case WM_SYSKEYDOWN:
 					// keys being captured never send the keydown
 					{
-						KeyTranslationListItem* pKeyListItem = g_KeyTranslationTable[pHook->vkCode];
+						RemapEntryListItem* pKeyListItem = g_KeyTranslationTable[pHook->vkCode];
 						while(NULL != pKeyListItem)
 						{
-							KeyDefinition* pKeyDef = &pKeyListItem->pTrans->kDef;
-							if((bAlt == pKeyDef->bAlt) &&
-								(bControl == pKeyDef->bControl) &&
-								(bShift == pKeyDef->bShift))
+							InputConfig* pKeyDef = &pKeyListItem->pEntry->inputConfig;
+							if((bAlt == pKeyDef->inputFlag.bAlt) &&
+								(bControl == pKeyDef->inputFlag.bControl) &&
+								(bShift == pKeyDef->inputFlag.bShift))
 							{
-								CreateThread(NULL, 0, SendInputThread, pKeyListItem->pTrans, 0, NULL);
+								LogDebugMessage("Detected Key Press: %s Outputs: %d", GetInputConfigDescription(*pKeyDef), pKeyListItem->pEntry->outputCount);
+								CreateThread(NULL, 0, SendInputThread, pKeyListItem->pEntry, 0, NULL);
 								bSentInput = true;
 								break;
 							}
@@ -288,13 +322,13 @@ LRESULT CALLBACK LowLevelKeyboardProc(int nCode, WPARAM wParam, LPARAM lParam)
 				case WM_SYSKEYUP:
 					// keys being captured never send the keyup
 					{
-						KeyTranslationListItem* pKeyListItem = g_KeyTranslationTable[pHook->vkCode];
+						RemapEntryListItem* pKeyListItem = g_KeyTranslationTable[pHook->vkCode];
 						while(NULL != pKeyListItem)
 						{
-							KeyDefinition* pKeyDef = &pKeyListItem->pTrans->kDef;
-							if((bAlt == pKeyDef->bAlt) &&
-								(bControl == pKeyDef->bControl) &&
-								(bShift == pKeyDef->bShift))
+							InputConfig* pKeyDef = &pKeyListItem->pEntry->inputConfig;
+							if ((bAlt == pKeyDef->inputFlag.bAlt) &&
+								(bControl == pKeyDef->inputFlag.bControl) &&
+								(bShift == pKeyDef->inputFlag.bShift))
 							{
 								bSentInput = true;
 								break;
@@ -315,62 +349,82 @@ Thread responsible for sending the desired inputs to the OS (see standard win32 
 */
 DWORD WINAPI SendInputThread( LPVOID lpParam ) 
 {
-	KeyTranslation* pItem = static_cast<KeyTranslation*>(lpParam);
-	KeyDefinition* pKeyDef = (KeyDefinition*)((char*)pItem + sizeof(KeyTranslation));
-	KeyDefinition* pEndDef = (KeyDefinition*)(&pItem->nKDefOutput + (1 + (pItem->nKDefOutput * sizeof(KeyDefinition))));
-	if(pKeyDef->bDoNothing)
+
+	/*
+struct RemapEntry
+{
+	InputConfig inputConfig;
+	BYTE outputCount;
+	// KeyDefintion[outputCount]
+};
+	*/
+
+	RemapEntry* pItem = static_cast<RemapEntry*>(lpParam);
+	// get a pointer to the OutputConfig data that is AFTER the RemapEntry fields
+	OutputConfig* pOutputConfig = (OutputConfig*)((BYTE*)pItem + sizeof(RemapEntry));
+	// get a pointer to the first byte AFTER all the OutputConfig entries
+	OutputConfig* pTerminator = (OutputConfig*)((BYTE*)pOutputConfig + (pItem->outputCount * sizeof(OutputConfig)));
+	if(pOutputConfig->outputFlag.bDoNothing)
 	{
 		return 0; // done!
 	}
 
 	// trigger any necessary release of shift/control/alt by passing the trigger key definition
-	SendTriggerEndInputKeys(&pItem->kDef);
+	SendTriggerEndInputKeys(&pItem->inputConfig);
 
 	// iterate over the target inputs
-	while(pKeyDef < pEndDef)
+	while(pOutputConfig < pTerminator)
 	{
+		LogDebugMessage("Performing Output Action: %s", GetOutputConfigDescription(*pOutputConfig));
 		// mouse input
-		if (pKeyDef->bMouseOut)
+		if (pOutputConfig->outputFlag.bMouseOut)
 		{
-			SendInputMouse(pKeyDef);
+			SendInputMouse(pOutputConfig);
 		}
 		// just a delay
-		else if (pKeyDef->bDelay)
+		else if (pOutputConfig->outputFlag.bDelay)
 		{
-			Sleep(1000 * pKeyDef->nVkKey);
+			Sleep(1000 * pOutputConfig->parameter);
 		}
 		// keyboard input
 		else
 		{
-			SendInputKeys(pKeyDef);
+			SendInputKeys(pOutputConfig);
 		}
-		pKeyDef++; // move the pointer forward one KeyDefinition
+		pOutputConfig++; // move the pointer forward one KeyDefinition
 	}
 
-#if 0
-	if(pKeyDef->bMouseOut)
-	{
-		// TODO: Support ctrl/alt/shift flags
-		while(pKeyDef < pEndDef)
-		{
-			SendInputMouse(pKeyDef);
-			pKeyDef++; // move the pointer forward one KeyDefinition
-		}
-	}
-	else
-	{
-		// trigger any necessary release of shift/control/alt by passing the trigger key definition
-		SendInputKey(pKeyDef, &pItem->kDef);
-		pKeyDef++; // move the pointer forward one KeyDefinition
-		while(pKeyDef < pEndDef)
-		{
-			SendInputKey(pKeyDef, NULL);
-			pKeyDef++; // move the pointer forward one KeyDefinition
-		}
-	}
-#endif
-#ifdef _DEBUG
-	OutputDebugStringA("\nSendInputThread: DEAD\n");
-#endif
+	LogDebugMessage("SendInputThread: DEAD");
 	return 0;
 }
+
+char* GetBoolString(BYTE nValue)
+{
+	return nValue == 0 ? "False" : "True";
+}
+
+// NOT THREAD SAFE
+char* GetInputConfigDescription(InputConfig inputConfig)
+{
+	static char buffer[256];
+	sprintf_s(buffer, 256, "InputConfig [Key: %d 0x%02x] [Alt: %s] [Ctrl: %s] [Shift: %s]",
+		inputConfig.virtualKey,
+		inputConfig.virtualKey,
+		GetBoolString(inputConfig.inputFlag.bAlt),
+		GetBoolString(inputConfig.inputFlag.bControl),
+		GetBoolString(inputConfig.inputFlag.bShift));
+	return buffer;
+}
+
+char* GetOutputConfigDescription(OutputConfig outputConfig)
+{
+	static char buffer[256];
+	sprintf_s(buffer, 256, "OutputConfig [Key: %d 0x%02x] [Alt: %s] [Ctrl: %s] [Shift: %s]",
+		outputConfig.virtualKey,
+		outputConfig.virtualKey,
+		GetBoolString(outputConfig.outputFlag.bAlt),
+		GetBoolString(outputConfig.outputFlag.bControl),
+		GetBoolString(outputConfig.outputFlag.bShift));
+	return buffer;
+}
+
