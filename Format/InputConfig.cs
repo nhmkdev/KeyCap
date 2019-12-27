@@ -33,7 +33,13 @@ namespace KeyCap.Format
     public class InputConfig : BaseIOConfig
     {
         /// <summary>
-        /// Flags applied to a given input/output key
+        /// Copy constructor
+        /// </summary>
+        /// <param name="config"></param>
+        public InputConfig(InputConfig config) : base(config) { }
+
+        /// <summary>
+        /// Flags applied to a given input key (this is the same size as the OutputFlag (32bit)
         /// </summary>
         public enum InputFlag
         {
@@ -49,18 +55,18 @@ namespace KeyCap.Format
         /// <param name="byFlags">The flags defining the input</param>
         /// <param name="byVirtualKey">The value of the input</param>
         /// <param name="eKeyArgs">The input key arguments from user input</param>
-        public InputConfig(byte byFlags, byte byVirtualKey, KeyEventArgs eKeyArgs)
+        public InputConfig(int nFlags, byte byVirtualKey, KeyEventArgs eKeyArgs)
         {
-            Flags = byFlags;
+            Flags = nFlags;
             VirtualKey = byVirtualKey;
 
             if (null != eKeyArgs)
             {
 #warning this is weird to have the flags further defined/or'd with the pkey args (likely only applied to outputs)
-                Flags |= (byte)(
-                    (eKeyArgs.Shift ? (byte)InputFlag.Shift : (byte)0) |
-                    (eKeyArgs.Alt ? (byte)InputFlag.Alt : (byte)0) |
-                    (eKeyArgs.Control ? (byte)InputFlag.Control : (byte)0));
+                Flags |= (int)(
+                    (eKeyArgs.Shift ? (int)InputFlag.Shift : (byte)0) |
+                    (eKeyArgs.Alt ? (int)InputFlag.Alt : (byte)0) |
+                    (eKeyArgs.Control ? (int)InputFlag.Control : (byte)0));
             }
         }
 

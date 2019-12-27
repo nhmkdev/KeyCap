@@ -21,9 +21,20 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 ////////////////////////////////////////////////////////////////////////////////
-
+#pragma once
 #ifndef KEY_CAPTURE_UTIL_H_     // equivalently, #if !defined HEADER_H_
 #define KEY_CAPTURE_UTIL_H_
 
+#include "stdafx.h"
+#include "keycapturestructs.h"
+
+bool IsButtonDownRequired(RemapEntry* pRemapEntry, OutputConfig* pKeyDef);
+bool IsButtonUpRequired(RemapEntry* pRemapEntry, OutputConfig* pKeyDef);
+
 void LogDebugMessage(const char *format, ...);
+void ValidateStructs();
+
+char* GetBoolString(BYTE nValue);
+char* GetInputConfigDescription(InputConfig inputConfig);
+char* GetOutputConfigDescription(OutputConfig outputConfig);
 #endif

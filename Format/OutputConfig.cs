@@ -24,6 +24,7 @@
 
 using System.IO;
 using System.Windows.Forms;
+using Support.UI;
 
 namespace KeyCap.Format
 {
@@ -32,6 +33,12 @@ namespace KeyCap.Format
     /// </summary>
     public class OutputConfig : BaseIOConfig
     {
+        /// <summary>
+        /// Copy constructor
+        /// </summary>
+        /// <param name="config"></param>
+        public OutputConfig(OutputConfig config) : base(config) { }
+
         /// <summary>
         /// Flags applied to a given input/output key
         /// </summary>
@@ -44,8 +51,8 @@ namespace KeyCap.Format
             MouseOut = 1 << 4, // mouse output -- see MouseButton
             Delay = 1 << 5,
             Toggle = 1 << 6,
-            TestFlagOne = 1 << 30,
-            TestFlagTwo = 1 << 31
+            Down = 1 << 7,
+            Up = 1 << 8
             //MAX         = 1 << 32, // it's an int! (aka if you need 32 you'll need more space)
         }
 
@@ -107,6 +114,7 @@ namespace KeyCap.Format
             {
                 return "[" + 
                     (MouseButton)VirtualKey +
+                    getOutputDescriptionText("Mouse") +
                     (IsFlaggedAs(OutputFlag.Toggle) ? "+Toggle" : string.Empty) +
                     "]";
             }
@@ -119,11 +127,21 @@ namespace KeyCap.Format
             // keyboard 
             return "[" +
                 (Keys)VirtualKey +
+                getOutputDescriptionText("Key") +
                 (IsFlaggedAs(OutputFlag.Shift) ? "+Shift" : string.Empty) +
                 (IsFlaggedAs(OutputFlag.Alt) ? "+Alt" : string.Empty) +
                 (IsFlaggedAs(OutputFlag.Control) ? "+Control" : string.Empty)+
                 (IsFlaggedAs(OutputFlag.Toggle) ? "+Toggle" : string.Empty) +
                     "]";
+        }
+
+        private string getOutputDescriptionText(string sPrefix)
+        {
+            return (IsFlaggedAs(OutputFlag.Down) && IsFlaggedAs(OutputFlag.Up)
+                    ? ":Press"
+                    : ((IsFlaggedAs(OutputFlag.Down) ? ":{0}Down".FormatString(sPrefix) : string.Empty) +
+                       (IsFlaggedAs(OutputFlag.Up) ? ":{0}Up".FormatString(sPrefix) : string.Empty))
+                );
         }
     }
 }

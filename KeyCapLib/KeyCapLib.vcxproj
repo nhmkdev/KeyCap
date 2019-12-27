@@ -148,18 +148,25 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClInclude Include="KeyboardInput.h" />
-    <ClInclude Include="KeyCapture.h" />
-    <ClInclude Include="MouseInput.h" />
+    <ClInclude Include="configfile.h" />
+    <ClInclude Include="keyboardinput.h" />
+    <ClInclude Include="keyboardproc.h" />
+    <ClInclude Include="keycapture.h" />
+    <ClInclude Include="keycapturestructs.h" />
+    <ClInclude Include="keycaptureutil.h" />
+    <ClInclude Include="mouseinput.h" />
+    <ClInclude Include="sendinputthread.h" />
     <ClInclude Include="stdafx.h" />
     <ClInclude Include="targetver.h" />
-    <ClInclude Include="KeyCaptureUtil.h" />
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="KeyboardInput.cpp" />
-    <ClCompile Include="KeyCapture.cpp" />
-    <ClCompile Include="MouseInput.cpp" />
-    <ClCompile Include="KeyCaptureUtil.cpp" />
+    <ClCompile Include="configfile.cpp" />
+    <ClCompile Include="keyboardinput.cpp" />
+    <ClCompile Include="keyboardproc.cpp" />
+    <ClCompile Include="keycapture.cpp" />
+    <ClCompile Include="keycaptureutil.cpp" />
+    <ClCompile Include="mouseinput.cpp" />
+    <ClCompile Include="sendinputthread.cpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

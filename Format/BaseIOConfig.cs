@@ -37,6 +37,17 @@ namespace KeyCap.Format
         public BaseIOConfig() { }
 
         /// <summary>
+        /// Clone constructor
+        /// </summary>
+        /// <param name="config"></param>
+        public BaseIOConfig(BaseIOConfig config)
+        {
+            Flags = config.Flags;
+            VirtualKey = config.VirtualKey;
+            Parameter = config.Parameter;
+        }
+
+        /// <summary>
         /// Constructor for an InputConfig
         /// </summary>
         /// <param name="byFlags">The flags defining the input</param>

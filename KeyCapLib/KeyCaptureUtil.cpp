@@ -22,8 +22,87 @@
 // SOFTWARE.
 ////////////////////////////////////////////////////////////////////////////////
 
-#include "stdafx.h"
-#include "KeyCaptureUtil.h"
+#include "keycapturestructs.h"
+#include "keycaptureutil.h"
+
+bool IsButtonDownRequired(RemapEntry* pRemapEntry, OutputConfig* pKeyDef)
+{
+	if (pKeyDef->outputFlag.bToggle)
+	{
+		return !pRemapEntry->bToggled;
+	}
+
+	bool keyDownRequired = true;
+	keyDownRequired = pKeyDef->outputFlag.bDown;
+	return keyDownRequired;
+}
+
+bool IsButtonUpRequired(RemapEntry* pRemapEntry, OutputConfig* pKeyDef)
+{
+	if (pKeyDef->outputFlag.bToggle)
+	{
+		return pRemapEntry->bToggled;
+	}
+
+	bool keyUpRequired = true;
+	keyUpRequired = pKeyDef->outputFlag.bUp;
+	return keyUpRequired;
+}
+
+char* GetBoolString(BYTE nValue)
+{
+	return nValue == 0 ? "False" : "True";
+}
+
+// NOT THREAD SAFE
+char* GetInputConfigDescription(InputConfig inputConfig)
+{
+	static char buffer[256];
+	sprintf_s(buffer, 256, "InputConfig [Key: %d 0x%02x][Alt: %s][Ctrl: %s][Shift: %s]",
+		inputConfig.virtualKey,
+		inputConfig.virtualKey,
+		GetBoolString(inputConfig.inputFlag.bAlt),
+		GetBoolString(inputConfig.inputFlag.bControl),
+		GetBoolString(inputConfig.inputFlag.bShift));
+	return buffer;
+}
+
+// NOT THREAD SAFE
+char* GetOutputConfigDescription(OutputConfig outputConfig)
+{
+	static char buffer[256];
+	sprintf_s(buffer, 256, "OutputConfig [Key: %d 0x%02x][Alt: %s][Ctrl: %s][Shift: %s][Nothing: %s][Mouse: %s][Delay: %s][Toggle: %s][Down: %s][Up: %s]",
+		outputConfig.virtualKey,
+		outputConfig.virtualKey,
+		GetBoolString(outputConfig.outputFlag.bAlt),
+		GetBoolString(outputConfig.outputFlag.bControl),
+		GetBoolString(outputConfig.outputFlag.bShift),
+		GetBoolString(outputConfig.outputFlag.bDoNothing),
+		GetBoolString(outputConfig.outputFlag.bMouseOut),
+		GetBoolString(outputConfig.outputFlag.bDelay),
+		GetBoolString(outputConfig.outputFlag.bToggle),
+		GetBoolString(outputConfig.outputFlag.bDown),
+		GetBoolString(outputConfig.outputFlag.bUp)
+	);
+
+	return buffer;
+}
+
+void ValidateStructs()
+{
+	// TODO: need to have a constant somewhere...
+	LogDebugMessage("InputConfig: %d", sizeof(InputConfig));
+	LogDebugMessage("OutputConfig: %d", sizeof(OutputConfig));
+	LogDebugMessage("InputFlag: %d", sizeof(InputFlag));
+	LogDebugMessage("OutputFlag: %d", sizeof(OutputFlag));
+	LogDebugMessage("RemapEntry: %d", sizeof(RemapEntry));
+	assert(12 == sizeof(InputConfig)); // if this is invalid the configuration tool and kfg files will not be valid
+	assert(12 == sizeof(OutputConfig)); // if this is invalid the configuration tool and kfg files will not be valid
+	assert(4 == sizeof(InputFlag));
+	assert(4 == sizeof(OutputFlag));
+	assert(16 == sizeof(RemapEntry));
+}
+
 
 void LogDebugMessage(const char *format, ...)
 {
@@ -31,17 +110,9 @@ void LogDebugMessage(const char *format, ...)
 	char outputchar[1024];
 	va_list argptr;
 	va_start(argptr, format);
-	//sprintf_s(outputchar, sizeof(outputchar), format, argptr);
 	vsnprintf_s(outputchar, sizeof(outputchar), format, argptr);
 	strcat_s(outputchar, sizeof(outputchar), "\n");
-	// TODO: may need to append \n
 	OutputDebugStringA(outputchar);
-	va_end(argptr);
-#endif
-#if 0
-	va_list argptr;
-	va_start(argptr, format);
-	vfprintf(stderr, format, argptr);
 	va_end(argptr);
 #endif
 }

@@ -82,12 +82,17 @@ namespace KeyCap.Forms
             IniManager.RestoreState(this, m_zIniManager.GetValue(Name));
 
             // setup the various mouse output options
-            comboBoxMouseOut.Items.Add("No Action");
+            comboBoxOutMouse.Items.Add("No Action");
             foreach (OutputConfig.MouseButton sName in Enum.GetValues(typeof(OutputConfig.MouseButton)))
             {
-                comboBoxMouseOut.Items.Add(sName);
+                comboBoxOutMouse.Items.Add(sName);
             }
-            comboBoxMouseOut.SelectedIndex = 0;
+            comboBoxOutMouse.SelectedIndex = 0;
+
+            // toggle: mouse buttons, Key
+            // action: mouse buttons down/up, Key down/up
+            
+
 
             // set the notification icon accordingly
             notifyIcon.Icon = Resources.KeyCapIdle;
@@ -106,8 +111,10 @@ namespace KeyCap.Forms
             // initialize capture from command line specified file
             if (0 != m_sLoadedFile.Length)
             {
+#if false
                 btnStart_Click(sender, new EventArgs());
                 new Thread(MinimizeThread) { Name = "MinimizeThread" }.Start();
+#endif
             }
         }
 
@@ -183,9 +190,9 @@ namespace KeyCap.Forms
             }
         }
 
-        #endregion
+#endregion
 
-        #region Text Capture Handling
+#region Text Capture Handling
 
 #warning Need to make an input and output version of this
         private void txtKeyIn_KeyDown(object sender, KeyEventArgs e)
@@ -217,9 +224,9 @@ namespace KeyCap.Forms
             ((TextBox)sender).BackColor = SystemColors.Control;
         }
 
-        #endregion
+#endregion
 
-        #region AbstractDirtyForm overrides
+#region AbstractDirtyForm overrides
 
         protected override bool SaveFormData(string sFileName)
         {
@@ -260,9 +267,9 @@ namespace KeyCap.Forms
             return true;
         }
 
-        #endregion
+#endregion
 
-        #region Menu Events
+#region Menu Events
 
         private void loadToolStripMenuItem_Click(object sender, EventArgs e)
         {
@@ -301,9 +308,9 @@ namespace KeyCap.Forms
             InitOpen(zItem.Text);
         }
 
-        #endregion
+#endregion
 
-        #region Control Events
+#region Control Events
 
         private void listViewKeys_SelectedIndexChanged(object sender, EventArgs e)
         {
@@ -317,13 +324,13 @@ namespace KeyCap.Forms
             ListViewAssist.ResizeColumnHeaders(listViewKeys);
         }
 
-        private void comboBoxSpecialOut_SelectedIndexChanged(object sender, EventArgs e)
+        private void comboBoxMouseOut_SelectedIndexChanged(object sender, EventArgs e)
         {
-            if (0 != comboBoxMouseOut.SelectedIndex) // the first entry does nothing
+            if (0 != comboBoxOutMouse.SelectedIndex) // the first entry does nothing
             {
                 var zOutputConfig = new OutputConfig(
                     (byte)OutputConfig.OutputFlag.MouseOut,
-                    (byte)(OutputConfig.MouseButton)comboBoxMouseOut.SelectedItem);
+                    (byte)(OutputConfig.MouseButton)comboBoxOutMouse.SelectedItem);
                 var zDisplay = txtKeyOut;
                 zDisplay.Text = zOutputConfig.GetDescription();
                 zDisplay.Tag = zOutputConfig;
@@ -343,7 +350,7 @@ namespace KeyCap.Forms
 
         private void btnAdd_Click(object sender, EventArgs e)
         {
-            var zInput = (InputConfig)txtKeyIn.Tag;
+            var zInput = new InputConfig((InputConfig)txtKeyIn.Tag);
             var zOutput = getCurrentOutputDefinition();
 
             if (null == zInput || null == zOutput)
@@ -357,6 +364,7 @@ namespace KeyCap.Forms
             var zPairDef = new RemapEntry(zInput, zOutput);
 
             // TODO: is it worth keeping a hashset of these to cut the time from o(n) to o(1)?
+            // TODO: validation method for this (also need to check that an output actually does something (unless do nothing is selected)
             // verify this is not already defined
             foreach (ListViewItem zListItem in listViewKeys.Items)
             {
@@ -420,12 +428,13 @@ namespace KeyCap.Forms
 
         private OutputConfig getCurrentOutputDefinition()
         {
-            var zOutput = (OutputConfig)txtKeyOut.Tag;
+            var zOutput = new OutputConfig((OutputConfig)txtKeyOut.Tag);
             if (zOutput == null)
             {
                 return null;
             }
 
+#warning Is this necessary? Why not just let the do nothing flag override?
             if (checkOutputNone.Checked) // if output is set to none change zOutput keyarg
             {
                 zOutput = new OutputConfig((byte)OutputConfig.OutputFlag.DoNothing, 0x00);
@@ -472,9 +481,9 @@ namespace KeyCap.Forms
             }
         }
 
-        #endregion
+#endregion
 
-        #region Support Methods
+#region Support Methods
 
         /// <summary>
         /// Updates the recent loaded file list
@@ -519,8 +528,10 @@ namespace KeyCap.Forms
             var bShift = checkOutputShift.Checked;
             var bNone = checkOutputNone.Checked;
             var bToggle = checkOutputToggle.Checked;
+            var bDown = checkOutputDown.Checked;
+            var bUp = checkOutputUp.Checked;
 
-            int nFlags = 0;
+            var nFlags = 0;
 #warning Make a new method on the config object to update the flag on a field and eliminate this copy+paste garbage
             nFlags = BitUtil.UpdateFlag(nFlags, bShift, OutputConfig.OutputFlag.Shift);
             nFlags = BitUtil.UpdateFlag(nFlags, bControl, OutputConfig.OutputFlag.Control);
@@ -531,6 +542,8 @@ namespace KeyCap.Forms
 
             nFlags = BitUtil.UpdateFlag(nFlags, bNone, OutputConfig.OutputFlag.DoNothing);
             nFlags = BitUtil.UpdateFlag(nFlags, bToggle, OutputConfig.OutputFlag.Toggle);
+            nFlags = BitUtil.UpdateFlag(nFlags, bDown, OutputConfig.OutputFlag.Down);
+            nFlags = BitUtil.UpdateFlag(nFlags, bUp, OutputConfig.OutputFlag.Up);
             zOutputConfig.Flags = nFlags;
         }
 
@@ -559,5 +572,24 @@ namespace KeyCap.Forms
         }
 
         #endregion
+
+        private void checkOutputToggle_CheckedChanged(object sender, EventArgs e)
+        {
+            checkOutputUp.Checked = checkOutputToggle.Checked;
+            checkOutputDown.Checked = checkOutputToggle.Checked;
+            checkOutputUp.Enabled = !checkOutputToggle.Checked;
+            checkOutputDown.Enabled = !checkOutputToggle.Checked;
+        }
+
+        private void checkOutputNone_CheckedChanged(object sender, EventArgs e)
+        {
+            comboBoxOutMouse.Enabled = !checkOutputNone.Checked;
+            checkOutputAlt.Enabled = !checkOutputNone.Checked;
+            checkOutputShift.Enabled = !checkOutputNone.Checked;
+            checkOutputControl.Enabled = !checkOutputNone.Checked;
+            checkOutputUp.Enabled = !checkOutputNone.Checked;
+            checkOutputDown.Enabled = !checkOutputNone.Checked;
+            checkOutputToggle.Enabled = !checkOutputNone.Checked;
+        }
     }
 }

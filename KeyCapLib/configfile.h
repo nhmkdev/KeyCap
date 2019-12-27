@@ -1,8 +1,3 @@
-////////////////////////////////////////////////////////////////////////////////
-// The MIT License (MIT)
-//
-// Copyright (c) 2019 Tim Stair
-//
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
 // in the Software without restriction, including without limitation the rights
@@ -22,21 +17,11 @@
 // SOFTWARE.
 ////////////////////////////////////////////////////////////////////////////////
 #pragma once
-#ifndef MOUSE_INPUT_H_     // equivalently, #if !defined HEADER_H_
-#define MOUSE_INPUT_H_
+#ifndef CONFIG_FILE_H_     // equivalently, #if !defined HEADER_H_
+#define CONFIG_FILE_H_
 
+#include "stdafx.h"
 #include "keycapturestructs.h"
 
-enum MOUSE_BUTTON
-{
-	MOUSE_NONE = 0x00,
-	MOUSE_LEFT = 0x01,
-	MOUSE_RIGHT = 0x02,
-	MOUSE_MIDDLE = 0x03,
-	MOUSE_BUTTON_COUNT
-};
-
-void SendInputMouse(RemapEntry* pRemapEntry, OutputConfig *pKeyDef);
-void AppendSingleMouse(INPUT* inputChar, unsigned char nVkKey);
-
-#endif // MOUSE_INPUT_H_
+int LoadFile(char* sFile, RemapEntry** g_KeyTranslationHead, void** g_KeyTranslationEnd);
+#endif
