@@ -30,8 +30,8 @@
 
 const int DESCRIPTION_BUFFER_SIZE = 256;
 
-bool IsButtonDownRequired(RemapEntry* pRemapEntry, OutputConfig* pKeyDef);
-bool IsButtonUpRequired(RemapEntry* pRemapEntry, OutputConfig* pKeyDef);
+bool IsButtonDownRequired(RemapEntryState* pRemapEntryState, OutputConfig* pKeyDef);
+bool IsButtonUpRequired(RemapEntryState* pRemapEntryState, OutputConfig* pKeyDef);
 
 void LogDebugMessage(const char *format, ...);
 void ValidateStructs();

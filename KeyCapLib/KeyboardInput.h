@@ -27,7 +27,7 @@
 
 #include "keycapturestructs.h"
 
-void SendInputKeys(RemapEntry* pRemapEntry, OutputConfig* pKeyDef);
+void SendInputKeys(RemapEntryState* pRemapEntryState, OutputConfig* pKeyDef);
 void SendTriggerEndInputKeys(RemapEntry* pRemapEntry);
 void AppendSingleKey(short keyScan, INPUT* inputChar, DWORD dwFlags);
 void ProcessModifierKeys(OutputConfig* pKeyDef, INPUT* pInput, int* nIndex, DWORD dwFlags);

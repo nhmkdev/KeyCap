@@ -22,7 +22,7 @@
 #include "keyboardproc.h"
 #include "sendinputthread.h"
 
-extern RemapEntryListItem* g_KeyTranslationTable[WIN_KEY_COUNT];
+extern RemapEntryContainerListItem* g_KeyTranslationTable[WIN_KEY_COUNT];
 
 /*
 Implementation of the win32 LowLevelKeyboardProc (see docs for information)
@@ -51,19 +51,19 @@ LRESULT CALLBACK LowLevelKeyboardProc(int nCode, WPARAM wParam, LPARAM lParam)
 		case WM_SYSKEYDOWN:
 			// detect a keydown that matches a remaped key (and start the input thread to respond accordingly then indicate to the OS that the key has been handled)
 			{
-				RemapEntryListItem* pKeyListItem = g_KeyTranslationTable[pHook->vkCode];
+				RemapEntryContainerListItem* pKeyListItem = g_KeyTranslationTable[pHook->vkCode];
 				while (NULL != pKeyListItem)
 				{
-					InputConfig* pKeyDef = &pKeyListItem->pEntry->inputConfig;
+					InputConfig* pKeyDef = &pKeyListItem->pEntryContainer->pEntry->inputConfig;
 					if ((bAlt == pKeyDef->inputFlag.bAlt) &&
 						(bControl == pKeyDef->inputFlag.bControl) &&
 						(bShift == pKeyDef->inputFlag.bShift))
 					{
 						char* pInputConfigDescription = GetInputConfigDescription(*pKeyDef);
-						LogDebugMessage("Detected Key Press: %s Outputs: %d", pInputConfigDescription, pKeyListItem->pEntry->outputCount);
+						LogDebugMessage("Detected Key Press: %s Outputs: %d", pInputConfigDescription, pKeyListItem->pEntryContainer->pEntry->outputCount);
 						free(pInputConfigDescription);
 						// TODO: get thread handle, also check for null
-						CreateThread(NULL, 0, SendInputThread, pKeyListItem->pEntry, 0, NULL);
+						CreateThread(NULL, 0, SendInputThread, pKeyListItem->pEntryContainer, 0, NULL);
 						bSentInput = true;
 						break;
 					}
@@ -75,10 +75,10 @@ LRESULT CALLBACK LowLevelKeyboardProc(int nCode, WPARAM wParam, LPARAM lParam)
 		case WM_SYSKEYUP:
 			// detect a keyup that matches a remaped key (and indicate to the OS that the key has been handled)
 			{
-				RemapEntryListItem* pKeyListItem = g_KeyTranslationTable[pHook->vkCode];
+				RemapEntryContainerListItem* pKeyListItem = g_KeyTranslationTable[pHook->vkCode];
 				while (NULL != pKeyListItem)
 				{
-					InputConfig* pKeyDef = &pKeyListItem->pEntry->inputConfig;
+					InputConfig* pKeyDef = &pKeyListItem->pEntryContainer->pEntry->inputConfig;
 					if ((bAlt == pKeyDef->inputFlag.bAlt) &&
 						(bControl == pKeyDef->inputFlag.bControl) &&
 						(bShift == pKeyDef->inputFlag.bShift))

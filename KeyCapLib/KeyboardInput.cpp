@@ -88,15 +88,13 @@ pKeyDef: pointer to a key definition for a keyboard input to send
 pTriggerDefinition: The definition of the triggering key. Modifiers like shift/alt/ctrl require special handling under
 certain circumstances
 */
-void SendInputKeys(RemapEntry* pRemapEntry, OutputConfig* pKeyDef)
+void SendInputKeys(RemapEntryState* pRemapEntryState, OutputConfig* pKeyDef)
 {
 	int nIndex = 0;
-	bool bSendKeyDown = IsButtonDownRequired(pRemapEntry, pKeyDef);
-	bool bSendKeyUp = IsButtonUpRequired(pRemapEntry, pKeyDef);
+	bool bSendKeyDown = IsButtonDownRequired(pRemapEntryState, pKeyDef);
+	bool bSendKeyUp = IsButtonUpRequired(pRemapEntryState, pKeyDef);
 	INPUT inputBuffer[MAX_KEY_INPUT_PER_STROKE];
 	memset(&inputBuffer, 0, sizeof(INPUT) * MAX_KEY_INPUT_PER_STROKE);
-
-	LogDebugMessage("%d", pKeyDef->outputFlag);
 
 	if (pKeyDef->outputFlag.bToggle && pKeyDef->virtualKey >= MAX_VKEY)
 	{

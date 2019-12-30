@@ -42,7 +42,7 @@ extern "C"
 HHOOK g_hookMain = NULL;
 
 // sweet globals
-RemapEntryListItem* g_KeyTranslationTable[WIN_KEY_COUNT];
+RemapEntryContainerListItem* g_KeyTranslationTable[WIN_KEY_COUNT];
 RemapEntry* g_KeyTranslationHead = NULL;
 void* g_KeyTranslationEnd = NULL; // pointer indicating the end of the input file data
 
@@ -69,7 +69,7 @@ __declspec(dllexport) int LoadAndCaptureFromFile(HINSTANCE hInstance, char* sFil
 	}
 
 	// validate file (and compile the "hash" table g_KeyTranslationTable)
-	memset(g_KeyTranslationTable, 0, WIN_KEY_COUNT * sizeof(RemapEntryListItem*));
+	memset(g_KeyTranslationTable, 0, WIN_KEY_COUNT * sizeof(RemapEntryContainerListItem*));
 
 	RemapEntry* pEntry = g_KeyTranslationHead;
 	bool bValidTranslationSet = false;
@@ -91,21 +91,25 @@ __declspec(dllexport) int LoadAndCaptureFromFile(HINSTANCE hInstance, char* sFil
 		// if the entry doesn't exist yet for the given input vkey create a new one with a null next pointer
 		if(NULL == g_KeyTranslationTable[pEntry->inputConfig.virtualKey])
 		{
-			g_KeyTranslationTable[pEntry->inputConfig.virtualKey] = (RemapEntryListItem*)malloc(sizeof(RemapEntryListItem));
-			g_KeyTranslationTable[pEntry->inputConfig.virtualKey]->pEntry = pEntry;
+			g_KeyTranslationTable[pEntry->inputConfig.virtualKey] = (RemapEntryContainerListItem*)malloc(sizeof(RemapEntryContainerListItem));
+			g_KeyTranslationTable[pEntry->inputConfig.virtualKey]->pEntryContainer = (RemapEntryContainer*)malloc(sizeof(RemapEntryContainer));
+			g_KeyTranslationTable[pEntry->inputConfig.virtualKey]->pEntryContainer->pEntryState = (RemapEntryState*)malloc(sizeof(RemapEntryState));
+			g_KeyTranslationTable[pEntry->inputConfig.virtualKey]->pEntryContainer->pEntry = pEntry;
 			g_KeyTranslationTable[pEntry->inputConfig.virtualKey]->pNext = NULL;
 		}
 		// if the entry does exist create a new entry and append it to the existing linked list
 		else
 		{
-			RemapEntryListItem* pKeyItem = g_KeyTranslationTable[pEntry->inputConfig.virtualKey];
+			RemapEntryContainerListItem* pKeyItem = g_KeyTranslationTable[pEntry->inputConfig.virtualKey];
 			while(NULL != pKeyItem->pNext)
 			{
 				pKeyItem = pKeyItem->pNext;
 			}
-			pKeyItem->pNext = (RemapEntryListItem*)malloc(sizeof(RemapEntryListItem));
+			pKeyItem->pNext = (RemapEntryContainerListItem*)malloc(sizeof(RemapEntryContainerListItem));
 			pKeyItem = pKeyItem->pNext;
-			pKeyItem->pEntry = pEntry;
+			pKeyItem->pEntryContainer = (RemapEntryContainer*)malloc(sizeof(RemapEntryContainer));
+			pKeyItem->pEntryContainer->pEntryState = (RemapEntryState*)malloc(sizeof(RemapEntryState));
+			pKeyItem->pEntryContainer->pEntry = pEntry;
 			pKeyItem->pNext = NULL;
 		}
 		// jump to the next entry
@@ -170,13 +174,16 @@ __declspec(dllexport) void ShutdownCapture()
 	{
 		if(NULL != g_KeyTranslationTable[nIdx])
 		{
-			RemapEntryListItem* pKeyItem = g_KeyTranslationTable[nIdx];
-			RemapEntryListItem* pKeyNextItem = NULL;
-			while(NULL != pKeyItem)
+			RemapEntryContainerListItem* pListItem = g_KeyTranslationTable[nIdx];
+			RemapEntryContainerListItem* pNextItem = NULL;
+			while(NULL != pListItem)
 			{
-				pKeyNextItem = pKeyItem->pNext;
-				free(pKeyItem);
-				pKeyItem = pKeyNextItem;
+				pNextItem = pListItem->pNext;
+				free(pListItem->pEntryContainer->pEntryState);
+				free(pListItem->pEntryContainer);
+				// NOTE: the entry itself was freed above
+				free(pListItem);
+				pListItem = pNextItem;
 			}
 			g_KeyTranslationTable[nIdx] = NULL;
 		}

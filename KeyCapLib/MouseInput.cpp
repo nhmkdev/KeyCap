@@ -36,13 +36,13 @@ Sends the desired mouse input
 
 pKeyDef: pointer to a key definition for a mouse input
 */
-void SendInputMouse(RemapEntry* pRemapEntry, OutputConfig *pKeyDef)
+void SendInputMouse(RemapEntryState* pRemapEntryState, OutputConfig *pKeyDef)
 {
 	INPUT inputBuffer[MAX_KEY_INPUT_PER_STROKE];
 	memset(&inputBuffer, 0, sizeof(INPUT) * MAX_KEY_INPUT_PER_STROKE);
 
-	bool bSendMouseDown = IsButtonDownRequired(pRemapEntry, pKeyDef);
-	bool bSendMouseUp = IsButtonUpRequired(pRemapEntry, pKeyDef);
+	bool bSendMouseDown = IsButtonDownRequired(pRemapEntryState, pKeyDef);
+	bool bSendMouseUp = IsButtonUpRequired(pRemapEntryState, pKeyDef);
 
 	if (pKeyDef->virtualKey == MOUSE_NONE)
 	{

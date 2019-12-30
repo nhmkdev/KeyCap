@@ -46,15 +46,6 @@ struct InputFlag
 
 struct OutputFlag
 {
-#if 0
-	const int KEYCAP_SHIFT = 1 << 0;
-	const int KEYCAP_CONTROL = 1 << 1;
-	const int KEYCAP_ALT = 1 << 2;
-	const int KEYCAP_DONOTHING = 1 << 3;
-	const int KEYCAP_MOUSEOUT = 1 << 4;
-	const int KEYCAP_DELAY = 1 << 5;
-	const int KEYCAP_TOGGLE = 1 << 6;
-#endif
 	BYTE bShift : 1;
 	BYTE bControl : 1;
 	BYTE bAlt : 1;
@@ -64,7 +55,8 @@ struct OutputFlag
 	BYTE bToggle : 1;
 	BYTE bDown : 1;
 	BYTE bUp : 1;
-	BYTE padTwo : 7;
+	BYTE bRepeat : 1;
+	BYTE padTwo : 6;
 	BYTE padThree : 8;
 	BYTE padFour : 8;
 };
@@ -93,17 +85,33 @@ struct RemapEntry
 {
 	InputConfig inputConfig;
 	BYTE outputCount;
-	BYTE bToggled : 1;
-	BYTE padOne : 7;
+	BYTE padOne : 8;
 	BYTE padTwo : 8;
 	BYTE padThree : 8;
 	// KeyDefintion[outputCount]
 };
 
-struct RemapEntryListItem
+struct RemapEntryState
+{
+	BYTE bToggled : 1;
+	BYTE bRepeating : 1;
+	BYTE padOne : 6;
+	BYTE padTwo : 8;
+	BYTE padThree : 8;
+	BYTE padFour : 8;
+	HANDLE threadHandle;
+};
+
+struct RemapEntryContainer
 {
 	RemapEntry* pEntry;
-	RemapEntryListItem* pNext;
+	RemapEntryState* pEntryState;
+};
+
+struct RemapEntryContainerListItem
+{
+	RemapEntryContainer* pEntryContainer;
+	RemapEntryContainerListItem* pNext;
 };
 
 enum HOOK_RESULT

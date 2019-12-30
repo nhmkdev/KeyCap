@@ -75,6 +75,7 @@ namespace KeyCap.Forms
             this.comboBoxOutMouse = new System.Windows.Forms.ComboBox();
             this.groupBoxInputKey = new System.Windows.Forms.GroupBox();
             this.panelKeySetupControls = new System.Windows.Forms.Panel();
+            this.checkOutputRepeat = new System.Windows.Forms.CheckBox();
             this.menuStripMain.SuspendLayout();
             this.contextMenuStripNotify.SuspendLayout();
             this.panelKeySetup.SuspendLayout();
@@ -325,7 +326,7 @@ namespace KeyCap.Forms
             // checkOutputDoNothing
             // 
             this.checkOutputDoNothing.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
-            this.checkOutputDoNothing.Location = new System.Drawing.Point(388, 70);
+            this.checkOutputDoNothing.Location = new System.Drawing.Point(470, 70);
             this.checkOutputDoNothing.Name = "checkOutputDoNothing";
             this.checkOutputDoNothing.Size = new System.Drawing.Size(85, 20);
             this.checkOutputDoNothing.TabIndex = 59;
@@ -395,6 +396,7 @@ namespace KeyCap.Forms
             // 
             this.groupBoxOutputKey.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left) 
             | System.Windows.Forms.AnchorStyles.Right)));
+            this.groupBoxOutputKey.Controls.Add(this.checkOutputRepeat);
             this.groupBoxOutputKey.Controls.Add(this.checkOutputUp);
             this.groupBoxOutputKey.Controls.Add(this.checkOutputDown);
             this.groupBoxOutputKey.Controls.Add(this.panel1);
@@ -554,6 +556,16 @@ namespace KeyCap.Forms
             this.panelKeySetupControls.Size = new System.Drawing.Size(250, 23);
             this.panelKeySetupControls.TabIndex = 18;
             // 
+            // checkOutputRepeat
+            // 
+            this.checkOutputRepeat.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
+            this.checkOutputRepeat.Location = new System.Drawing.Point(388, 70);
+            this.checkOutputRepeat.Name = "checkOutputRepeat";
+            this.checkOutputRepeat.Size = new System.Drawing.Size(76, 20);
+            this.checkOutputRepeat.TabIndex = 60;
+            this.checkOutputRepeat.Text = "Repeat";
+            this.checkOutputRepeat.UseVisualStyleBackColor = true;
+            // 
             // KeyCaptureConfig
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
@@ -634,6 +646,7 @@ namespace KeyCap.Forms
         private System.Windows.Forms.Button btnAppendExtra;
         private System.Windows.Forms.CheckBox checkOutputUp;
         private System.Windows.Forms.CheckBox checkOutputDown;
+        private System.Windows.Forms.CheckBox checkOutputRepeat;
     }
 }
 

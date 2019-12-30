@@ -54,6 +54,7 @@ namespace KeyCap.Format
             Toggle = 1 << 6,
             Down = 1 << 7,
             Up = 1 << 8,
+            Repeat = 1 << 9,
             // all ThreadKill ?
             // supports up to 32 entries
         }
@@ -146,7 +147,7 @@ namespace KeyCap.Format
         private string GetOutputDescriptionText(Enum eInputId, string sActionPrefix)
         {
             return "[" +
-                   (Keys)VirtualKey +
+                   eInputId +
                    (IsFlaggedAs(OutputFlag.Down) && IsFlaggedAs(OutputFlag.Up)
                        ? ":Press"
                        : ((IsFlaggedAs(OutputFlag.Down) ? ":{0}Down".FormatString(sActionPrefix) : string.Empty) +
@@ -156,6 +157,7 @@ namespace KeyCap.Format
                    (IsFlaggedAs(OutputFlag.Alt) ? "+Alt" : string.Empty) +
                    (IsFlaggedAs(OutputFlag.Control) ? "+Control" : string.Empty) +
                    (IsFlaggedAs(OutputFlag.Toggle) ? "+Toggle" : string.Empty) +
+                   (IsFlaggedAs(OutputFlag.Repeat) ? "+Repeat" : string.Empty) +
                    "]";
         }
     }

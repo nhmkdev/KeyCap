@@ -36,7 +36,7 @@ enum MOUSE_BUTTON
 	MOUSE_BUTTON_COUNT
 };
 
-void SendInputMouse(RemapEntry* pRemapEntry, OutputConfig *pKeyDef);
+void SendInputMouse(RemapEntryState* pRemapEntryState, OutputConfig *pKeyDef);
 void AppendSingleMouse(INPUT* inputChar, unsigned char nVkKey);
 
 #endif // MOUSE_INPUT_H_

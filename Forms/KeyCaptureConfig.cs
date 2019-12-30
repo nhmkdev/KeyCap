@@ -498,6 +498,7 @@ namespace KeyCap.Forms
             var bShift = checkOutputShift.Checked;
             var bNone = checkOutputDoNothing.Checked;
             var bToggle = checkOutputToggle.Checked;
+            var bRepeat = checkOutputRepeat.Checked;
             var bDown = checkOutputDown.Checked;
             var bUp = checkOutputUp.Checked;
 
@@ -510,6 +511,7 @@ namespace KeyCap.Forms
 
             nFlags = BitUtil.UpdateFlag(nFlags, bNone, OutputConfig.OutputFlag.DoNothing);
             nFlags = BitUtil.UpdateFlag(nFlags, bToggle, OutputConfig.OutputFlag.Toggle);
+            nFlags = BitUtil.UpdateFlag(nFlags, bRepeat, OutputConfig.OutputFlag.Repeat);
             nFlags = BitUtil.UpdateFlag(nFlags, bDown, OutputConfig.OutputFlag.Down);
             nFlags = BitUtil.UpdateFlag(nFlags, bUp, OutputConfig.OutputFlag.Up);
             zOutputConfig.Flags = nFlags;

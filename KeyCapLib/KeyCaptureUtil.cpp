@@ -25,11 +25,11 @@
 #include "keycapturestructs.h"
 #include "keycaptureutil.h"
 
-bool IsButtonDownRequired(RemapEntry* pRemapEntry, OutputConfig* pKeyDef)
+bool IsButtonDownRequired(RemapEntryState* pRemapEntryState, OutputConfig* pKeyDef)
 {
 	if (pKeyDef->outputFlag.bToggle)
 	{
-		return !pRemapEntry->bToggled;
+		return !pRemapEntryState->bToggled;
 	}
 
 	bool keyDownRequired = true;
@@ -37,11 +37,11 @@ bool IsButtonDownRequired(RemapEntry* pRemapEntry, OutputConfig* pKeyDef)
 	return keyDownRequired;
 }
 
-bool IsButtonUpRequired(RemapEntry* pRemapEntry, OutputConfig* pKeyDef)
+bool IsButtonUpRequired(RemapEntryState* pRemapEntryState, OutputConfig* pKeyDef)
 {
 	if (pKeyDef->outputFlag.bToggle)
 	{
-		return pRemapEntry->bToggled;
+		return pRemapEntryState->bToggled;
 	}
 
 	bool keyUpRequired = true;

@@ -72,9 +72,7 @@ namespace KeyCap.Format
             }
 
             // TODO: comment on why this is
-            zFileStream.ReadByte();
-            zFileStream.ReadByte();
-            zFileStream.ReadByte();
+            zFileStream.Read(new byte[3], 0, 3);
 
             try
             {
@@ -107,9 +105,7 @@ namespace KeyCap.Format
             InputConfig.SerializeToStream(zStream);
             zStream.WriteByte((byte)OutputConfigs.Count);
             // TODO: comment on padding
-            zStream.WriteByte(0);
-            zStream.WriteByte(0);
-            zStream.WriteByte(0);
+            zStream.Write(new byte[3], 0, 3);
             OutputConfigs.ForEach(oc => oc.SerializeToStream(zStream));
             return zStream.ToArray();
         }
