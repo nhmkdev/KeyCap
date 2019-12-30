@@ -49,10 +49,13 @@ DWORD WINAPI SendInputThread(LPVOID lpParam)
 	// iterate over the target inputs
 	while (pOutputConfig < pTerminator)
 	{
+		char* pOutputConfigDescription = GetOutputConfigDescription(*pOutputConfig);
 		LogDebugMessage("Performing %s Output Action: %s", 
 			pOutputConfig->outputFlag.bMouseOut ? "Mouse" : "Keyboard",
-			GetOutputConfigDescription(*pOutputConfig)
+			pOutputConfigDescription
 		);
+		free(pOutputConfigDescription);
+
 		// mouse input
 		if (pOutputConfig->outputFlag.bMouseOut)
 		{

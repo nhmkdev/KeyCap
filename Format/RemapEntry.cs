@@ -34,26 +34,15 @@ namespace KeyCap.Format
     /// </summary>
     public class RemapEntry
     {
-#warning remove the memory stream usage... just confusing
-        /// <summary>
-        /// Format is a byte[] [flags][value][count of outputs]([flags][value])([flags][value])([flags][value])...
-        /// </summary>
-//        private readonly MemoryStream m_zStream = new MemoryStream();
-
         private InputConfig InputConfig { get; set; }
         private List<OutputConfig> OutputConfigs { get; set; }
 
-        private readonly int m_nHash;
-
-        /// <summary>
-        /// The byte indicies for the stream representation of the class
-        /// </summary>
-        public enum KeyDefinitionIndices
+        public int OutputConfigCount
         {
-            Flags,
-            Value,
-            Count // not applicable to the output definitions
+            get { return OutputConfigs == null ? 0 : OutputConfigs.Count; }
         }
+
+        private readonly int m_nHash;
 
         /// <summary>
         /// Constructor based on input/output definitions
@@ -64,13 +53,7 @@ namespace KeyCap.Format
         {
             InputConfig = zInputConfig;
             OutputConfigs = new List<OutputConfig>(new [] {zOutputConfig});
-#warning move hash calc to method
-            m_nHash = (int)(zInputConfig.Flags & 0xFF) + (int)((zInputConfig.VirtualKey & 0xFF) << 8);
-#if false
-            zInputConfig.SerializeToStream(m_zStream);
-            m_zStream.WriteByte(1);
-            zOutputConfig.SerializeToStream(m_zStream);
-#endif
+            m_nHash = CalculateHashCode(InputConfig);
         }
 
         /// <summary>
@@ -88,6 +71,7 @@ namespace KeyCap.Format
                 throw new Exception("Output definition length must be > 0. Invalid File!");
             }
 
+            // TODO: comment on why this is
             zFileStream.ReadByte();
             zFileStream.ReadByte();
             zFileStream.ReadByte();
@@ -113,10 +97,6 @@ namespace KeyCap.Format
         /// <returns></returns>
         public bool AppendOutputConfig(OutputConfig zOutputConfig)
         {
-            if (OutputConfigs.Count == 0xff)
-            {
-                return false;
-            }
             OutputConfigs.Add(zOutputConfig);
             return true;
         }
@@ -126,6 +106,7 @@ namespace KeyCap.Format
             var zStream = new MemoryStream();
             InputConfig.SerializeToStream(zStream);
             zStream.WriteByte((byte)OutputConfigs.Count);
+            // TODO: comment on padding
             zStream.WriteByte(0);
             zStream.WriteByte(0);
             zStream.WriteByte(0);
@@ -159,10 +140,18 @@ namespace KeyCap.Format
             return zBuilder.ToString();
         }
 
-#warning why is this necessary? (double definition detection it appears... so the same input isn't reused)
+        /// <summary>
+        /// Returns the hash code of this remap entry
+        /// </summary>
+        /// <returns></returns>
         public override int GetHashCode()
         {
             return m_nHash;
+        }
+
+        protected static int CalculateHashCode(InputConfig zInputConfig)
+        {
+            return (int)(zInputConfig.Flags & 0xFF) + (int)((zInputConfig.VirtualKey & 0xFF) << 8);
         }
     }
 }

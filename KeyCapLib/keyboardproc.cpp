@@ -59,7 +59,10 @@ LRESULT CALLBACK LowLevelKeyboardProc(int nCode, WPARAM wParam, LPARAM lParam)
 						(bControl == pKeyDef->inputFlag.bControl) &&
 						(bShift == pKeyDef->inputFlag.bShift))
 					{
-						LogDebugMessage("Detected Key Press: %s Outputs: %d", GetInputConfigDescription(*pKeyDef), pKeyListItem->pEntry->outputCount);
+						char* pInputConfigDescription = GetInputConfigDescription(*pKeyDef);
+						LogDebugMessage("Detected Key Press: %s Outputs: %d", pInputConfigDescription, pKeyListItem->pEntry->outputCount);
+						free(pInputConfigDescription);
+						// TODO: get thread handle, also check for null
 						CreateThread(NULL, 0, SendInputThread, pKeyListItem->pEntry, 0, NULL);
 						bSentInput = true;
 						break;

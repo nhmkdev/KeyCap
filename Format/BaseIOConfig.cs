@@ -47,26 +47,11 @@ namespace KeyCap.Format
             Parameter = config.Parameter;
         }
 
-        /// <summary>
-        /// Constructor for an InputConfig
-        /// </summary>
-        /// <param name="byFlags">The flags defining the input</param>
-        /// <param name="byVirtualKey">The value of the input</param>
-        /// <param name="eKeyArgs">The input key arguments from user input</param>
-        public BaseIOConfig(int nFlags, byte byVirtualKey, int nParameter)
-        {
-            Flags = nFlags;
-            VirtualKey = byVirtualKey;
-            Parameter = nParameter;
-        }
-
         public BaseIOConfig(Stream zStream)
         {
             Flags = StreamUtil.ReadIntFromStream(zStream);
             VirtualKey = StreamUtil.ReadByteFromStream(zStream);
-            StreamUtil.ReadByteFromStream(zStream);
-            StreamUtil.ReadByteFromStream(zStream);
-            StreamUtil.ReadByteFromStream(zStream);
+            StreamUtil.ReadBytesFromStream(zStream, 3);
             Parameter = StreamUtil.ReadIntFromStream(zStream);
         }
 
@@ -84,6 +69,7 @@ namespace KeyCap.Format
 
         public void SerializeToStream(Stream zStream)
         {
+            // Due to the struct format on the C side the data is written as 3 32-bit ints
             StreamUtil.WriteIntToStream(zStream, Flags);
             zStream.WriteByte(VirtualKey);
             zStream.WriteByte(0);

@@ -46,7 +46,7 @@ namespace KeyCap.Format
             Shift = 1 << 0,
             Control = 1 << 1,
             Alt = 1 << 2,
-            //MAX         = 1 << 7, // it's a byte! (aka if you need 8 you'll need more space)
+            // supports up to 32 entries
         }
 
         /// <summary>
@@ -55,14 +55,12 @@ namespace KeyCap.Format
         /// <param name="byFlags">The flags defining the input</param>
         /// <param name="byVirtualKey">The value of the input</param>
         /// <param name="eKeyArgs">The input key arguments from user input</param>
-        public InputConfig(int nFlags, byte byVirtualKey, KeyEventArgs eKeyArgs)
+        public InputConfig(byte byVirtualKey, KeyEventArgs eKeyArgs)
         {
-            Flags = nFlags;
             VirtualKey = byVirtualKey;
 
             if (null != eKeyArgs)
             {
-#warning this is weird to have the flags further defined/or'd with the pkey args (likely only applied to outputs)
                 Flags |= (int)(
                     (eKeyArgs.Shift ? (int)InputFlag.Shift : (byte)0) |
                     (eKeyArgs.Alt ? (int)InputFlag.Alt : (byte)0) |

@@ -35,6 +35,11 @@ namespace KeyCap.Format
         private static readonly int FILE_DATA_PREFIX = (int)0x0E0CA000;
         private static readonly int DATA_FORMAT_VERSION = (int)0x1;
 
+        /// <summary>
+        /// Saves the remap entries to a versioned file format
+        /// </summary>
+        /// <param name="listRemapEntries">The entries to persist</param>
+        /// <param name="sFileName">The name of the file to save to</param>
         public void SaveFile(List<RemapEntry> listRemapEntries, string sFileName)
         {
             var zFileStream = new FileStream(sFileName, FileMode.Create, FileAccess.Write, FileShare.None);
@@ -48,6 +53,11 @@ namespace KeyCap.Format
             zFileStream.Close();
         }
 
+        /// <summary>
+        /// Loads the remap entries from the specified file
+        /// </summary>
+        /// <param name="sFileName"></param>
+        /// <returns></returns>
         public List<RemapEntry> LoadFile(string sFileName)
         {
             FileStream zFileStream = null;

@@ -28,6 +28,8 @@
 #include "stdafx.h"
 #include "keycapturestructs.h"
 
+const int DESCRIPTION_BUFFER_SIZE = 256;
+
 bool IsButtonDownRequired(RemapEntry* pRemapEntry, OutputConfig* pKeyDef);
 bool IsButtonUpRequired(RemapEntry* pRemapEntry, OutputConfig* pKeyDef);
 

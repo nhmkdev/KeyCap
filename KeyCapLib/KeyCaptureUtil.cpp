@@ -57,21 +57,21 @@ char* GetBoolString(BYTE nValue)
 // NOT THREAD SAFE
 char* GetInputConfigDescription(InputConfig inputConfig)
 {
-	static char buffer[256];
-	sprintf_s(buffer, 256, "InputConfig [Key: %d 0x%02x][Alt: %s][Ctrl: %s][Shift: %s]",
+	char* pDescription = (char*)malloc(DESCRIPTION_BUFFER_SIZE);
+	sprintf_s(pDescription, DESCRIPTION_BUFFER_SIZE, "InputConfig [Key: %d 0x%02x][Alt: %s][Ctrl: %s][Shift: %s]",
 		inputConfig.virtualKey,
 		inputConfig.virtualKey,
 		GetBoolString(inputConfig.inputFlag.bAlt),
 		GetBoolString(inputConfig.inputFlag.bControl),
 		GetBoolString(inputConfig.inputFlag.bShift));
-	return buffer;
+	return pDescription;
 }
 
 // NOT THREAD SAFE
 char* GetOutputConfigDescription(OutputConfig outputConfig)
 {
-	static char buffer[256];
-	sprintf_s(buffer, 256, "OutputConfig [Key: %d 0x%02x][Alt: %s][Ctrl: %s][Shift: %s][Nothing: %s][Mouse: %s][Delay: %s][Toggle: %s][Down: %s][Up: %s]",
+	char* pDescription = (char*)malloc(DESCRIPTION_BUFFER_SIZE);
+	sprintf_s(pDescription, DESCRIPTION_BUFFER_SIZE, "OutputConfig [Key: %d 0x%02x][Alt: %s][Ctrl: %s][Shift: %s][Nothing: %s][Mouse: %s][Delay: %s][Toggle: %s][Down: %s][Up: %s]",
 		outputConfig.virtualKey,
 		outputConfig.virtualKey,
 		GetBoolString(outputConfig.outputFlag.bAlt),
@@ -85,7 +85,7 @@ char* GetOutputConfigDescription(OutputConfig outputConfig)
 		GetBoolString(outputConfig.outputFlag.bUp)
 	);
 
-	return buffer;
+	return pDescription;
 }
 
 void ValidateStructs()

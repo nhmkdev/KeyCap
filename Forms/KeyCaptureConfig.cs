@@ -40,12 +40,15 @@ namespace KeyCap.Forms
 {
     public partial class KeyCaptureConfig
     {
-        private ConfigFileManager m_zConfigFileManager = new ConfigFileManager();
+        private readonly ConfigFileManager m_zConfigFileManager = new ConfigFileManager();
         private readonly List<string> m_listRecentFiles = new List<string>();
-        private FormWindowState m_ePrevWindowState = FormWindowState.Normal;
+        private readonly KeyCapInstanceState m_zInstanceState;
         private readonly IniManager m_zIniManager = new IniManager(Application.ProductName, false, true, false);
-        private bool m_bRun = true;
 
+        private FormWindowState m_ePrevWindowState = FormWindowState.Normal;
+        private bool m_bRun = true;
+        private bool m_bShutdownApplication = false;
+        
         /// <summary>
         /// Text to display on the button to start/stop capturing
         /// </summary>
@@ -66,11 +69,12 @@ namespace KeyCap.Forms
             m_sFileOpenFilter = Application.ProductName + " Config files (*.kfg)|*.kfg|All files (*.*)|*.*";
             Text = m_sBaseTitle;
             
-            // load the input file
-            if (1 == args.Count)
+            m_zInstanceState = new KeyCapInstanceState(args);
+
+            // load the command line specified file
+            if (m_zInstanceState.DefaultConfigFile != null)
             {
-                // existence already checked in program.cs
-                InitOpen(args[0]);
+                InitOpen(m_zInstanceState.DefaultConfigFile);
             }
         }
 
@@ -82,17 +86,11 @@ namespace KeyCap.Forms
             IniManager.RestoreState(this, m_zIniManager.GetValue(Name));
 
             // setup the various mouse output options
-            comboBoxOutMouse.Items.Add("No Action");
             foreach (OutputConfig.MouseButton sName in Enum.GetValues(typeof(OutputConfig.MouseButton)))
             {
                 comboBoxOutMouse.Items.Add(sName);
             }
             comboBoxOutMouse.SelectedIndex = 0;
-
-            // toggle: mouse buttons, Key
-            // action: mouse buttons down/up, Key down/up
-            
-
 
             // set the notification icon accordingly
             notifyIcon.Icon = Resources.KeyCapIdle;
@@ -109,25 +107,11 @@ namespace KeyCap.Forms
             }
 
             // initialize capture from command line specified file
-            if (0 != m_sLoadedFile.Length)
+            if (0 != m_sLoadedFile.Length && m_zInstanceState.AutoStart)
             {
-#if false
                 btnStart_Click(sender, new EventArgs());
                 new Thread(MinimizeThread) { Name = "MinimizeThread" }.Start();
-#endif
             }
-        }
-
-        private void exitMainToolStripMenuItem_Click(object sender, EventArgs e)
-        {
-            m_bRun = false;
-            if (WindowState == FormWindowState.Minimized)
-            {
-                WindowState = m_ePrevWindowState;
-            }
-            KeyCaptureLib.Shutdown();
-            m_zIniManager.SetValue(Name, IniManager.GetFormSettings(this));
-            Close();
         }
 
         private void newToolStripMenuItem_Click(object sender, EventArgs e)
@@ -142,10 +126,34 @@ namespace KeyCap.Forms
             InitNew();
         }
 
+        private void exitMainToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            m_bShutdownApplication = true;
+            m_bRun = false;
+            if (WindowState == FormWindowState.Minimized)
+            {
+                WindowState = m_ePrevWindowState;
+            }
+            KeyCaptureLib.Shutdown();
+            m_zIniManager.SetValue(Name, IniManager.GetFormSettings(this));
+            Close();
+        }
+
+
         private void KeyCaptureConfig_FormClosing(object sender, FormClosingEventArgs e)
         {
-#warning only exit on right-click exit from the sys tray icon (or the 2 close reasons below)
-            if (m_bRun && !panelKeySetup.Enabled)
+            // exit requested (can only be canceled with the save on close cancel)
+            if (m_bShutdownApplication)
+            {
+                SaveOnClose(e);
+                if (e.Cancel)
+                {
+                    m_bShutdownApplication = false;
+                    return;
+                }
+                FlushIniSettings();
+            }
+            else
             {
                 switch (e.CloseReason)
                 {
@@ -158,27 +166,6 @@ namespace KeyCap.Forms
                         Hide();
                         break;
                 }
-            }
-            else
-            {
-                SaveOnClose(e);
-                if (e.Cancel)
-                {
-                    return;
-                }
-#warning this should be in its own method
-                var zBuilder = new StringBuilder();
-                var dictionaryFilenames = new Dictionary<string, object>();
-                foreach (var sFile in m_listRecentFiles)
-                {
-                    var sLowerFile = sFile.ToLower();
-                    if (dictionaryFilenames.ContainsKey(sLowerFile))
-                        continue;
-                    dictionaryFilenames.Add(sLowerFile, null);
-                    zBuilder.Append(sFile + KeyCapConstants.CharFileSplit);
-                }
-                m_zIniManager.SetValue(IniSettings.PreviousFiles, zBuilder.ToString());
-                m_zIniManager.FlushIniSettings();
             }
         }
 
@@ -194,11 +181,10 @@ namespace KeyCap.Forms
 
 #region Text Capture Handling
 
-#warning Need to make an input and output version of this
         private void txtKeyIn_KeyDown(object sender, KeyEventArgs e)
         {
             //            Console.Out.WriteLine("Key Input: {0} 0x{1}".FormatString(e.KeyCode, e.KeyCode.ToString("x")));
-            UpdateTextBox((TextBox)sender, e, new InputConfig(0x00, (byte)e.KeyCode, e));
+            UpdateTextBox((TextBox)sender, e, new InputConfig((byte)e.KeyCode, e));
         }
 
         private void txtKeyOut_KeyDown(object sender, KeyEventArgs e)
@@ -326,14 +312,19 @@ namespace KeyCap.Forms
 
         private void comboBoxMouseOut_SelectedIndexChanged(object sender, EventArgs e)
         {
-            if (0 != comboBoxOutMouse.SelectedIndex) // the first entry does nothing
+
+            if (comboBoxOutMouse.SelectedIndex == 0)
+            {
+                txtKeyOut.Text = string.Empty;
+                txtKeyOut.Tag = null;
+            }
+            else
             {
                 var zOutputConfig = new OutputConfig(
                     (byte)OutputConfig.OutputFlag.MouseOut,
                     (byte)(OutputConfig.MouseButton)comboBoxOutMouse.SelectedItem);
-                var zDisplay = txtKeyOut;
-                zDisplay.Text = zOutputConfig.GetDescription();
-                zDisplay.Tag = zOutputConfig;
+                txtKeyOut.Text = zOutputConfig.GetDescription();
+                txtKeyOut.Tag = zOutputConfig;
             }
         }
 
@@ -350,42 +341,37 @@ namespace KeyCap.Forms
 
         private void btnAdd_Click(object sender, EventArgs e)
         {
-            var zInput = new InputConfig((InputConfig)txtKeyIn.Tag);
-            var zOutput = getCurrentOutputDefinition();
-
-            if (null == zInput || null == zOutput)
-            {
-                MessageBox.Show(this, "Please specify both an input and output key.", "Error!", MessageBoxButtons.OK, MessageBoxIcon.Error);
-                return;
-            }
-
-            UpdateInputFlags(zInput);
-
-            var zPairDef = new RemapEntry(zInput, zOutput);
-
-            // TODO: is it worth keeping a hashset of these to cut the time from o(n) to o(1)?
-            // TODO: validation method for this (also need to check that an output actually does something (unless do nothing is selected)
-            // verify this is not already defined
-            foreach (ListViewItem zListItem in listViewKeys.Items)
-            {
-                var zKeyOldDef = (RemapEntry)zListItem.Tag;
-                if (zPairDef.GetHashCode() != zKeyOldDef.GetHashCode())
-                {
-                    continue;
-                }
-
-                MessageBox.Show(this, "Duplicate inputs are not allowed!", "Error!", MessageBoxButtons.OK, MessageBoxIcon.Exclamation);
-                return;
-            }
+            InputConfig zInputConfig = null;
+            OutputConfig zOutputConfig = null;
+            RemapEntry zRemapEntry = null;
+            if (!RetrieveAddConfigs(ref zInputConfig, ref zOutputConfig, ref zRemapEntry)) return;
 
             var zItem = new ListViewItem(new string[] { 
-                zPairDef.GetInputString(), 
-                zPairDef.GetOutputString() });
-            zItem.Tag = zPairDef;
+                zRemapEntry.GetInputString(), 
+                zRemapEntry.GetOutputString() });
+            zItem.Tag = zRemapEntry;
             listViewKeys.Items.Add(zItem);
             listViewKeys.SelectedItems.Clear();
             zItem.Selected = true;
             MarkDirty();
+        }
+
+        private void btnAppend_Click(object sender, EventArgs e)
+        {
+            if (1 != listViewKeys.SelectedItems.Count)
+            {
+                return;
+            }
+
+            var zItem = listViewKeys.SelectedItems[0];
+            var zRemapEntry = (RemapEntry)zItem.Tag;
+            OutputConfig zOutputConfig = null;
+            if (!RetrieveAppendConfigs(ref zOutputConfig, zRemapEntry)) return;
+
+            zRemapEntry.AppendOutputConfig(zOutputConfig);
+            zItem.SubItems[1].Text = zRemapEntry.GetOutputString();
+            MarkDirty();
+            txtKeyOut.Focus(); // restore focus to the output
         }
 
         private void btnRemove_Click(object sender, EventArgs e)
@@ -400,50 +386,6 @@ namespace KeyCap.Forms
                 listViewKeys.Items.Remove(zItem);
             }
             MarkDirty();
-        }
-
-        private void btnAppend_Click(object sender, EventArgs e)
-        {
-            if (1 != listViewKeys.SelectedItems.Count)
-            {
-                return;
-            }
-
-            var zItem = listViewKeys.SelectedItems[0];
-            var zPairDef = (RemapEntry)zItem.Tag;
-            var zOutDef = getCurrentOutputDefinition();
-            var bSuccess = zPairDef.AppendOutputConfig(zOutDef);
-            if (bSuccess)
-            {
-                zItem.SubItems[1].Text = zPairDef.GetOutputString();
-                MarkDirty();
-                txtKeyOut.Focus(); // restore focus to the output
-            }
-            else
-            {
-                MessageBox.Show(this, "Failed to append item. The maximum number of outputs allowed is 255.", "Append Error!",
-                    MessageBoxButtons.OK, MessageBoxIcon.Exclamation);
-            }
-        }
-
-        private OutputConfig getCurrentOutputDefinition()
-        {
-            var zOutput = new OutputConfig((OutputConfig)txtKeyOut.Tag);
-            if (zOutput == null)
-            {
-                return null;
-            }
-
-#warning Is this necessary? Why not just let the do nothing flag override?
-            if (checkOutputNone.Checked) // if output is set to none change zOutput keyarg
-            {
-                zOutput = new OutputConfig((byte)OutputConfig.OutputFlag.DoNothing, 0x00);
-            }
-            else
-            {
-                UpdateOutputFlags(zOutput);
-            }
-            return zOutput;
         }
 
         private void btnStart_Click(object sender, EventArgs e)
@@ -481,9 +423,38 @@ namespace KeyCap.Forms
             }
         }
 
-#endregion
+        private void checkOutputToggle_CheckedChanged(object sender, EventArgs e)
+        {
+            checkOutputUp.Checked = checkOutputToggle.Checked;
+            checkOutputDown.Checked = checkOutputToggle.Checked;
+            checkOutputUp.Enabled = !checkOutputToggle.Checked;
+            checkOutputDown.Enabled = !checkOutputToggle.Checked;
 
-#region Support Methods
+            checkOutputAlt.Enabled = !checkOutputToggle.Checked;
+            checkOutputShift.Enabled = !checkOutputToggle.Checked;
+            checkOutputControl.Enabled = !checkOutputToggle.Checked;
+            if (checkOutputToggle.Checked)
+            {
+                checkOutputAlt.Checked = false;
+                checkOutputShift.Checked = false;
+                checkOutputControl.Checked = false;
+            }
+        }
+
+        private void checkOutputDoNothing_CheckedChanged(object sender, EventArgs e)
+        {
+            comboBoxOutMouse.Enabled = !checkOutputDoNothing.Checked;
+            checkOutputAlt.Enabled = !checkOutputDoNothing.Checked;
+            checkOutputShift.Enabled = !checkOutputDoNothing.Checked;
+            checkOutputControl.Enabled = !checkOutputDoNothing.Checked;
+            checkOutputUp.Enabled = !checkOutputDoNothing.Checked;
+            checkOutputDown.Enabled = !checkOutputDoNothing.Checked;
+            checkOutputToggle.Enabled = !checkOutputDoNothing.Checked;
+        }
+
+        #endregion
+
+        #region Support Methods
 
         /// <summary>
         /// Updates the recent loaded file list
@@ -499,15 +470,13 @@ namespace KeyCap.Forms
             }
         }
 
-#warning - likely needs one for input and one for output
-
         /// <summary>
         /// Gets the flags byte based on the definition and the type of input/output
         /// </summary>
         /// <param name="zInputConfig">the io definition</param>
         /// <param name="eFlag">the type of io</param>
         /// <returns>New flags value based on the settings of the ui (any prior flags are lost)</returns>
-        private void UpdateInputFlags(InputConfig zInputConfig)
+        private InputConfig UpdateInputFlags(InputConfig zInputConfig)
         {
             var bAlt = checkInputAlt.Checked;
             var bControl = checkInputControl.Checked;
@@ -518,25 +487,24 @@ namespace KeyCap.Forms
             nFlags = BitUtil.UpdateFlag(nFlags, bControl, InputConfig.InputFlag.Control);
             nFlags = BitUtil.UpdateFlag(nFlags, bShift, InputConfig.InputFlag.Shift);
             zInputConfig.Flags = nFlags;
+            return zInputConfig;
         }
 
-        private void UpdateOutputFlags(OutputConfig zOutputConfig)
+        private OutputConfig UpdateOutputFlags(OutputConfig zOutputConfig)
         {
             // get the flags from the check boxes (always, both mouse and keyboard support them in some fashion)
             var bAlt = checkOutputAlt.Checked;
             var bControl = checkOutputControl.Checked;
             var bShift = checkOutputShift.Checked;
-            var bNone = checkOutputNone.Checked;
+            var bNone = checkOutputDoNothing.Checked;
             var bToggle = checkOutputToggle.Checked;
             var bDown = checkOutputDown.Checked;
             var bUp = checkOutputUp.Checked;
 
             var nFlags = 0;
-#warning Make a new method on the config object to update the flag on a field and eliminate this copy+paste garbage
             nFlags = BitUtil.UpdateFlag(nFlags, bShift, OutputConfig.OutputFlag.Shift);
             nFlags = BitUtil.UpdateFlag(nFlags, bControl, OutputConfig.OutputFlag.Control);
             nFlags = BitUtil.UpdateFlag(nFlags, bAlt, OutputConfig.OutputFlag.Alt);
-#warning this seems strange (the output config needs to be updated with the flag for these)
             nFlags = BitUtil.UpdateFlag(nFlags, zOutputConfig.IsFlaggedAs(OutputConfig.OutputFlag.MouseOut), OutputConfig.OutputFlag.MouseOut);
             nFlags = BitUtil.UpdateFlag(nFlags, zOutputConfig.IsFlaggedAs(OutputConfig.OutputFlag.Delay), OutputConfig.OutputFlag.Delay);
 
@@ -545,6 +513,7 @@ namespace KeyCap.Forms
             nFlags = BitUtil.UpdateFlag(nFlags, bDown, OutputConfig.OutputFlag.Down);
             nFlags = BitUtil.UpdateFlag(nFlags, bUp, OutputConfig.OutputFlag.Up);
             zOutputConfig.Flags = nFlags;
+            return zOutputConfig;
         }
 
         /// <summary>
@@ -571,25 +540,100 @@ namespace KeyCap.Forms
             this.InvokeAction(() => Close());
         }
 
+        /// <summary>
+        /// Flushes all the ini settings
+        /// </summary>
+        private void FlushIniSettings()
+        {
+            var zBuilder = new StringBuilder();
+            var dictionaryFilenames = new Dictionary<string, object>();
+            foreach (var sFile in m_listRecentFiles)
+            {
+                var sLowerFile = sFile.ToLower();
+                if (dictionaryFilenames.ContainsKey(sLowerFile))
+                    continue;
+                dictionaryFilenames.Add(sLowerFile, null);
+                zBuilder.Append(sFile + KeyCapConstants.CharFileSplit);
+            }
+            m_zIniManager.SetValue(IniSettings.PreviousFiles, zBuilder.ToString());
+            m_zIniManager.FlushIniSettings();
+        }
+
+        private bool RetrieveAddConfigs(ref InputConfig zInputConfig, ref OutputConfig zOutputConfig, ref RemapEntry zRemapEntry)
+        {
+            var zCurrentInputConfig = (InputConfig)txtKeyIn.Tag;
+            var zCurrentOutputConfig = (OutputConfig)txtKeyOut.Tag;
+            if (null == zCurrentInputConfig || null == zCurrentOutputConfig)
+            {
+                MessageBox.Show(this, "Please specify both an input and output key.", "Error!", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                return false;
+            }
+
+            // build cloned configs based on the ui state
+            zInputConfig = UpdateInputFlags(new InputConfig(zCurrentInputConfig));
+            zOutputConfig = UpdateOutputFlags(new OutputConfig(zCurrentOutputConfig));
+
+            if (!ValidateOutputHasAction(zOutputConfig))
+            {
+                return false;
+            }
+
+            zRemapEntry = new RemapEntry(zInputConfig, zOutputConfig);
+
+            // verify this is not already defined
+            foreach (ListViewItem zListItem in listViewKeys.Items)
+            {
+                var zKeyOldDef = (RemapEntry)zListItem.Tag;
+                if (zRemapEntry.GetHashCode() != zKeyOldDef.GetHashCode())
+                {
+                    continue;
+                }
+
+                MessageBox.Show(this, "Duplicate inputs are not allowed!", "Error!", MessageBoxButtons.OK, MessageBoxIcon.Exclamation);
+                return false;
+            }
+
+            return true;
+        }
+
+        private bool RetrieveAppendConfigs(ref OutputConfig zOutputConfig, RemapEntry zRemapEntry)
+        {
+            var zCurrentOutputConfig = (OutputConfig)txtKeyOut.Tag;
+            if (null == zCurrentOutputConfig)
+            {
+                MessageBox.Show(this, "Please specify an output key.", "Error!", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                return false;
+            }
+
+            if (zRemapEntry.OutputConfigCount == KeyCapConstants.MaxOutputs)
+            {
+                MessageBox.Show(this, "Failed to append item. The maximum number of outputs allowed is {0}.".FormatString(KeyCapConstants.MaxOutputs),
+                    "Append Error!",
+                    MessageBoxButtons.OK, MessageBoxIcon.Exclamation);
+                return false;
+            }
+
+            zOutputConfig = UpdateOutputFlags(new OutputConfig(zCurrentOutputConfig));
+            if (!ValidateOutputHasAction(zOutputConfig))
+            {
+                return false;
+            }
+            return true;
+        }
+
+        private bool ValidateOutputHasAction(OutputConfig zOutputConfig)
+        {
+            if (!zOutputConfig.IsAssignedAction())
+            {
+                MessageBox.Show(this, "The output must be configured to perform an action.",
+                    "Output Configuration Error!",
+                    MessageBoxButtons.OK, MessageBoxIcon.Exclamation);
+                return false;
+            }
+
+            return true;
+        }
+
         #endregion
-
-        private void checkOutputToggle_CheckedChanged(object sender, EventArgs e)
-        {
-            checkOutputUp.Checked = checkOutputToggle.Checked;
-            checkOutputDown.Checked = checkOutputToggle.Checked;
-            checkOutputUp.Enabled = !checkOutputToggle.Checked;
-            checkOutputDown.Enabled = !checkOutputToggle.Checked;
-        }
-
-        private void checkOutputNone_CheckedChanged(object sender, EventArgs e)
-        {
-            comboBoxOutMouse.Enabled = !checkOutputNone.Checked;
-            checkOutputAlt.Enabled = !checkOutputNone.Checked;
-            checkOutputShift.Enabled = !checkOutputNone.Checked;
-            checkOutputControl.Enabled = !checkOutputNone.Checked;
-            checkOutputUp.Enabled = !checkOutputNone.Checked;
-            checkOutputDown.Enabled = !checkOutputNone.Checked;
-            checkOutputToggle.Enabled = !checkOutputNone.Checked;
-        }
     }
 }

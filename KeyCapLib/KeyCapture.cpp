@@ -84,7 +84,9 @@ __declspec(dllexport) int LoadAndCaptureFromFile(HINSTANCE hInstance, char* sFil
 		}
 		// TODO: just get a pointer to g_KeyTranslationTable[pKey->inputConfig.virtualKey] ?
 
-		LogDebugMessage("Loading %s Outputs: %d", GetInputConfigDescription(pEntry->inputConfig), pEntry->outputCount);
+		char* pInputConfigDescription = GetInputConfigDescription(pEntry->inputConfig);
+		LogDebugMessage("Loading %s Outputs: %d", pInputConfigDescription, pEntry->outputCount);
+		free(pInputConfigDescription);
 
 		// if the entry doesn't exist yet for the given input vkey create a new one with a null next pointer
 		if(NULL == g_KeyTranslationTable[pEntry->inputConfig.virtualKey])

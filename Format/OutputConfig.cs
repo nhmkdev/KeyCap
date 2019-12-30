@@ -22,6 +22,7 @@
 // SOFTWARE.
 ////////////////////////////////////////////////////////////////////////////////
 
+using System;
 using System.IO;
 using System.Windows.Forms;
 using Support.UI;
@@ -52,8 +53,9 @@ namespace KeyCap.Format
             Delay = 1 << 5,
             Toggle = 1 << 6,
             Down = 1 << 7,
-            Up = 1 << 8
-            //MAX         = 1 << 32, // it's an int! (aka if you need 32 you'll need more space)
+            Up = 1 << 8,
+            // all ThreadKill ?
+            // supports up to 32 entries
         }
 
         public enum MouseButton
@@ -72,18 +74,17 @@ namespace KeyCap.Format
         /// <param name="eKeyArgs">The input key arguments from user input</param>
         public OutputConfig(int nFlags, byte byVirtualKey, int nParameter, KeyEventArgs eKeyArgs)
         {
-#warning what's the chance of an input nFlags that is non-zero?
+            Flags = nFlags;
+            VirtualKey = byVirtualKey;
+            Parameter = nParameter;
+
             if (null != eKeyArgs)
             {
-                nFlags |= 
+                Flags |= 
                     (eKeyArgs.Shift ? (int)OutputFlag.Shift : 0) 
                     | (eKeyArgs.Alt ? (int)OutputFlag.Alt : 0) 
                     | (eKeyArgs.Control ? (int)OutputFlag.Control : 0);
             }
-
-            Flags = nFlags;
-            VirtualKey = byVirtualKey;
-            Parameter = nParameter;
         }
 
         /// <summary>
@@ -109,39 +110,53 @@ namespace KeyCap.Format
         /// <returns>String representation of this definition</returns>
         public override string GetDescription()
         {
-            // mouse (every other flag ignored)
-            if (IsFlaggedAs(OutputFlag.MouseOut))
-            {
-                return "[" + 
-                    (MouseButton)VirtualKey +
-                    getOutputDescriptionText("Mouse") +
-                    (IsFlaggedAs(OutputFlag.Toggle) ? "+Toggle" : string.Empty) +
-                    "]";
-            }
             // delay (every other flag ignored)
             if (IsFlaggedAs(OutputFlag.Delay))
             {
-#warning todo: delay is currently not written to parameter
                 return "[Delay: " + (int)Parameter + "]";
             }
+
+            if (IsFlaggedAs(OutputFlag.MouseOut))
+            {
+                return GetOutputDescriptionText((MouseButton)VirtualKey, "Mouse");
+            }
+
             // keyboard 
-            return "[" +
-                (Keys)VirtualKey +
-                getOutputDescriptionText("Key") +
-                (IsFlaggedAs(OutputFlag.Shift) ? "+Shift" : string.Empty) +
-                (IsFlaggedAs(OutputFlag.Alt) ? "+Alt" : string.Empty) +
-                (IsFlaggedAs(OutputFlag.Control) ? "+Control" : string.Empty)+
-                (IsFlaggedAs(OutputFlag.Toggle) ? "+Toggle" : string.Empty) +
-                    "]";
+            return GetOutputDescriptionText((Keys)VirtualKey, "Key");
         }
 
-        private string getOutputDescriptionText(string sPrefix)
+        /// <summary>
+        /// Indicates if the config is assigned a valid action
+        /// </summary>
+        /// <returns></returns>
+        public bool IsAssignedAction()
         {
-            return (IsFlaggedAs(OutputFlag.Down) && IsFlaggedAs(OutputFlag.Up)
-                    ? ":Press"
-                    : ((IsFlaggedAs(OutputFlag.Down) ? ":{0}Down".FormatString(sPrefix) : string.Empty) +
-                       (IsFlaggedAs(OutputFlag.Up) ? ":{0}Up".FormatString(sPrefix) : string.Empty))
-                );
+            return IsFlaggedAs(OutputFlag.Down)
+                   || IsFlaggedAs(OutputFlag.Up)
+                   || IsFlaggedAs(OutputFlag.MouseOut)
+                   || IsFlaggedAs(OutputFlag.Delay)
+                    || IsFlaggedAs(OutputFlag.DoNothing);
+        }
+
+        /// <summary>
+        /// Gets the output description for the up/down/press based on the state of the flags
+        /// </summary>
+        /// <param name="sActionPrefix">The prefix indicating the type of input</param>
+        /// <returns></returns>
+        private string GetOutputDescriptionText(Enum eInputId, string sActionPrefix)
+        {
+            return "[" +
+                   (Keys)VirtualKey +
+                   (IsFlaggedAs(OutputFlag.Down) && IsFlaggedAs(OutputFlag.Up)
+                       ? ":Press"
+                       : ((IsFlaggedAs(OutputFlag.Down) ? ":{0}Down".FormatString(sActionPrefix) : string.Empty) +
+                          (IsFlaggedAs(OutputFlag.Up) ? ":{0}Up".FormatString(sActionPrefix) : string.Empty))
+                   ) +
+                   (IsFlaggedAs(OutputFlag.Shift) ? "+Shift" : string.Empty) +
+                   (IsFlaggedAs(OutputFlag.Alt) ? "+Alt" : string.Empty) +
+                   (IsFlaggedAs(OutputFlag.Control) ? "+Control" : string.Empty) +
+                   (IsFlaggedAs(OutputFlag.Toggle) ? "+Toggle" : string.Empty) +
+                   "]";
         }
     }
 }

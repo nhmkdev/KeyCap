@@ -54,6 +54,7 @@
     <Compile Include="Format\OutputConfig.cs" />
     <Compile Include="Format\InputConfig.cs" />
     <Compile Include="Format\RemapEntry.cs" />
+    <Compile Include="Settings\KeyCapInstanceState.cs" />
     <Compile Include="Util\BitUtil.cs" />
     <Compile Include="Util\StreamUtil.cs" />
     <Compile Include="Forms\KeyCaptureConfig.cs">

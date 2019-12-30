@@ -24,6 +24,7 @@
 
 using System;
 using System.IO;
+using Support.UI;
 
 namespace KeyCap.Format
 {
@@ -42,6 +43,27 @@ namespace KeyCap.Format
                 throw new Exception("Hit the end of the stream unexpectedly. Invalid File!");
             }
             return (byte)nReadByte;
+        }
+
+        /// <summary>
+        /// Reads a single byte from the file stream
+        /// </summary>
+        /// <param name="zStream">The file stream to read from</param>
+        /// <param name="nByteReadCount"></param>
+        /// <returns>The byte value read (throws exception otherwise)</returns>
+        public static byte[] ReadBytesFromStream(Stream zStream, int nByteReadCount)
+        {
+            var arrayBytes = new byte[nByteReadCount];
+            var nReadBytes = zStream.Read(arrayBytes, 0, nByteReadCount);
+            if (-1 == nReadBytes)
+            {
+                throw new Exception("Hit the end of the stream unexpectedly. Invalid File!");
+            }
+            else if (nByteReadCount != nReadBytes)
+            {
+                throw new Exception("Unable to read {0} bytes. Read {1} bytes.".FormatString(nByteReadCount, nReadBytes));
+            }
+            return arrayBytes;
         }
 
         /// <summary>

@@ -30,7 +30,8 @@
 void SendInputKeys(RemapEntry* pRemapEntry, OutputConfig* pKeyDef);
 void SendTriggerEndInputKeys(RemapEntry* pRemapEntry);
 void AppendSingleKey(short keyScan, INPUT* inputChar, DWORD dwFlags);
-char* GetFlagsString(DWORD dwFlags);
+void ProcessModifierKeys(OutputConfig* pKeyDef, INPUT* pInput, int* nIndex, DWORD dwFlags);
+char* GetKeyFlagsString(DWORD dwFlags);
 
 const int MAX_VKEY = 256;
 #endif

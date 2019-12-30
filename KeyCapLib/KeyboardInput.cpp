@@ -74,7 +74,7 @@ void SendTriggerEndInputKeys(RemapEntry* pRemapEntry/*InputConfig* pInputConfig*
 	LogDebugMessage("Sending Trigger End Inputs");
 	for (int nTemp = 0; nTemp < nIndex; nTemp++)
 	{
-		LogDebugMessage("Type:%s VKey:%d", GetFlagsString(inputBuffer[nTemp].ki.dwFlags), inputBuffer[nTemp].ki.wVk);
+		LogDebugMessage("Type:%s VKey:%d", GetKeyFlagsString(inputBuffer[nTemp].ki.dwFlags), inputBuffer[nTemp].ki.wVk);
 	}
 
 	UINT inputsSent = SendInput(nIndex, inputBuffer, sizeof(INPUT));
@@ -109,20 +109,7 @@ void SendInputKeys(RemapEntry* pRemapEntry, OutputConfig* pKeyDef)
 	if (bSendKeyDown)
 	{
 		// flags first then key
-		if (pKeyDef->outputFlag.bShift)
-		{
-			AppendSingleKey(VK_SHIFT, &inputBuffer[nIndex++], 0);
-		}
-
-		if (pKeyDef->outputFlag.bControl)
-		{
-			AppendSingleKey(VK_CONTROL, &inputBuffer[nIndex++], 0);
-		}
-
-		if (pKeyDef->outputFlag.bAlt)
-		{
-			AppendSingleKey(VK_MENU, &inputBuffer[nIndex++], 0);
-		}
+		ProcessModifierKeys(pKeyDef, &inputBuffer[nIndex], &nIndex, 0);
 
 		AppendSingleKey(pKeyDef->virtualKey, &inputBuffer[nIndex++], 0);
 	}
@@ -132,18 +119,7 @@ void SendInputKeys(RemapEntry* pRemapEntry, OutputConfig* pKeyDef)
 		// key first then flags
 		AppendSingleKey(pKeyDef->virtualKey, &inputBuffer[nIndex++], KEYEVENTF_KEYUP);
 
-		if (pKeyDef->outputFlag.bShift)
-		{
-			AppendSingleKey(VK_SHIFT, &inputBuffer[nIndex++], KEYEVENTF_KEYUP);
-		}
-		if (pKeyDef->outputFlag.bControl)
-		{
-			AppendSingleKey(VK_CONTROL, &inputBuffer[nIndex++], KEYEVENTF_KEYUP);
-		}
-		if (pKeyDef->outputFlag.bAlt)
-		{
-			AppendSingleKey(VK_MENU, &inputBuffer[nIndex++], KEYEVENTF_KEYUP);
-		}
+		ProcessModifierKeys(pKeyDef, &inputBuffer[nIndex], &nIndex, KEYEVENTF_KEYUP);
 	}
 	if (!bSendKeyDown && !bSendKeyUp)
 	{
@@ -155,7 +131,7 @@ void SendInputKeys(RemapEntry* pRemapEntry, OutputConfig* pKeyDef)
 	for (int nTemp = 0; nTemp < nIndex; nTemp++)
 	{
 		// TODO: support Shift+W toggle (the toggle ends up requiring detection of the shift key)
-		LogDebugMessage("%s: %d", GetFlagsString(inputBuffer[nTemp].ki.dwFlags), inputBuffer[nTemp].ki.wVk);
+		LogDebugMessage("%s: %d", GetKeyFlagsString(inputBuffer[nTemp].ki.dwFlags), inputBuffer[nTemp].ki.wVk);
 	}
 
 	UINT inputsSent = SendInput(nIndex, inputBuffer, sizeof(INPUT));
@@ -185,7 +161,28 @@ void AppendSingleKey(short keyScan, INPUT* inputChar, DWORD dwFlags)
 	);*/
 }
 
-char* GetFlagsString(DWORD dwFlags)
+void ProcessModifierKeys(OutputConfig* pKeyDef, INPUT* pInput, int* nIndex, DWORD dwFlags)
+{
+	if (pKeyDef->outputFlag.bShift)
+	{
+		AppendSingleKey(VK_SHIFT, pInput++, dwFlags);
+		*nIndex+=1;
+	}
+
+	if (pKeyDef->outputFlag.bControl)
+	{
+		AppendSingleKey(VK_CONTROL, pInput++, dwFlags);
+		*nIndex += 1;
+	}
+
+	if (pKeyDef->outputFlag.bAlt)
+	{
+		AppendSingleKey(VK_MENU, pInput++, dwFlags);
+		*nIndex += 1;
+	}
+}
+
+char* GetKeyFlagsString(DWORD dwFlags)
 {
 	if ((dwFlags & KEYEVENTF_KEYUP) == KEYEVENTF_KEYUP)
 	{

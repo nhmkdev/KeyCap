@@ -23,12 +23,13 @@
 ////////////////////////////////////////////////////////////////////////////////
 
 #include "mouseinput.h"
+#include "keyboardinput.h"
 #include "keycaptureutil.h"
 
 static const unsigned char g_MouseDownMap[] = { 0, MOUSEEVENTF_LEFTDOWN, MOUSEEVENTF_RIGHTDOWN, MOUSEEVENTF_MIDDLEDOWN };
 static const unsigned char g_MouseUpMap[] = { 0, MOUSEEVENTF_LEFTUP, MOUSEEVENTF_RIGHTUP, MOUSEEVENTF_MIDDLEUP };
 
-char* GetMouseDescription(unsigned char nVkKey);
+char* GetMouseDescription(DWORD dwVkKey);
 
 /*
 Sends the desired mouse input
@@ -52,18 +53,23 @@ void SendInputMouse(RemapEntry* pRemapEntry, OutputConfig *pKeyDef)
 
 	if (bSendMouseDown)
 	{
+		ProcessModifierKeys(pKeyDef, &inputBuffer[nIndex], &nIndex, 0);
 		AppendSingleMouse(&inputBuffer[nIndex++], g_MouseDownMap[pKeyDef->virtualKey]);
 	}
 
 	if (bSendMouseUp)
 	{
 		AppendSingleMouse(&inputBuffer[nIndex++], g_MouseUpMap[pKeyDef->virtualKey]);
+		ProcessModifierKeys(pKeyDef, &inputBuffer[nIndex], &nIndex, KEYEVENTF_KEYUP);
 	}
 
 	LogDebugMessage("Sending Mouse Inputs");
 	for (int nTemp = 0; nTemp < nIndex; nTemp++)
 	{
-		LogDebugMessage("%s", GetMouseDescription(inputBuffer[nTemp].mi.dwFlags));
+		if(inputBuffer[nTemp].type == INPUT_MOUSE)
+			LogDebugMessage("%s", GetMouseDescription(inputBuffer[nTemp].mi.dwFlags));
+		else
+			LogDebugMessage("%s: %d", GetKeyFlagsString(inputBuffer[nTemp].ki.dwFlags), inputBuffer[nTemp].ki.wVk);
 	}
 
 	UINT inputsSent = SendInput(nIndex, inputBuffer, sizeof(INPUT));
@@ -90,29 +96,22 @@ void AppendSingleMouse(INPUT* inputChar, unsigned char nVkKey)
 }
 
 // NOT THREAD SAFE
-char* GetMouseDescription(unsigned char nVkKey)
+char* GetMouseDescription(DWORD dwVkKey)
 {
-	static char mouseOutputString[1024];
-	switch (nVkKey)
+	switch (dwVkKey)
 	{
 	case MOUSEEVENTF_LEFTDOWN:
-		snprintf(mouseOutputString, sizeof(mouseOutputString), "LeftMouseDown");
-		break;
+		return "LeftMouseDown";
 	case MOUSEEVENTF_RIGHTDOWN:
-		snprintf(mouseOutputString, sizeof(mouseOutputString), "RightMouseDown");
-		break;
+		return "RightMouseDown";
 	case MOUSEEVENTF_MIDDLEDOWN:
-		snprintf(mouseOutputString, sizeof(mouseOutputString), "MiddleMouseDown");
-		break;
+		return "MiddleMouseDown";
 	case MOUSEEVENTF_LEFTUP:
-		snprintf(mouseOutputString, sizeof(mouseOutputString), "LeftMouseUp");
-		break;
+		return "LeftMouseUp";
 	case MOUSEEVENTF_RIGHTUP:
-		snprintf(mouseOutputString, sizeof(mouseOutputString), "RightMouseUp");
-		break;
+		return "RightMouseUp";
 	case MOUSEEVENTF_MIDDLEUP:
-		snprintf(mouseOutputString, sizeof(mouseOutputString), "MiddleMouseUp");
-		break;
+		return "MiddleMouseUp";
 	}
-	return mouseOutputString;
+	return "Unknown";
 }
