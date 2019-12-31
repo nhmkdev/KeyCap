@@ -125,6 +125,7 @@ enum HOOK_RESULT
 };
 
 // === consts and defines
+const int MIN_REPEAT_DELAY_MS = 100;
 const int WIN_KEY_COUNT = 256;
 const int MAX_KEY_INPUT_PER_STROKE = 9; // control, alt (OR alt-up alt-down alt-up), shift, key, key-up, shift-up,  alt-up, control-up
 

@@ -31,7 +31,7 @@
 DWORD InitiateSendInput(RemapEntry* pRemapEntry, RemapEntryState* pRemapEntryState);
 
 /*
-Thread responsible for sending the desired inputs to the OS (see standard win32 definition)
+Thread entry point so the parameter can be opened and evaluated (not-quite-critical wrapper method)
 */
 DWORD WINAPI SendInputThread(LPVOID lpParam)
 {
@@ -45,6 +45,7 @@ Thread responsible for sending the desired inputs to the OS (see standard win32 
 */
 DWORD InitiateSendInput(RemapEntry* pRemapEntry, RemapEntryState* pRemapEntryState)
 {
+	DWORD repeatDelayMillis = MIN_REPEAT_DELAY_MS;
 	// get a pointer to the OutputConfig data that is AFTER the RemapEntry field
 	OutputConfig* pOutputConfig = (OutputConfig*)(pRemapEntry + 1);
 	// get a pointer to the first byte AFTER all the OutputConfig entries
@@ -64,11 +65,14 @@ DWORD InitiateSendInput(RemapEntry* pRemapEntry, RemapEntryState* pRemapEntrySta
 		return 0;
 	}
 
-	// scan for repeating entries
+	// scan for repeating entries (and the highest repeat delay)
 	while (pOutputConfig < pTerminator)
 	{
 		if (pOutputConfig->outputFlag.bRepeat)
+		{
 			pRemapEntryState->bRepeating = true;
+			repeatDelayMillis = max(pOutputConfig->parameter, repeatDelayMillis);
+		}
 		pOutputConfig++; // move the pointer forward one KeyDefinition
 	}
 
@@ -117,9 +121,9 @@ DWORD InitiateSendInput(RemapEntry* pRemapEntry, RemapEntryState* pRemapEntrySta
 		// reset output pointer
 		pOutputConfig = (OutputConfig*)(pRemapEntry + 1);
 		firstPassComplete = true;
-		Sleep(100);
 		if (pRemapEntryState->bRepeating)
 		{
+			Sleep(repeatDelayMillis);
 			LogDebugMessage("SendInputThread Repeating...");
 		}
 	} while (pRemapEntryState->bRepeating);

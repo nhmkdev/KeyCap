@@ -190,7 +190,7 @@ namespace KeyCap.Forms
         private void txtKeyOut_KeyDown(object sender, KeyEventArgs e)
         {
             //            Console.Out.WriteLine("Key Input: {0} 0x{1}".FormatString(e.KeyCode, e.KeyCode.ToString("x")));
-            UpdateTextBox((TextBox)sender, e, new OutputConfig(0x00, (byte)e.KeyCode, 0, e));
+            UpdateTextBox((TextBox)sender, e, new OutputConfig(0, (byte)e.KeyCode, 0, e));
         }
 
         private void UpdateTextBox<T>(TextBox txtBox, KeyEventArgs e, T config) where T : BaseIOConfig
@@ -321,7 +321,7 @@ namespace KeyCap.Forms
             else
             {
                 var zOutputConfig = new OutputConfig(
-                    (byte)OutputConfig.OutputFlag.MouseOut,
+                    (int)OutputConfig.OutputFlag.MouseOut,
                     (byte)(OutputConfig.MouseButton)comboBoxOutMouse.SelectedItem);
                 txtKeyOut.Text = zOutputConfig.GetDescription();
                 txtKeyOut.Tag = zOutputConfig;
@@ -330,10 +330,22 @@ namespace KeyCap.Forms
 
         private void numericUpDownDelay_ValueChanged(object sender, EventArgs e)
         {
+            var nFlag = 0;
+            if (checkOutputDelay.Checked)
+            {
+                nFlag = (int) OutputConfig.OutputFlag.Delay;
+            }
+            // TODO: support other types that use the param this way...
+            if (nFlag == 0)
+            {
+                return;
+            }
+
             var zOutputConfig = new OutputConfig(
-                (byte)OutputConfig.OutputFlag.Delay,
+                nFlag,
                 0,
-                (int)numericUpDownDelay.Value);
+                (int) numericUpDownOutputParameter.Value);
+
             var zDisplay = txtKeyOut;
             zDisplay.Text = zOutputConfig.GetDescription();
             zDisplay.Tag = zOutputConfig;
@@ -427,29 +439,38 @@ namespace KeyCap.Forms
         {
             checkOutputUp.Checked = checkOutputToggle.Checked;
             checkOutputDown.Checked = checkOutputToggle.Checked;
+
             checkOutputUp.Enabled = !checkOutputToggle.Checked;
             checkOutputDown.Enabled = !checkOutputToggle.Checked;
+            checkOutputRepeat.Enabled = !checkOutputToggle.Checked;
+            checkOutputDelay.Enabled = !checkOutputToggle.Checked;
+            checkOutputNothing.Enabled = !checkOutputToggle.Checked;
 
             checkOutputAlt.Enabled = !checkOutputToggle.Checked;
             checkOutputShift.Enabled = !checkOutputToggle.Checked;
             checkOutputControl.Enabled = !checkOutputToggle.Checked;
             if (checkOutputToggle.Checked)
             {
-                checkOutputAlt.Checked = false;
-                checkOutputShift.Checked = false;
-                checkOutputControl.Checked = false;
+                checkOutputAlt.Checked = 
+                    checkOutputShift.Checked = 
+                    checkOutputControl.Checked =
+                    checkOutputRepeat.Checked =
+                    checkOutputDelay.Checked =
+                    checkOutputNothing.Checked = false;
             }
         }
 
         private void checkOutputDoNothing_CheckedChanged(object sender, EventArgs e)
         {
-            comboBoxOutMouse.Enabled = !checkOutputDoNothing.Checked;
-            checkOutputAlt.Enabled = !checkOutputDoNothing.Checked;
-            checkOutputShift.Enabled = !checkOutputDoNothing.Checked;
-            checkOutputControl.Enabled = !checkOutputDoNothing.Checked;
-            checkOutputUp.Enabled = !checkOutputDoNothing.Checked;
-            checkOutputDown.Enabled = !checkOutputDoNothing.Checked;
-            checkOutputToggle.Enabled = !checkOutputDoNothing.Checked;
+            comboBoxOutMouse.Enabled = 
+                checkOutputAlt.Enabled =
+                checkOutputShift.Enabled = 
+                checkOutputControl.Enabled = 
+                checkOutputUp.Enabled = 
+                checkOutputDown.Enabled = 
+                checkOutputToggle.Enabled = 
+                checkOutputDelay.Enabled =
+                checkOutputRepeat.Enabled = !checkOutputNothing.Checked;
         }
 
         #endregion
@@ -496,7 +517,7 @@ namespace KeyCap.Forms
             var bAlt = checkOutputAlt.Checked;
             var bControl = checkOutputControl.Checked;
             var bShift = checkOutputShift.Checked;
-            var bNone = checkOutputDoNothing.Checked;
+            var bNone = checkOutputNothing.Checked;
             var bToggle = checkOutputToggle.Checked;
             var bRepeat = checkOutputRepeat.Checked;
             var bDown = checkOutputDown.Checked;
@@ -515,6 +536,12 @@ namespace KeyCap.Forms
             nFlags = BitUtil.UpdateFlag(nFlags, bDown, OutputConfig.OutputFlag.Down);
             nFlags = BitUtil.UpdateFlag(nFlags, bUp, OutputConfig.OutputFlag.Up);
             zOutputConfig.Flags = nFlags;
+
+            if (bRepeat)
+            {
+                zOutputConfig.Parameter = (int)numericUpDownOutputParameter.Value;
+            }
+
             return zOutputConfig;
         }
 

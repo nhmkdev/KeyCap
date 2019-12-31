@@ -70,7 +70,7 @@ namespace KeyCap.Format
         /// <summary>
         /// Constructor for an InputConfig
         /// </summary>
-        /// <param name="byFlags">The flags defining the input</param>
+        /// <param name="nFlags">The flags defining the input</param>
         /// <param name="byVirtualKey">The value of the input</param>
         /// <param name="eKeyArgs">The input key arguments from user input</param>
         public OutputConfig(int nFlags, byte byVirtualKey, int nParameter, KeyEventArgs eKeyArgs)
@@ -91,17 +91,17 @@ namespace KeyCap.Format
         /// <summary>
         /// Constructor for an InputConfig
         /// </summary>
-        /// <param name="byFlags">The flags defining the input</param>
+        /// <param name="nFlags">The flags defining the input</param>
         /// <param name="byVirtualKey">The value of the input</param>
         /// <param name="nParameter"></param>
-        public OutputConfig(byte byFlags, byte byVirtualKey, int nParameter) : this(byFlags, byVirtualKey, nParameter, null) { }
+        public OutputConfig(int nFlags, byte byVirtualKey, int nParameter) : this(nFlags, byVirtualKey, nParameter, null) { }
 
         /// <summary>
         /// Constructor for an InputConfig
         /// </summary>
-        /// <param name="byFlags">The flags defining the input</param>
+        /// <param name="nFlags">The flags defining the input</param>
         /// <param name="byVirtualKey">The value of the input</param>
-        public OutputConfig(byte byFlags, byte byVirtualKey):this(byFlags, byVirtualKey, 0, null) { }
+        public OutputConfig(int nFlags, byte byVirtualKey):this(nFlags, byVirtualKey, 0, null) { }
 
         public OutputConfig(Stream zStream) : base(zStream) { }
 
@@ -114,7 +114,7 @@ namespace KeyCap.Format
             // delay (every other flag ignored)
             if (IsFlaggedAs(OutputFlag.Delay))
             {
-                return "[Delay: " + (int)Parameter + "]";
+                return "[Delay({0}s)]".FormatString(Parameter);
             }
 
             if (IsFlaggedAs(OutputFlag.MouseOut))
@@ -157,7 +157,9 @@ namespace KeyCap.Format
                    (IsFlaggedAs(OutputFlag.Alt) ? "+Alt" : string.Empty) +
                    (IsFlaggedAs(OutputFlag.Control) ? "+Control" : string.Empty) +
                    (IsFlaggedAs(OutputFlag.Toggle) ? "+Toggle" : string.Empty) +
-                   (IsFlaggedAs(OutputFlag.Repeat) ? "+Repeat" : string.Empty) +
+                   (IsFlaggedAs(OutputFlag.Repeat) ? "+Repeat"
+                       + (Parameter > 0 ? "({0}ms)".FormatString(Parameter) : "")
+                       : string.Empty) +
                    "]";
         }
     }
