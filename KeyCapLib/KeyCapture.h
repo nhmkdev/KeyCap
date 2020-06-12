@@ -28,4 +28,8 @@
 #include "keycapturestructs.h"
 #include "keycaptureutil.h"
 
+// === consts and defines
+const int THREAD_SHUTDOWN_MAX_ATTEMPTS = 5;
+const int THREAD_SHUTDOWN_ATTEMPT_DELAY_MS = 100;
+
 #endif // KEY_CAPTURE_H_

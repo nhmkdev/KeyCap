@@ -61,6 +61,7 @@ DWORD InitiateSendInput(RemapEntry* pRemapEntry, RemapEntryState* pRemapEntrySta
 	if (pRemapEntryState->bRepeating)
 	{
 		pRemapEntryState->bRepeating = false;
+		pRemapEntryState->bShutdown = true;
 		LogDebugMessage("SendInputThread Completed (ended Repeat)");
 		return 0;
 	}
@@ -92,14 +93,14 @@ DWORD InitiateSendInput(RemapEntry* pRemapEntry, RemapEntryState* pRemapEntrySta
 				// skip this output
 				pOutputConfig++; // move the pointer forward one KeyDefinition
 			}
-
+#ifdef _DEBUG
 			char* pOutputConfigDescription = GetOutputConfigDescription(*pOutputConfig);
 			LogDebugMessage("Performing %s Output Action: %s",
 				pOutputConfig->outputFlag.bMouseOut ? "Mouse" : "Keyboard",
 				pOutputConfigDescription
 			);
 			free(pOutputConfigDescription);
-
+#endif
 			// mouse input
 			if (pOutputConfig->outputFlag.bMouseOut)
 			{
@@ -108,7 +109,16 @@ DWORD InitiateSendInput(RemapEntry* pRemapEntry, RemapEntryState* pRemapEntrySta
 			// just a delay
 			else if (pOutputConfig->outputFlag.bDelay)
 			{
-				Sleep(1000 * pOutputConfig->parameter);
+				//Want to delay break...
+				int iterations = pOutputConfig->parameter * 10;
+				for (int nDelayCount = 0; nDelayCount < iterations; nDelayCount++)
+				{
+					Sleep(100);
+					if (pRemapEntryState->bShutdown)
+					{
+						break;
+					}
+				}
 			}
 			// keyboard input
 			else
@@ -118,6 +128,12 @@ DWORD InitiateSendInput(RemapEntry* pRemapEntry, RemapEntryState* pRemapEntrySta
 			pOutputConfig++; // move the pointer forward one KeyDefinition
 		}
 
+		// break out now
+		if (pRemapEntryState->bShutdown)
+		{
+			break;
+		}
+		
 		// reset output pointer
 		pOutputConfig = (OutputConfig*)(pRemapEntry + 1);
 		firstPassComplete = true;
@@ -132,5 +148,7 @@ DWORD InitiateSendInput(RemapEntry* pRemapEntry, RemapEntryState* pRemapEntrySta
 	pRemapEntryState->bToggled = !pRemapEntryState->bToggled;
 
 	LogDebugMessage("SendInputThread Completed");
+	// Disconnect this thread from the state
+	pRemapEntryState->threadHandle = NULL;
 	return 0;
 }

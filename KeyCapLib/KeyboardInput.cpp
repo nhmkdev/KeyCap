@@ -30,7 +30,7 @@ Sends the necessary inputs to complete the trigger (modifier keys)
 
 pTriggerDefinition: pointer to a key definition for the trigger
 */
-void SendTriggerEndInputKeys(RemapEntry* pRemapEntry/*InputConfig* pInputConfig*/)
+void SendTriggerEndInputKeys(RemapEntry* pRemapEntry)
 {
 	InputConfig* pInputConfig = &pRemapEntry->inputConfig;
 

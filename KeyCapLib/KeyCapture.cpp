@@ -28,7 +28,6 @@
 #include "keycapture.h"
 #include "keyboardproc.h"
 #include "mouseinput.h"
-#include "keyboardinput.h"
 #include "configfile.h"
 
 // === prototypes
@@ -39,9 +38,11 @@ extern "C"
 	__declspec(dllexport) void ShutdownCapture();
 }
 
-HHOOK g_hookMain = NULL;
+// non extern functions
+void InitiallizeEntryContainerListItem(RemapEntryContainerListItem* pKeyItem, RemapEntry* pEntry);
 
 // sweet globals
+HHOOK g_hookMain = NULL;
 RemapEntryContainerListItem* g_KeyTranslationTable[WIN_KEY_COUNT];
 RemapEntry* g_KeyTranslationHead = NULL;
 void* g_KeyTranslationEnd = NULL; // pointer indicating the end of the input file data
@@ -83,20 +84,19 @@ __declspec(dllexport) int LoadAndCaptureFromFile(HINSTANCE hInstance, char* sFil
 			return INPUT_BAD;
 		}
 		// TODO: just get a pointer to g_KeyTranslationTable[pKey->inputConfig.virtualKey] ?
-
+#ifdef _DEBUG
 		char* pInputConfigDescription = GetInputConfigDescription(pEntry->inputConfig);
 		LogDebugMessage("Loading %s Outputs: %d", pInputConfigDescription, pEntry->outputCount);
 		free(pInputConfigDescription);
-
+#endif
 		// if the entry doesn't exist yet for the given input vkey create a new one with a null next pointer
 		if(NULL == g_KeyTranslationTable[pEntry->inputConfig.virtualKey])
 		{
 			g_KeyTranslationTable[pEntry->inputConfig.virtualKey] = (RemapEntryContainerListItem*)malloc(sizeof(RemapEntryContainerListItem));
-			g_KeyTranslationTable[pEntry->inputConfig.virtualKey]->pEntryContainer = (RemapEntryContainer*)malloc(sizeof(RemapEntryContainer));
-			g_KeyTranslationTable[pEntry->inputConfig.virtualKey]->pEntryContainer->pEntryState = (RemapEntryState*)malloc(sizeof(RemapEntryState));
-			g_KeyTranslationTable[pEntry->inputConfig.virtualKey]->pEntryContainer->pEntry = pEntry;
+			InitiallizeEntryContainerListItem(g_KeyTranslationTable[pEntry->inputConfig.virtualKey], pEntry);
 			g_KeyTranslationTable[pEntry->inputConfig.virtualKey]->pNext = NULL;
 		}
+		
 		// if the entry does exist create a new entry and append it to the existing linked list
 		else
 		{
@@ -107,9 +107,7 @@ __declspec(dllexport) int LoadAndCaptureFromFile(HINSTANCE hInstance, char* sFil
 			}
 			pKeyItem->pNext = (RemapEntryContainerListItem*)malloc(sizeof(RemapEntryContainerListItem));
 			pKeyItem = pKeyItem->pNext;
-			pKeyItem->pEntryContainer = (RemapEntryContainer*)malloc(sizeof(RemapEntryContainer));
-			pKeyItem->pEntryContainer->pEntryState = (RemapEntryState*)malloc(sizeof(RemapEntryState));
-			pKeyItem->pEntryContainer->pEntry = pEntry;
+			InitiallizeEntryContainerListItem(pKeyItem, pEntry);
 			pKeyItem->pNext = NULL;
 		}
 		// jump to the next entry
@@ -130,7 +128,7 @@ __declspec(dllexport) int LoadAndCaptureFromFile(HINSTANCE hInstance, char* sFil
 	if(bValidTranslationSet)
 	{
 		// Note: This fails in VisualStudio if managed debugging is NOT enabled in the project(!)
-		HHOOK g_hookMain = SetWindowsHookEx( WH_KEYBOARD_LL, LowLevelKeyboardProc, hInstance, NULL);
+		g_hookMain = SetWindowsHookEx( WH_KEYBOARD_LL, LowLevelKeyboardProc, hInstance, NULL);
 		if(NULL == g_hookMain)
 		{
 			ShutdownCapture();
@@ -148,11 +146,67 @@ __declspec(dllexport) int LoadAndCaptureFromFile(HINSTANCE hInstance, char* sFil
 	}
 }
 
+void InitiallizeEntryContainerListItem(RemapEntryContainerListItem* pKeyItem, RemapEntry* pEntry)
+{
+	pKeyItem->pEntryContainer = (RemapEntryContainer*)malloc(sizeof(RemapEntryContainer));
+	pKeyItem->pEntryContainer->pEntryState = (RemapEntryState*)calloc(1, sizeof(RemapEntryState));
+	pKeyItem->pEntryContainer->pEntry = pEntry;
+}
+
 /*
 Shuts down the key capture hook and frees any allocated memory
 */
 __declspec(dllexport) void ShutdownCapture()
 {
+	// signal shutdown for all entries with a thread handle
+	for(int nIdx = 0; nIdx < WIN_KEY_COUNT; nIdx++)
+	{
+		if(NULL != g_KeyTranslationTable[nIdx])
+		{
+			RemapEntryContainerListItem* pListItem = g_KeyTranslationTable[nIdx];
+			RemapEntryContainerListItem* pNextItem = NULL;
+			while(NULL != pListItem)
+			{
+				pNextItem = pListItem->pNext;
+				if (NULL != pListItem->pEntryContainer->pEntryState->threadHandle)
+				{
+					pListItem->pEntryContainer->pEntryState->bShutdown = true;
+				}
+				pListItem = pNextItem;
+			}
+		}
+	}	
+
+	// monitor and terminate threads for all entries with a thread handle
+	for (int nIdx = 0; nIdx < WIN_KEY_COUNT; nIdx++)
+	{
+		if (NULL != g_KeyTranslationTable[nIdx])
+		{
+			RemapEntryContainerListItem* pListItem = g_KeyTranslationTable[nIdx];
+			RemapEntryContainerListItem* pNextItem = NULL;
+			while (NULL != pListItem)
+			{
+				pNextItem = pListItem->pNext;
+				if(NULL != pListItem->pEntryContainer->pEntryState->threadHandle)
+				{
+					DWORD dwExitCode = WAIT_TIMEOUT;
+					for(int shutdownIteration = 0; shutdownIteration < THREAD_SHUTDOWN_MAX_ATTEMPTS && dwExitCode != WAIT_OBJECT_0; shutdownIteration++)
+					{
+						// check on the state of the thread (for 100ms) (MS says not to use GetExitCodeThread unless the thread is known to be exited)
+						dwExitCode = WaitForSingleObject(pListItem->pEntryContainer->pEntryState->threadHandle, THREAD_SHUTDOWN_ATTEMPT_DELAY_MS);
+					}
+					if (dwExitCode != WAIT_OBJECT_0)
+					{
+						LogDebugMessage("Force terminating thread!");
+						TerminateThread(pListItem->pEntryContainer->pEntryState->threadHandle, 1);
+					}
+				}
+				pListItem = pNextItem;
+			}
+		}
+	}
+
+	
 	// disable the hook
 	if(NULL != g_hookMain)
 	{

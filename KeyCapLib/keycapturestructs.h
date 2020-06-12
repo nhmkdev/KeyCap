@@ -95,7 +95,8 @@ struct RemapEntryState
 {
 	BYTE bToggled : 1;
 	BYTE bRepeating : 1;
-	BYTE padOne : 6;
+	BYTE bShutdown : 1;
+	BYTE padOne : 5;
 	BYTE padTwo : 8;
 	BYTE padThree : 8;
 	BYTE padFour : 8;

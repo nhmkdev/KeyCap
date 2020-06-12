@@ -59,11 +59,17 @@ LRESULT CALLBACK LowLevelKeyboardProc(int nCode, WPARAM wParam, LPARAM lParam)
 						(bControl == pKeyDef->inputFlag.bControl) &&
 						(bShift == pKeyDef->inputFlag.bShift))
 					{
+#ifdef _DEBUG
 						char* pInputConfigDescription = GetInputConfigDescription(*pKeyDef);
 						LogDebugMessage("Detected Key Press: %s Outputs: %d", pInputConfigDescription, pKeyListItem->pEntryContainer->pEntry->outputCount);
 						free(pInputConfigDescription);
-						// TODO: get thread handle, also check for null
-						CreateThread(NULL, 0, SendInputThread, pKeyListItem->pEntryContainer, 0, NULL);
+#endif
+						// If there is NOT an existing thread OR the existing thread is running a repeat another key press is allowed
+						if (NULL == pKeyListItem->pEntryContainer->pEntryState->threadHandle || pKeyListItem->pEntryContainer->pEntryState->bRepeating)
+						{
+							pKeyListItem->pEntryContainer->pEntryState->threadHandle = CreateThread(NULL, 0, SendInputThread, pKeyListItem->pEntryContainer, 0, NULL);
+						}
+						// no matter if a new SendInputThread was started or not block further processing with the inputs
 						bSentInput = true;
 						break;
 					}
