@@ -24,6 +24,7 @@
 
 #include "keycapturestructs.h"
 #include "keycaptureutil.h"
+#include "keycapture.h"
 #include "sendinputthread.h"
 #include "keyboardinput.h"
 #include "mouseinput.h"
@@ -86,7 +87,7 @@ DWORD InitiateSendInput(RemapEntry* pRemapEntry, RemapEntryState* pRemapEntrySta
 	do
 	{
 		// iterate over the target inputs
-		while (pOutputConfig < pTerminator)
+		while (pOutputConfig < pTerminator && !pRemapEntryState->bShutdown)
 		{
 			if (!pOutputConfig->outputFlag.bRepeat && firstPassComplete)
 			{
@@ -96,17 +97,28 @@ DWORD InitiateSendInput(RemapEntry* pRemapEntry, RemapEntryState* pRemapEntrySta
 #ifdef _DEBUG
 			char* pOutputConfigDescription = GetOutputConfigDescription(*pOutputConfig);
 			LogDebugMessage("Performing %s Output Action: %s",
-				pOutputConfig->outputFlag.bMouseOut ? "Mouse" : "Keyboard",
+				pOutputConfig->outputFlag.bMouseOut ? "Mouse" : "Keyboard (or other)",
 				pOutputConfigDescription
 			);
 			free(pOutputConfigDescription);
 #endif
 			// mouse input
-			if (pOutputConfig->outputFlag.bMouseOut)
+			if(pOutputConfig->outputFlag.bDoNothing)
+			{
+				// nothing
+			}
+			if(pOutputConfig->outputFlag.bCancelActiveOutputs)
+			{
+				// HACK alert - would destroy this thread, so disassociate and exit immediately after
+				pRemapEntryState->bShutdown = true;
+				pRemapEntryState->threadHandle = NULL;
+				ShutdownInputThreads();
+				break;
+			}
+			else if (pOutputConfig->outputFlag.bMouseOut)
 			{
 				SendInputMouse(pRemapEntryState, pOutputConfig);
 			}
-			// just a delay
 			else if (pOutputConfig->outputFlag.bDelay)
 			{
 				//Want to delay break...
@@ -116,13 +128,14 @@ DWORD InitiateSendInput(RemapEntry* pRemapEntry, RemapEntryState* pRemapEntrySta
 					Sleep(100);
 					if (pRemapEntryState->bShutdown)
 					{
+						LogDebugMessage("Exiting delay loop due to shutdown.");
 						break;
 					}
 				}
 			}
-			// keyboard input
 			else
 			{
+				// default to keyboard input
 				SendInputKeys(pRemapEntryState, pOutputConfig);
 			}
 			pOutputConfig++; // move the pointer forward one KeyDefinition
@@ -146,6 +159,7 @@ DWORD InitiateSendInput(RemapEntry* pRemapEntry, RemapEntryState* pRemapEntrySta
 
 	// flip the overall toggle state
 	pRemapEntryState->bToggled = !pRemapEntryState->bToggled;
+	pRemapEntryState->bShutdown = false;
 
 	LogDebugMessage("SendInputThread Completed");
 	// Disconnect this thread from the state

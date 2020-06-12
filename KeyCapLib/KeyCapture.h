@@ -28,6 +28,9 @@
 #include "keycapturestructs.h"
 #include "keycaptureutil.h"
 
+// shared functions
+void ShutdownInputThreads();
+
 // === consts and defines
 const int THREAD_SHUTDOWN_MAX_ATTEMPTS = 5;
 const int THREAD_SHUTDOWN_ATTEMPT_DELAY_MS = 100;

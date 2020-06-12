@@ -56,7 +56,8 @@ struct OutputFlag
 	BYTE bDown : 1;
 	BYTE bUp : 1;
 	BYTE bRepeat : 1;
-	BYTE padTwo : 6;
+	BYTE bCancelActiveOutputs : 1;
+	BYTE padTwo : 5;
 	BYTE padThree : 8;
 	BYTE padFour : 8;
 };

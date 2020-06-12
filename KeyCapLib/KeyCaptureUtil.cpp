@@ -71,7 +71,7 @@ char* GetInputConfigDescription(InputConfig inputConfig)
 char* GetOutputConfigDescription(OutputConfig outputConfig)
 {
 	char* pDescription = (char*)malloc(DESCRIPTION_BUFFER_SIZE);
-	sprintf_s(pDescription, DESCRIPTION_BUFFER_SIZE, "OutputConfig [Key: %d 0x%02x][Alt: %s][Ctrl: %s][Shift: %s][Nothing: %s][Mouse: %s][Delay: %s][Toggle: %s][Down: %s][Up: %s]",
+	sprintf_s(pDescription, DESCRIPTION_BUFFER_SIZE, "OutputConfig [Key: %d 0x%02x][Alt: %s][Ctrl: %s][Shift: %s][Nothing: %s][Mouse: %s][Delay: %s][Toggle: %s][Down: %s][Up: %s][Cancel: %s]",
 		outputConfig.virtualKey,
 		outputConfig.virtualKey,
 		GetBoolString(outputConfig.outputFlag.bAlt),
@@ -82,7 +82,8 @@ char* GetOutputConfigDescription(OutputConfig outputConfig)
 		GetBoolString(outputConfig.outputFlag.bDelay),
 		GetBoolString(outputConfig.outputFlag.bToggle),
 		GetBoolString(outputConfig.outputFlag.bDown),
-		GetBoolString(outputConfig.outputFlag.bUp)
+		GetBoolString(outputConfig.outputFlag.bUp),
+		GetBoolString(outputConfig.outputFlag.bCancelActiveOutputs)
 	);
 
 	return pDescription;

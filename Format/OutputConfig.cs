@@ -55,6 +55,7 @@ namespace KeyCap.Format
             Down = 1 << 7,
             Up = 1 << 8,
             Repeat = 1 << 9,
+            CancelActiveOutputs = 1 << 10,
             // all ThreadKill ?
             // supports up to 32 entries
         }
@@ -115,6 +116,16 @@ namespace KeyCap.Format
             if (IsFlaggedAs(OutputFlag.Delay))
             {
                 return "[Delay({0}s)]".FormatString(Parameter);
+            }
+
+            if (IsFlaggedAs(OutputFlag.DoNothing))
+            {
+                return "[Do Nothing]".FormatString(Parameter);
+            }
+
+            if (IsFlaggedAs(OutputFlag.CancelActiveOutputs))
+            {
+                return "[Cancel Active Outputs]".FormatString(Parameter);
             }
 
             if (IsFlaggedAs(OutputFlag.MouseOut))

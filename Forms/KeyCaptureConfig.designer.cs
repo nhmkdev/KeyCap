@@ -63,6 +63,7 @@ namespace KeyCap.Forms
             this.exitToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.panelKeySetup = new System.Windows.Forms.Panel();
             this.groupBoxOutputKey = new System.Windows.Forms.GroupBox();
+            this.checkOutputCancel = new System.Windows.Forms.CheckBox();
             this.checkOutputDelay = new System.Windows.Forms.CheckBox();
             this.checkOutputRepeat = new System.Windows.Forms.CheckBox();
             this.checkOutputUp = new System.Windows.Forms.CheckBox();
@@ -395,6 +396,7 @@ namespace KeyCap.Forms
             // 
             this.groupBoxOutputKey.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left) 
             | System.Windows.Forms.AnchorStyles.Right)));
+            this.groupBoxOutputKey.Controls.Add(this.checkOutputCancel);
             this.groupBoxOutputKey.Controls.Add(this.checkOutputDelay);
             this.groupBoxOutputKey.Controls.Add(this.checkOutputRepeat);
             this.groupBoxOutputKey.Controls.Add(this.checkOutputUp);
@@ -415,6 +417,17 @@ namespace KeyCap.Forms
             this.groupBoxOutputKey.TabStop = false;
             this.groupBoxOutputKey.Text = "Output Key";
             // 
+            // checkOutputCancel
+            // 
+            this.checkOutputCancel.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
+            this.checkOutputCancel.Location = new System.Drawing.Point(598, 44);
+            this.checkOutputCancel.Name = "checkOutputCancel";
+            this.checkOutputCancel.Size = new System.Drawing.Size(156, 20);
+            this.checkOutputCancel.TabIndex = 62;
+            this.checkOutputCancel.Text = "Cancel Outputs";
+            this.checkOutputCancel.UseVisualStyleBackColor = true;
+            this.checkOutputCancel.CheckedChanged += new System.EventHandler(this.checkOutputCancel_CheckedChanged);
+            // 
             // checkOutputDelay
             // 
             this.checkOutputDelay.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
@@ -424,6 +437,7 @@ namespace KeyCap.Forms
             this.checkOutputDelay.TabIndex = 61;
             this.checkOutputDelay.Text = "Delay";
             this.checkOutputDelay.UseVisualStyleBackColor = true;
+            this.checkOutputDelay.CheckedChanged += new System.EventHandler(this.checkOutputDelay_CheckedChanged);
             // 
             // checkOutputRepeat
             // 
@@ -568,7 +582,7 @@ namespace KeyCap.Forms
             this.MinimumSize = new System.Drawing.Size(800, 520);
             this.Name = "KeyCaptureConfig";
             this.ShowInTaskbar = false;
-            this.Text = "KeyCap Configuration UNTESTED WIP FOR V2 (NOT BACKWARD COMPATIBLE)";
+            this.Text = "KeyCap Configuration";
             this.FormClosing += new System.Windows.Forms.FormClosingEventHandler(this.KeyCaptureConfig_FormClosing);
             this.Load += new System.EventHandler(this.KeyCaptureConfig_Load);
             this.Resize += new System.EventHandler(this.KeyCaptureConfig_Resize);
@@ -634,6 +648,7 @@ namespace KeyCap.Forms
         private System.Windows.Forms.CheckBox checkOutputDown;
         private System.Windows.Forms.CheckBox checkOutputRepeat;
         private System.Windows.Forms.CheckBox checkOutputDelay;
+        private System.Windows.Forms.CheckBox checkOutputCancel;
     }
 }
 

@@ -153,19 +153,16 @@ void InitiallizeEntryContainerListItem(RemapEntryContainerListItem* pKeyItem, Re
 	pKeyItem->pEntryContainer->pEntry = pEntry;
 }
 
-/*
-Shuts down the key capture hook and frees any allocated memory
-*/
-__declspec(dllexport) void ShutdownCapture()
+void ShutdownInputThreads()
 {
 	// signal shutdown for all entries with a thread handle
-	for(int nIdx = 0; nIdx < WIN_KEY_COUNT; nIdx++)
+	for (int nIdx = 0; nIdx < WIN_KEY_COUNT; nIdx++)
 	{
-		if(NULL != g_KeyTranslationTable[nIdx])
+		if (NULL != g_KeyTranslationTable[nIdx])
 		{
 			RemapEntryContainerListItem* pListItem = g_KeyTranslationTable[nIdx];
 			RemapEntryContainerListItem* pNextItem = NULL;
-			while(NULL != pListItem)
+			while (NULL != pListItem)
 			{
 				pNextItem = pListItem->pNext;
 				if (NULL != pListItem->pEntryContainer->pEntryState->threadHandle)
@@ -175,7 +172,7 @@ __declspec(dllexport) void ShutdownCapture()
 				pListItem = pNextItem;
 			}
 		}
-	}	
+	}
 
 	// monitor and terminate threads for all entries with a thread handle
 	for (int nIdx = 0; nIdx < WIN_KEY_COUNT; nIdx++)
@@ -187,10 +184,10 @@ __declspec(dllexport) void ShutdownCapture()
 			while (NULL != pListItem)
 			{
 				pNextItem = pListItem->pNext;
-				if(NULL != pListItem->pEntryContainer->pEntryState->threadHandle)
+				if (NULL != pListItem->pEntryContainer->pEntryState->threadHandle)
 				{
 					DWORD dwExitCode = WAIT_TIMEOUT;
-					for(int shutdownIteration = 0; shutdownIteration < THREAD_SHUTDOWN_MAX_ATTEMPTS && dwExitCode != WAIT_OBJECT_0; shutdownIteration++)
+					for (int shutdownIteration = 0; shutdownIteration < THREAD_SHUTDOWN_MAX_ATTEMPTS && dwExitCode != WAIT_OBJECT_0; shutdownIteration++)
 					{
 						// check on the state of the thread (for 100ms) (MS says not to use GetExitCodeThread unless the thread is known to be exited)
 						dwExitCode = WaitForSingleObject(pListItem->pEntryContainer->pEntryState->threadHandle, THREAD_SHUTDOWN_ATTEMPT_DELAY_MS);
@@ -205,7 +202,15 @@ __declspec(dllexport) void ShutdownCapture()
 			}
 		}
 	}
+}
 
+/*
+Shuts down the key capture hook and frees any allocated memory
+*/
+__declspec(dllexport) void ShutdownCapture()
+{
+	// stop any active threads
+	ShutdownInputThreads();
 	
 	// disable the hook
 	if(NULL != g_hookMain)
