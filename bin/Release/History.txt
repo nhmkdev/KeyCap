@@ -1,5 +1,9 @@
 KeyCap Version History
 --------------------------
+2.0.0.1
+- Added ability to cancel all active threads (repeats, delays, etc.)
+- Fixed a critical bug with shutdown (basically it wouldn't)
+
 2.0.0.0
 - New file format for configurations to support future expansion
 - Direct control over up/down messages (if needed)

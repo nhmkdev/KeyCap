@@ -109,10 +109,8 @@ DWORD InitiateSendInput(RemapEntry* pRemapEntry, RemapEntryState* pRemapEntrySta
 			}
 			if(pOutputConfig->outputFlag.bCancelActiveOutputs)
 			{
-				// HACK alert - would destroy this thread, so disassociate and exit immediately after
-				pRemapEntryState->bShutdown = true;
-				pRemapEntryState->threadHandle = NULL;
-				ShutdownInputThreads();
+				// NOTE: even this thread might be affected
+				ShutdownInputThreads(false);
 				break;
 			}
 			else if (pOutputConfig->outputFlag.bMouseOut)
@@ -152,17 +150,34 @@ DWORD InitiateSendInput(RemapEntry* pRemapEntry, RemapEntryState* pRemapEntrySta
 		firstPassComplete = true;
 		if (pRemapEntryState->bRepeating)
 		{
-			Sleep(repeatDelayMillis);
-			LogDebugMessage("SendInputThread Repeating...");
+			int iterations = repeatDelayMillis / MIN_REPEAT_DELAY_MS;
+			for (int repeatDelayCount = 0; repeatDelayCount < iterations; repeatDelayCount++)
+			{
+				Sleep(100);
+				if (pRemapEntryState->bShutdown)
+				{
+					LogDebugMessage("Exiting repeat loop due to shutdown.");
+					break;
+				}
+			}
+			if (!pRemapEntryState->bShutdown)
+			{
+				LogDebugMessage("SendInputThread Repeating...");
+			}
 		}
 	} while (pRemapEntryState->bRepeating);
 
-	// flip the overall toggle state
+	// flip the overall toggle state (even when a thread is canceled this should flip back, arguably to false...)
 	pRemapEntryState->bToggled = !pRemapEntryState->bToggled;
-	pRemapEntryState->bShutdown = false;
 
-	LogDebugMessage("SendInputThread Completed");
-	// Disconnect this thread from the state
+	// reset things on the remap entry
+	pRemapEntryState->bShutdown = false;
+	pRemapEntryState->bRepeating = false;
 	pRemapEntryState->threadHandle = NULL;
+#ifdef _DEBUG
+	char* pInputConfigDescription = GetInputConfigDescription(pRemapEntry->inputConfig);
+	LogDebugMessage("SendInputThread Completed: %s", pInputConfigDescription);
+	free(pInputConfigDescription);
+#endif
 	return 0;
 }

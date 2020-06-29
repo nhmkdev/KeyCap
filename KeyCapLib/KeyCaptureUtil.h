@@ -30,6 +30,7 @@
 
 const int DESCRIPTION_BUFFER_SIZE = 256;
 
+void ResetRemapEntryState(RemapEntryState* pRemapEntryState, BYTE bToggled);
 bool IsButtonDownRequired(RemapEntryState* pRemapEntryState, OutputConfig* pKeyDef);
 bool IsButtonUpRequired(RemapEntryState* pRemapEntryState, OutputConfig* pKeyDef);
 

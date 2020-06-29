@@ -29,7 +29,7 @@
 #include "keycaptureutil.h"
 
 // shared functions
-void ShutdownInputThreads();
+void ShutdownInputThreads(bool forceShutdown);
 
 // === consts and defines
 const int THREAD_SHUTDOWN_MAX_ATTEMPTS = 5;

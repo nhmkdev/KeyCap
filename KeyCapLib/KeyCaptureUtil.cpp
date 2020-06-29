@@ -25,6 +25,14 @@
 #include "keycapturestructs.h"
 #include "keycaptureutil.h"
 
+void ResetRemapEntryState(RemapEntryState* pRemapEntryState, BYTE bToggled)
+{
+	pRemapEntryState->bToggled = bToggled;
+	pRemapEntryState->bRepeating = false;
+	pRemapEntryState->bShutdown = false;
+	pRemapEntryState->threadHandle = NULL;
+}
+
 bool IsButtonDownRequired(RemapEntryState* pRemapEntryState, OutputConfig* pKeyDef)
 {
 	if (pKeyDef->outputFlag.bToggle)

@@ -46,7 +46,6 @@ namespace KeyCap.Forms
         private readonly IniManager m_zIniManager = new IniManager(Application.ProductName, false, true, false);
 
         private FormWindowState m_ePrevWindowState = FormWindowState.Normal;
-        private bool m_bRun = true;
         private bool m_bShutdownApplication = false;
         
         /// <summary>
@@ -129,7 +128,6 @@ namespace KeyCap.Forms
         private void exitMainToolStripMenuItem_Click(object sender, EventArgs e)
         {
             m_bShutdownApplication = true;
-            m_bRun = false;
             if (WindowState == FormWindowState.Minimized)
             {
                 WindowState = m_ePrevWindowState;

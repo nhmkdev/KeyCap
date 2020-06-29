@@ -153,7 +153,7 @@ void InitiallizeEntryContainerListItem(RemapEntryContainerListItem* pKeyItem, Re
 	pKeyItem->pEntryContainer->pEntry = pEntry;
 }
 
-void ShutdownInputThreads()
+void ShutdownInputThreads(bool forceShutdown)
 {
 	// signal shutdown for all entries with a thread handle
 	for (int nIdx = 0; nIdx < WIN_KEY_COUNT; nIdx++)
@@ -173,6 +173,9 @@ void ShutdownInputThreads()
 			}
 		}
 	}
+
+	// a forced shutdown will kill threads (mostly for application exit)
+	if(!forceShutdown) return;
 
 	// monitor and terminate threads for all entries with a thread handle
 	for (int nIdx = 0; nIdx < WIN_KEY_COUNT; nIdx++)
@@ -210,7 +213,7 @@ Shuts down the key capture hook and frees any allocated memory
 __declspec(dllexport) void ShutdownCapture()
 {
 	// stop any active threads
-	ShutdownInputThreads();
+	ShutdownInputThreads(true);
 	
 	// disable the hook
 	if(NULL != g_hookMain)
