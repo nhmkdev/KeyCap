@@ -222,6 +222,8 @@ namespace KeyCap.Forms
                 listConfigs.Add((RemapEntry) zItem.Tag);
             }
             m_zConfigFileManager.SaveFile(listConfigs, sFileName);
+            // on save the project list should be updated
+            UpdateProjectsList(sFileName);
             return true;
         }
 
