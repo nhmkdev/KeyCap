@@ -22,32 +22,32 @@
     <ProjectGuid>{5637CC7B-9FFF-486B-9D51-898DEDCB908A}</ProjectGuid>
     <Keyword>Win32Proj</Keyword>
     <RootNamespace>KeyCapLib</RootNamespace>
-    <WindowsTargetPlatformVersion>10.0.17134.0</WindowsTargetPlatformVersion>
+    <WindowsTargetPlatformVersion>10.0</WindowsTargetPlatformVersion>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
     <ConfigurationType>DynamicLibrary</ConfigurationType>
     <UseDebugLibraries>true</UseDebugLibraries>
-    <PlatformToolset>v141</PlatformToolset>
+    <PlatformToolset>v142</PlatformToolset>
     <CharacterSet>Unicode</CharacterSet>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
     <ConfigurationType>DynamicLibrary</ConfigurationType>
     <UseDebugLibraries>false</UseDebugLibraries>
-    <PlatformToolset>v141</PlatformToolset>
+    <PlatformToolset>v142</PlatformToolset>
     <WholeProgramOptimization>true</WholeProgramOptimization>
     <CharacterSet>Unicode</CharacterSet>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="Configuration">
     <ConfigurationType>DynamicLibrary</ConfigurationType>
     <UseDebugLibraries>true</UseDebugLibraries>
-    <PlatformToolset>v141</PlatformToolset>
+    <PlatformToolset>v142</PlatformToolset>
     <CharacterSet>Unicode</CharacterSet>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="Configuration">
     <ConfigurationType>DynamicLibrary</ConfigurationType>
     <UseDebugLibraries>false</UseDebugLibraries>
-    <PlatformToolset>v141</PlatformToolset>
+    <PlatformToolset>v142</PlatformToolset>
     <WholeProgramOptimization>true</WholeProgramOptimization>
     <CharacterSet>Unicode</CharacterSet>
   </PropertyGroup>
@@ -148,16 +148,25 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClInclude Include="KeyboardInput.h" />
-    <ClInclude Include="KeyCapture.h" />
-    <ClInclude Include="MouseInput.h" />
+    <ClInclude Include="configfile.h" />
+    <ClInclude Include="keyboardinput.h" />
+    <ClInclude Include="keyboardproc.h" />
+    <ClInclude Include="keycapture.h" />
+    <ClInclude Include="keycapturestructs.h" />
+    <ClInclude Include="keycaptureutil.h" />
+    <ClInclude Include="mouseinput.h" />
+    <ClInclude Include="sendinputthread.h" />
     <ClInclude Include="stdafx.h" />
     <ClInclude Include="targetver.h" />
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="KeyboardInput.cpp" />
-    <ClCompile Include="KeyCapture.cpp" />
-    <ClCompile Include="MouseInput.cpp" />
+    <ClCompile Include="configfile.cpp" />
+    <ClCompile Include="keyboardinput.cpp" />
+    <ClCompile Include="keyboardproc.cpp" />
+    <ClCompile Include="keycapture.cpp" />
+    <ClCompile Include="keycaptureutil.cpp" />
+    <ClCompile Include="mouseinput.cpp" />
+    <ClCompile Include="sendinputthread.cpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

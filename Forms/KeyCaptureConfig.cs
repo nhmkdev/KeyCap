@@ -26,12 +26,12 @@ using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Drawing;
-using System.IO;
 using System.Text;
 using System.Threading;
 using System.Windows.Forms;
 using KeyCap.Format;
 using KeyCap.Settings;
+using KeyCap.Util;
 using KeyCap.Wrapper;
 using Support.IO;
 using Support.UI;
@@ -40,11 +40,14 @@ namespace KeyCap.Forms
 {
     public partial class KeyCaptureConfig
     {
+        private readonly ConfigFileManager m_zConfigFileManager = new ConfigFileManager();
         private readonly List<string> m_listRecentFiles = new List<string>();
-        private FormWindowState m_ePrevWindowState = FormWindowState.Normal;
+        private readonly KeyCapInstanceState m_zInstanceState;
         private readonly IniManager m_zIniManager = new IniManager(Application.ProductName, false, true, false);
-        private bool m_bRun = true;
 
+        private FormWindowState m_ePrevWindowState = FormWindowState.Normal;
+        private bool m_bShutdownApplication = false;
+        
         /// <summary>
         /// Text to display on the button to start/stop capturing
         /// </summary>
@@ -53,17 +56,6 @@ namespace KeyCap.Forms
             Start,
             Stop
         }
-
-        /// <summary>
-        /// Used to determine where to get the flags from
-        /// </summary>
-        private enum FlagsFromEnum
-        {
-            Input,
-            Output
-        }
-
-        private KeyCaptureConfig() { }
 
         /// <summary>
         /// Constructs a new dialog
@@ -76,11 +68,12 @@ namespace KeyCap.Forms
             m_sFileOpenFilter = Application.ProductName + " Config files (*.kfg)|*.kfg|All files (*.*)|*.*";
             Text = m_sBaseTitle;
             
-            // load the input file
-            if (1 == args.Count)
+            m_zInstanceState = new KeyCapInstanceState(args);
+
+            // load the command line specified file
+            if (m_zInstanceState.DefaultConfigFile != null)
             {
-                // existence already checked in program.cs
-                InitOpen(args[0]);
+                InitOpen(m_zInstanceState.DefaultConfigFile);
             }
         }
 
@@ -92,12 +85,11 @@ namespace KeyCap.Forms
             IniManager.RestoreState(this, m_zIniManager.GetValue(Name));
 
             // setup the various mouse output options
-            comboBoxMouseOut.Items.Add("No Action");
-            foreach (IODefinition.MouseButton sName in Enum.GetValues(typeof(IODefinition.MouseButton)))
+            foreach (OutputConfig.MouseButton sName in Enum.GetValues(typeof(OutputConfig.MouseButton)))
             {
-                comboBoxMouseOut.Items.Add(sName);
+                comboBoxOutMouse.Items.Add(sName);
             }
-            comboBoxMouseOut.SelectedIndex = 0;
+            comboBoxOutMouse.SelectedIndex = 0;
 
             // set the notification icon accordingly
             notifyIcon.Icon = Resources.KeyCapIdle;
@@ -114,23 +106,11 @@ namespace KeyCap.Forms
             }
 
             // initialize capture from command line specified file
-            if (0 != m_sLoadedFile.Length)
+            if (0 != m_sLoadedFile.Length && m_zInstanceState.AutoStart)
             {
                 btnStart_Click(sender, new EventArgs());
                 new Thread(MinimizeThread) { Name = "MinimizeThread" }.Start();
             }
-        }
-
-        private void exitMainToolStripMenuItem_Click(object sender, EventArgs e)
-        {
-            m_bRun = false;
-            if (WindowState == FormWindowState.Minimized)
-            {
-                WindowState = m_ePrevWindowState;
-            }
-            KeyCaptureLib.Shutdown();
-            m_zIniManager.SetValue(Name, IniManager.GetFormSettings(this));
-            Close();
         }
 
         private void newToolStripMenuItem_Click(object sender, EventArgs e)
@@ -145,9 +125,33 @@ namespace KeyCap.Forms
             InitNew();
         }
 
+        private void exitMainToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            m_bShutdownApplication = true;
+            if (WindowState == FormWindowState.Minimized)
+            {
+                WindowState = m_ePrevWindowState;
+            }
+            KeyCaptureLib.Shutdown();
+            m_zIniManager.SetValue(Name, IniManager.GetFormSettings(this));
+            Close();
+        }
+
+
         private void KeyCaptureConfig_FormClosing(object sender, FormClosingEventArgs e)
         {
-            if (m_bRun && !panelKeySetup.Enabled)
+            // exit requested (can only be canceled with the save on close cancel)
+            if (m_bShutdownApplication)
+            {
+                SaveOnClose(e);
+                if (e.Cancel)
+                {
+                    m_bShutdownApplication = false;
+                    return;
+                }
+                FlushIniSettings();
+            }
+            else
             {
                 switch (e.CloseReason)
                 {
@@ -161,26 +165,6 @@ namespace KeyCap.Forms
                         break;
                 }
             }
-            else
-            {
-                SaveOnClose(e);
-                if (e.Cancel)
-                {
-                    return;
-                }
-                var zBuilder = new StringBuilder();
-                var dictionaryFilenames = new Dictionary<string, object>();
-                foreach (var sFile in m_listRecentFiles)
-                {
-                    var sLowerFile = sFile.ToLower();
-                    if (dictionaryFilenames.ContainsKey(sLowerFile))
-                        continue;
-                    dictionaryFilenames.Add(sLowerFile, null);
-                    zBuilder.Append(sFile + KeyCapConstants.CharFileSplit);
-                }
-                m_zIniManager.SetValue(IniSettings.PreviousFiles, zBuilder.ToString());
-                m_zIniManager.FlushIniSettings();
-            }
         }
 
         private void KeyCaptureConfig_Resize(object sender, EventArgs e)
@@ -191,19 +175,29 @@ namespace KeyCap.Forms
             }
         }
 
-        #endregion
+#endregion
 
-        #region Text Capture Handling
+#region Text Capture Handling
 
-        private void textBox_KeyDown(object sender, KeyEventArgs e)
+        private void txtKeyIn_KeyDown(object sender, KeyEventArgs e)
         {
-            var zDisplay = (TextBox)sender;
             //            Console.Out.WriteLine("Key Input: {0} 0x{1}".FormatString(e.KeyCode, e.KeyCode.ToString("x")));
-#warning not so sure how non-english keyboards are going to handle the limitation/cast to a byte here. This should probably be an int32 (this could be one of many problems...)
-            var zIODef = new IODefinition(0x00, (byte)e.KeyCode, e);
-            zDisplay.Text = zIODef.GetDescription();
+            UpdateTextBox((TextBox)sender, e, new InputConfig((byte)e.KeyCode, e));
+        }
+
+        private void txtKeyOut_KeyDown(object sender, KeyEventArgs e)
+        {
+            //            Console.Out.WriteLine("Key Input: {0} 0x{1}".FormatString(e.KeyCode, e.KeyCode.ToString("x")));
+            UpdateTextBox((TextBox)sender, e, new OutputConfig(0, (byte)e.KeyCode, 0, e));
+            // delay is toggled off if a key is specified
+            checkOutputDelay.Checked = false;
+        }
+
+        private void UpdateTextBox<T>(TextBox txtBox, KeyEventArgs e, T config) where T : BaseIOConfig
+        {
+            txtBox.Text = config.GetDescription();
+            txtBox.Tag = config;
             e.Handled = true;
-            zDisplay.Tag = zIODef;
         }
 
         private void txtKey_Enter(object sender, EventArgs e)
@@ -216,20 +210,20 @@ namespace KeyCap.Forms
             ((TextBox)sender).BackColor = SystemColors.Control;
         }
 
-        #endregion
+#endregion
 
-        #region AbstractDirtyForm overrides
+#region AbstractDirtyForm overrides
 
         protected override bool SaveFormData(string sFileName)
         {
-            var zWriter = new FileStream(sFileName, FileMode.Create, FileAccess.Write, FileShare.None);
+            var listConfigs = new List<RemapEntry>(listViewKeys.Items.Count);
             foreach (ListViewItem zItem in listViewKeys.Items)
             {
-                var zIOPair = (IOPairDefinition)zItem.Tag;
-                var arrayKeyDefinition = zIOPair.ToArray();
-                zWriter.Write(arrayKeyDefinition, 0, arrayKeyDefinition.Length);
+                listConfigs.Add((RemapEntry) zItem.Tag);
             }
-            zWriter.Close();
+            m_zConfigFileManager.SaveFile(listConfigs, sFileName);
+            // on save the project list should be updated
+            UpdateProjectsList(sFileName);
             return true;
         }
 
@@ -237,27 +231,33 @@ namespace KeyCap.Forms
         {
             txtKeyIn.Text = string.Empty;
             txtKeyOut.Text = string.Empty;
-            FileStream zReader = null;
+            listViewKeys.Items.Clear();
             try
             {
-                zReader = new FileStream(sFileName, FileMode.Open, FileAccess.Read, FileShare.Read);
-                AddListViewItems(zReader);
+                var listConfigs = m_zConfigFileManager.LoadFile(sFileName);
+                listConfigs.ForEach(ioc =>
+                {
+                    listViewKeys.Items.Add(new ListViewItem(new string[]
+                    {
+                        ioc.GetInputString(),
+                        ioc.GetOutputString()
+                    })
+                    {
+                        Tag = ioc
+                    });
+                });
+                UpdateProjectsList(sFileName);
             }
             catch (Exception e)
             {
                 MessageBox.Show(e.Message);
             }
-            finally
-            {
-                zReader?.Close();
-            }
-            UpdateProjectsList(sFileName);
             return true;
         }
 
-        #endregion
+#endregion
 
-        #region Menu Events
+#region Menu Events
 
         private void loadToolStripMenuItem_Click(object sender, EventArgs e)
         {
@@ -296,9 +296,9 @@ namespace KeyCap.Forms
             InitOpen(zItem.Text);
         }
 
-        #endregion
+#endregion
 
-        #region Control Events
+#region Control Events
 
         private void listViewKeys_SelectedIndexChanged(object sender, EventArgs e)
         {
@@ -312,66 +312,87 @@ namespace KeyCap.Forms
             ListViewAssist.ResizeColumnHeaders(listViewKeys);
         }
 
-        private void comboBoxSpecialOut_SelectedIndexChanged(object sender, EventArgs e)
+        private void comboBoxMouseOut_SelectedIndexChanged(object sender, EventArgs e)
         {
-            if (0 != comboBoxMouseOut.SelectedIndex) // the first entry does nothing
+
+            if (comboBoxOutMouse.SelectedIndex == 0)
             {
-                var zIODefinition = new IODefinition(
-                    (byte)IODefinition.IOFlags.MouseOut,
-                    (byte)(IODefinition.MouseButton)comboBoxMouseOut.SelectedItem);
-                var zDisplay = txtKeyOut;
-                zDisplay.Text = zIODefinition.GetDescription();
-                zDisplay.Tag = zIODefinition;
+                txtKeyOut.Text = string.Empty;
+                txtKeyOut.Tag = null;
+            }
+            else
+            {
+                var zOutputConfig = new OutputConfig(
+                    (int)OutputConfig.OutputFlag.MouseOut,
+                    (byte)(OutputConfig.MouseButton)comboBoxOutMouse.SelectedItem);
+                txtKeyOut.Text = zOutputConfig.GetDescription();
+                txtKeyOut.Tag = zOutputConfig;
+            }
+        }
+
+        private void checkOutputDelay_CheckedChanged(object sender, EventArgs e)
+        {
+            if (checkOutputDelay.Checked)
+            {
+                numericUpDownDelay_ValueChanged(sender, e);
             }
         }
 
         private void numericUpDownDelay_ValueChanged(object sender, EventArgs e)
         {
-            var zIODefinition = new IODefinition(
-                (byte)IODefinition.IOFlags.Delay,
-                (byte)numericUpDownDelay.Value);
-            var zDisplay = txtKeyOut;
-            zDisplay.Text = zIODefinition.GetDescription();
-            zDisplay.Tag = zIODefinition;
+            var nFlag = 0;
+            if (checkOutputDelay.Checked)
+            {
+                nFlag = (int) OutputConfig.OutputFlag.Delay;
+            }
+            // TODO: support other types that use the param this way...
+            if (nFlag == 0)
+            {
+                return;
+            }
+
+            var zOutputConfig = new OutputConfig(
+                nFlag,
+                0,
+                (int) numericUpDownOutputParameter.Value);
+
+            txtKeyOut.Text = zOutputConfig.GetDescription();
+            txtKeyOut.Tag = zOutputConfig;
         }
 
         private void btnAdd_Click(object sender, EventArgs e)
         {
-            var zInput = (IODefinition)txtKeyIn.Tag;
-            var zOutput = getCurrentOutputDefinition();
-
-            if (null == zInput || null == zOutput)
-            {
-                MessageBox.Show(this, "Please specify both an input and output key.", "Error!", MessageBoxButtons.OK, MessageBoxIcon.Error);
-                return;
-            }
-
-            zInput.Flags = GetFlags(zInput, FlagsFromEnum.Input);
-
-            var zPairDef = new IOPairDefinition(zInput, zOutput);
-
-            // TODO: is it worth keeping a hashset of these to cut the time from o(n) to o(1)?
-            // verify this is not already defined
-            foreach (ListViewItem zListItem in listViewKeys.Items)
-            {
-                var zKeyOldDef = (IOPairDefinition)zListItem.Tag;
-                if (zPairDef.GetHashCode() != zKeyOldDef.GetHashCode())
-                {
-                    continue;
-                }
-
-                MessageBox.Show(this, "Duplicate inputs are not allowed!", "Error!", MessageBoxButtons.OK, MessageBoxIcon.Exclamation);
-                return;
-            }
+            InputConfig zInputConfig = null;
+            OutputConfig zOutputConfig = null;
+            RemapEntry zRemapEntry = null;
+            if (!RetrieveAddConfigs(ref zInputConfig, ref zOutputConfig, ref zRemapEntry)) return;
 
             var zItem = new ListViewItem(new string[] { 
-                zPairDef.GetInputString(), 
-                zPairDef.GetOutputString() });
-            zItem.Tag = zPairDef;
+                zRemapEntry.GetInputString(), 
+                zRemapEntry.GetOutputString() });
+            zItem.Tag = zRemapEntry;
             listViewKeys.Items.Add(zItem);
             listViewKeys.SelectedItems.Clear();
             zItem.Selected = true;
             MarkDirty();
+        }
+
+        private void btnAppend_Click(object sender, EventArgs e)
+        {
+            if (1 != listViewKeys.SelectedItems.Count)
+            {
+                return;
+            }
+
+            var zItem = listViewKeys.SelectedItems[0];
+            var zRemapEntry = (RemapEntry)zItem.Tag;
+            OutputConfig zOutputConfig = null;
+            if (!RetrieveAppendConfigs(ref zOutputConfig, zRemapEntry)) return;
+
+            zRemapEntry.AppendOutputConfig(zOutputConfig);
+            zItem.SubItems[1].Text = zRemapEntry.GetOutputString();
+            MarkDirty();
+            txtKeyOut.Focus(); // restore focus to the output
         }
 
         private void btnRemove_Click(object sender, EventArgs e)
@@ -386,49 +407,6 @@ namespace KeyCap.Forms
                 listViewKeys.Items.Remove(zItem);
             }
             MarkDirty();
-        }
-
-        private void btnAppend_Click(object sender, EventArgs e)
-        {
-            if (1 != listViewKeys.SelectedItems.Count)
-            {
-                return;
-            }
-
-            var zItem = listViewKeys.SelectedItems[0];
-            var zPairDef = (IOPairDefinition)zItem.Tag;
-            var zOutDef = getCurrentOutputDefinition();
-            var bSuccess = zPairDef.AddOutputDefinition(zOutDef);
-            if (bSuccess)
-            {
-                zItem.SubItems[1].Text = zPairDef.GetOutputString();
-                MarkDirty();
-                txtKeyOut.Focus(); // restore focus to the output
-            }
-            else
-            {
-                MessageBox.Show(this, "Failed to append item. The maximum number of outputs allowed is 255.", "Append Error!",
-                    MessageBoxButtons.OK, MessageBoxIcon.Exclamation);
-            }
-        }
-
-        private IODefinition getCurrentOutputDefinition()
-        {
-            var zOutput = (IODefinition)txtKeyOut.Tag;
-            if (zOutput == null)
-            {
-                return null;
-            }
-
-            if (checkOutputNone.Checked) // if output is set to none change zOutput keyarg
-            {
-                zOutput = new IODefinition((byte)IODefinition.IOFlags.DoNothing, 0x00);
-            }
-            else
-            {
-                zOutput.Flags = GetFlags(zOutput, FlagsFromEnum.Output);
-            }
-            return zOutput;
         }
 
         private void btnStart_Click(object sender, EventArgs e)
@@ -466,6 +444,73 @@ namespace KeyCap.Forms
             }
         }
 
+        private void checkOutputToggle_CheckedChanged(object sender, EventArgs e)
+        {
+            checkOutputUp.Checked = checkOutputToggle.Checked;
+            checkOutputDown.Checked = checkOutputToggle.Checked;
+
+            checkOutputUp.Enabled = !checkOutputToggle.Checked;
+            checkOutputDown.Enabled = !checkOutputToggle.Checked;
+            checkOutputRepeat.Enabled = !checkOutputToggle.Checked;
+            checkOutputDelay.Enabled = !checkOutputToggle.Checked;
+            checkOutputNothing.Enabled = !checkOutputToggle.Checked;
+
+            checkOutputAlt.Enabled = !checkOutputToggle.Checked;
+            checkOutputShift.Enabled = !checkOutputToggle.Checked;
+            checkOutputControl.Enabled = !checkOutputToggle.Checked;
+            if (checkOutputToggle.Checked)
+            {
+                checkOutputAlt.Checked = 
+                checkOutputShift.Checked = 
+                checkOutputControl.Checked =
+                checkOutputRepeat.Checked =
+                checkOutputDelay.Checked =
+                checkOutputNothing.Checked = false;
+            }
+        }
+
+        private void checkOutputDoNothing_CheckedChanged(object sender, EventArgs e)
+        {
+            comboBoxOutMouse.Enabled = 
+            checkOutputAlt.Enabled =
+            checkOutputShift.Enabled = 
+            checkOutputControl.Enabled = 
+            checkOutputUp.Enabled = 
+            checkOutputDown.Enabled = 
+            checkOutputToggle.Enabled = 
+            checkOutputDelay.Enabled =
+            checkOutputRepeat.Enabled =
+            checkOutputCancel.Enabled =
+                !checkOutputNothing.Checked;
+            if (checkOutputNothing.Checked)
+            {
+                var zOutputConfig = new OutputConfig((int)OutputConfig.OutputFlag.DoNothing, 0);
+                txtKeyOut.Text = zOutputConfig.GetDescription();
+                txtKeyOut.Tag = zOutputConfig;
+            }
+        }
+
+        private void checkOutputCancel_CheckedChanged(object sender, EventArgs e)
+        {
+            comboBoxOutMouse.Enabled =
+            checkOutputAlt.Enabled =
+            checkOutputShift.Enabled =
+            checkOutputControl.Enabled =
+            checkOutputUp.Enabled =
+            checkOutputDown.Enabled =
+            checkOutputToggle.Enabled =
+            checkOutputDelay.Enabled =
+            checkOutputRepeat.Enabled =
+            checkOutputNothing.Enabled = 
+                !checkOutputCancel.Checked;
+            if (checkOutputCancel.Checked)
+            {
+                var zOutputConfig = new OutputConfig((int)OutputConfig.OutputFlag.CancelActiveOutputs, 0);
+                txtKeyOut.Text = zOutputConfig.GetDescription();
+                txtKeyOut.Tag = zOutputConfig;
+            }
+        }
+
         #endregion
 
         #region Support Methods
@@ -487,70 +532,60 @@ namespace KeyCap.Forms
         /// <summary>
         /// Gets the flags byte based on the definition and the type of input/output
         /// </summary>
-        /// <param name="zIODef">the io definition</param>
+        /// <param name="zInputConfig">the io definition</param>
         /// <param name="eFlag">the type of io</param>
         /// <returns>New flags value based on the settings of the ui (any prior flags are lost)</returns>
-        private byte GetFlags(IODefinition zIODef, FlagsFromEnum eFlag)
+        private InputConfig UpdateInputFlags(InputConfig zInputConfig)
         {
+            var bAlt = checkInputAlt.Checked;
+            var bControl = checkInputControl.Checked;
+            var bShift = checkInputShift.Checked;
+
+            var nFlags = 0;
+            nFlags = BitUtil.UpdateFlag(nFlags, bAlt, InputConfig.InputFlag.Alt);
+            nFlags = BitUtil.UpdateFlag(nFlags, bControl, InputConfig.InputFlag.Control);
+            nFlags = BitUtil.UpdateFlag(nFlags, bShift, InputConfig.InputFlag.Shift);
+            zInputConfig.Flags = nFlags;
+            return zInputConfig;
+        }
+
+        private OutputConfig UpdateOutputFlags(OutputConfig zOutputConfig)
+        {
+            if (zOutputConfig.IsFlaggedAs(OutputConfig.OutputFlag.DoNothing) 
+                || zOutputConfig.IsFlaggedAs(OutputConfig.OutputFlag.CancelActiveOutputs))
+            {
+                return zOutputConfig;
+            }
+
+
             // get the flags from the check boxes (always, both mouse and keyboard support them in some fashion)
-            var bAlt = false;
-            var bControl = false;
-            var bShift = false;
-            var bNone = false;
-            var bToggle = false;
-            switch (eFlag)
+            var bAlt = checkOutputAlt.Checked;
+            var bControl = checkOutputControl.Checked;
+            var bShift = checkOutputShift.Checked;
+            var bToggle = checkOutputToggle.Checked;
+            var bRepeat = checkOutputRepeat.Checked;
+            var bDown = checkOutputDown.Checked;
+            var bUp = checkOutputUp.Checked;
+
+            var nFlags = 0;
+            nFlags = BitUtil.UpdateFlag(nFlags, bShift, OutputConfig.OutputFlag.Shift);
+            nFlags = BitUtil.UpdateFlag(nFlags, bControl, OutputConfig.OutputFlag.Control);
+            nFlags = BitUtil.UpdateFlag(nFlags, bAlt, OutputConfig.OutputFlag.Alt);
+            nFlags = BitUtil.UpdateFlag(nFlags, zOutputConfig.IsFlaggedAs(OutputConfig.OutputFlag.MouseOut), OutputConfig.OutputFlag.MouseOut);
+            nFlags = BitUtil.UpdateFlag(nFlags, zOutputConfig.IsFlaggedAs(OutputConfig.OutputFlag.Delay), OutputConfig.OutputFlag.Delay);
+
+            nFlags = BitUtil.UpdateFlag(nFlags, bToggle, OutputConfig.OutputFlag.Toggle);
+            nFlags = BitUtil.UpdateFlag(nFlags, bRepeat, OutputConfig.OutputFlag.Repeat);
+            nFlags = BitUtil.UpdateFlag(nFlags, bDown, OutputConfig.OutputFlag.Down);
+            nFlags = BitUtil.UpdateFlag(nFlags, bUp, OutputConfig.OutputFlag.Up);
+            zOutputConfig.Flags = nFlags;
+
+            if (bRepeat)
             {
-                case FlagsFromEnum.Input:
-                    bAlt = checkInputAlt.Checked;
-                    bControl = checkInputControl.Checked;
-                    bShift = checkInputShift.Checked;
-                    break;
-                case FlagsFromEnum.Output:
-                    bAlt = checkOutputAlt.Checked;
-                    bControl = checkOutputControl.Checked;
-                    bShift = checkOutputShift.Checked;
-                    bNone = checkOutputNone.Checked;
-                    bToggle = checkOutputToggle.Checked;
-                    break;
+                zOutputConfig.Parameter = (int)numericUpDownOutputParameter.Value;
             }
 
-            byte byFlags = 0;
-            byFlags = UpdateFlag(byFlags, bAlt, (byte) IODefinition.IOFlags.Alt);
-            byFlags = UpdateFlag(byFlags, bControl, (byte)IODefinition.IOFlags.Control);
-            byFlags = UpdateFlag(byFlags, bShift, (byte)IODefinition.IOFlags.Shift);
-
-            byFlags = UpdateFlag(byFlags, bNone, (byte)IODefinition.IOFlags.DoNothing);
-
-            byFlags = UpdateFlag(byFlags, bToggle, (byte)IODefinition.IOFlags.Toggle);
-
-            byFlags = UpdateFlag(byFlags, zIODef.IsFlaggedAs(IODefinition.IOFlags.MouseOut), (byte)IODefinition.IOFlags.MouseOut);
-            byFlags = UpdateFlag(byFlags, zIODef.IsFlaggedAs(IODefinition.IOFlags.Delay), (byte)IODefinition.IOFlags.Delay);
-            return byFlags;
-        }
-
-        private byte UpdateFlag(byte byFlag, bool bFlagSetting, byte byFlagBit)
-        {
-            return (byte)(byFlag | (byte)(bFlagSetting ? byFlagBit : (byte)0));
-        }
-
-        /// <summary>
-        /// Adds a new list view item representation of the key in/out
-        /// </summary>
-        /// <param name="zStream">The stream to read the key definitions from</param>
-        /// <returns></returns>
-        private void AddListViewItems(FileStream zStream)
-        {
-            listViewKeys.Items.Clear();
-            while (zStream.Position < zStream.Length )
-            {
-                var zKeyDef = new IOPairDefinition(zStream);
-                var zItem = new ListViewItem(new string[] {
-                    zKeyDef.GetInputString(),
-                    zKeyDef.GetOutputString()
-                    });
-                zItem.Tag = zKeyDef;
-                listViewKeys.Items.Add(zItem);
-            }
+            return zOutputConfig;
         }
 
         /// <summary>
@@ -577,6 +612,101 @@ namespace KeyCap.Forms
             this.InvokeAction(() => Close());
         }
 
+        /// <summary>
+        /// Flushes all the ini settings
+        /// </summary>
+        private void FlushIniSettings()
+        {
+            var zBuilder = new StringBuilder();
+            var dictionaryFilenames = new Dictionary<string, object>();
+            foreach (var sFile in m_listRecentFiles)
+            {
+                var sLowerFile = sFile.ToLower();
+                if (dictionaryFilenames.ContainsKey(sLowerFile))
+                    continue;
+                dictionaryFilenames.Add(sLowerFile, null);
+                zBuilder.Append(sFile + KeyCapConstants.CharFileSplit);
+            }
+            m_zIniManager.SetValue(IniSettings.PreviousFiles, zBuilder.ToString());
+            m_zIniManager.FlushIniSettings();
+        }
+
+        private bool RetrieveAddConfigs(ref InputConfig zInputConfig, ref OutputConfig zOutputConfig, ref RemapEntry zRemapEntry)
+        {
+            var zCurrentInputConfig = (InputConfig)txtKeyIn.Tag;
+            var zCurrentOutputConfig = (OutputConfig)txtKeyOut.Tag;
+            if (null == zCurrentInputConfig || null == zCurrentOutputConfig)
+            {
+                MessageBox.Show(this, "Please specify both an input and output key.", "Error!", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                return false;
+            }
+
+            // build cloned configs based on the ui state
+            zInputConfig = UpdateInputFlags(new InputConfig(zCurrentInputConfig));
+            zOutputConfig = UpdateOutputFlags(new OutputConfig(zCurrentOutputConfig));
+
+            if (!ValidateOutputHasAction(zOutputConfig))
+            {
+                return false;
+            }
+
+            zRemapEntry = new RemapEntry(zInputConfig, zOutputConfig);
+
+            // verify this is not already defined
+            foreach (ListViewItem zListItem in listViewKeys.Items)
+            {
+                var zKeyOldDef = (RemapEntry)zListItem.Tag;
+                if (zRemapEntry.GetHashCode() != zKeyOldDef.GetHashCode())
+                {
+                    continue;
+                }
+
+                MessageBox.Show(this, "Duplicate inputs are not allowed!", "Error!", MessageBoxButtons.OK, MessageBoxIcon.Exclamation);
+                return false;
+            }
+
+            return true;
+        }
+
+        private bool RetrieveAppendConfigs(ref OutputConfig zOutputConfig, RemapEntry zRemapEntry)
+        {
+            var zCurrentOutputConfig = (OutputConfig)txtKeyOut.Tag;
+            if (null == zCurrentOutputConfig)
+            {
+                MessageBox.Show(this, "Please specify an output key.", "Error!", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                return false;
+            }
+
+            if (zRemapEntry.OutputConfigCount == KeyCapConstants.MaxOutputs)
+            {
+                MessageBox.Show(this, "Failed to append item. The maximum number of outputs allowed is {0}.".FormatString(KeyCapConstants.MaxOutputs),
+                    "Append Error!",
+                    MessageBoxButtons.OK, MessageBoxIcon.Exclamation);
+                return false;
+            }
+
+            zOutputConfig = UpdateOutputFlags(new OutputConfig(zCurrentOutputConfig));
+            if (!ValidateOutputHasAction(zOutputConfig))
+            {
+                return false;
+            }
+            return true;
+        }
+
+        private bool ValidateOutputHasAction(OutputConfig zOutputConfig)
+        {
+            if (!zOutputConfig.IsAssignedAction())
+            {
+                MessageBox.Show(this, "The output must be configured to perform an action.",
+                    "Output Configuration Error!",
+                    MessageBoxButtons.OK, MessageBoxIcon.Exclamation);
+                return false;
+            }
+
+            return true;
+        }
+
         #endregion
+
     }
 }

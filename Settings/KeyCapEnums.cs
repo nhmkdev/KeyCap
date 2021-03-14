@@ -44,4 +44,10 @@ namespace KeyCap.Settings
         InputZero,
         InputBad
     }
+
+    public enum CommandLineArgument
+    {
+        AutoStart, // auto start
+        F, // file name
+    }
 }

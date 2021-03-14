@@ -23,7 +23,6 @@
 ////////////////////////////////////////////////////////////////////////////////
 
 using System;
-using System.IO;
 using System.Windows.Forms;
 using KeyCap.Forms;
 using Support.UI;
@@ -38,14 +37,6 @@ namespace KeyCap
         [STAThread]
         static void Main(string[] args)
         {
-            if (1 == args.Length)
-            {
-                if (!File.Exists(args[0]))
-                {
-                    Console.WriteLine(args[0] + " does not exist!");
-                    Environment.Exit(1);
-                }
-            }
             Win32.ShowConsole(Application.ProductName + " Console " + DateTime.Now.ToString("MM/dd/yy hh:mm:ss"),
 #if DEBUG
                 true

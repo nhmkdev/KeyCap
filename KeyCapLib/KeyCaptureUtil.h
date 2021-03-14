@@ -1,4 +1,4 @@
-﻿////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
 // The MIT License (MIT)
 //
 // Copyright (c) 2019 Tim Stair
@@ -21,16 +21,23 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 ////////////////////////////////////////////////////////////////////////////////
+#pragma once
+#ifndef KEY_CAPTURE_UTIL_H_     // equivalently, #if !defined HEADER_H_
+#define KEY_CAPTURE_UTIL_H_
 
-namespace KeyCap.Settings
-{
-    /// <summary>
-    /// Constants for use across the application
-    /// </summary>
-    static class KeyCapConstants
-    {
-        public static readonly char CharFileSplit = ';';
-        public static readonly int MaxRecentProjects = 10;
-        public static readonly int MaxOutputs = byte.MaxValue;
-    }
-}
+#include "stdafx.h"
+#include "keycapturestructs.h"
+
+const int DESCRIPTION_BUFFER_SIZE = 256;
+
+void ResetRemapEntryState(RemapEntryState* pRemapEntryState, BYTE bToggled);
+bool IsButtonDownRequired(RemapEntryState* pRemapEntryState, OutputConfig* pKeyDef);
+bool IsButtonUpRequired(RemapEntryState* pRemapEntryState, OutputConfig* pKeyDef);
+
+void LogDebugMessage(const char *format, ...);
+void ValidateStructs();
+
+char* GetBoolString(BYTE nValue);
+char* GetInputConfigDescription(InputConfig inputConfig);
+char* GetOutputConfigDescription(OutputConfig outputConfig);
+#endif

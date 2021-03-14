@@ -1,0 +1,24 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <ClCompile Include="configfile.cpp" />
+    <ClCompile Include="keyboardinput.cpp" />
+    <ClCompile Include="keyboardproc.cpp" />
+    <ClCompile Include="keycapture.cpp" />
+    <ClCompile Include="keycaptureutil.cpp" />
+    <ClCompile Include="mouseinput.cpp" />
+    <ClCompile Include="sendinputthread.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="stdafx.h" />
+    <ClInclude Include="targetver.h" />
+    <ClInclude Include="configfile.h" />
+    <ClInclude Include="keyboardinput.h" />
+    <ClInclude Include="keyboardproc.h" />
+    <ClInclude Include="keycapture.h" />
+    <ClInclude Include="keycapturestructs.h" />
+    <ClInclude Include="keycaptureutil.h" />
+    <ClInclude Include="mouseinput.h" />
+    <ClInclude Include="sendinputthread.h" />
+  </ItemGroup>
+</Project>

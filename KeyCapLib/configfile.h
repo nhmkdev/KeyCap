@@ -1,8 +1,3 @@
-﻿////////////////////////////////////////////////////////////////////////////////
-// The MIT License (MIT)
-//
-// Copyright (c) 2019 Tim Stair
-//
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
 // in the Software without restriction, including without limitation the rights
@@ -21,16 +16,12 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 ////////////////////////////////////////////////////////////////////////////////
+#pragma once
+#ifndef CONFIG_FILE_H_     // equivalently, #if !defined HEADER_H_
+#define CONFIG_FILE_H_
 
-namespace KeyCap.Settings
-{
-    /// <summary>
-    /// Constants for use across the application
-    /// </summary>
-    static class KeyCapConstants
-    {
-        public static readonly char CharFileSplit = ';';
-        public static readonly int MaxRecentProjects = 10;
-        public static readonly int MaxOutputs = byte.MaxValue;
-    }
-}
+#include "stdafx.h"
+#include "keycapturestructs.h"
+
+int LoadFile(char* sFile, RemapEntry** g_KeyTranslationHead, void** g_KeyTranslationEnd);
+#endif

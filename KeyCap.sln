@@ -1,7 +1,7 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio 14
-VisualStudioVersion = 14.0.25123.0
+# Visual Studio 15
+VisualStudioVersion = 15.0.28010.2050
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "KeyCap", "KeyCap.csproj", "{F25A3BB8-AF8D-4642-8C3A-87CB44A5D013}"
 	ProjectSection(ProjectDependencies) = postProject
@@ -9,6 +9,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "KeyCap", "KeyCap.csproj", "
 	EndProjectSection
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "KeyCapLib", "KeyCapLib\KeyCapLib.vcxproj", "{5637CC7B-9FFF-486B-9D51-898DEDCB908A}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "KeyCapTest", "..\KeyCapTest\KeyCapTest.csproj", "{7A2EAF9A-467E-42A8-BC8D-23B4480AF4FD}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -44,8 +46,23 @@ Global
 		{5637CC7B-9FFF-486B-9D51-898DEDCB908A}.Release|x64.Build.0 = Release|x64
 		{5637CC7B-9FFF-486B-9D51-898DEDCB908A}.Release|x86.ActiveCfg = Release|Win32
 		{5637CC7B-9FFF-486B-9D51-898DEDCB908A}.Release|x86.Build.0 = Release|Win32
+		{7A2EAF9A-467E-42A8-BC8D-23B4480AF4FD}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{7A2EAF9A-467E-42A8-BC8D-23B4480AF4FD}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{7A2EAF9A-467E-42A8-BC8D-23B4480AF4FD}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{7A2EAF9A-467E-42A8-BC8D-23B4480AF4FD}.Debug|x64.Build.0 = Debug|Any CPU
+		{7A2EAF9A-467E-42A8-BC8D-23B4480AF4FD}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{7A2EAF9A-467E-42A8-BC8D-23B4480AF4FD}.Debug|x86.Build.0 = Debug|Any CPU
+		{7A2EAF9A-467E-42A8-BC8D-23B4480AF4FD}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{7A2EAF9A-467E-42A8-BC8D-23B4480AF4FD}.Release|Any CPU.Build.0 = Release|Any CPU
+		{7A2EAF9A-467E-42A8-BC8D-23B4480AF4FD}.Release|x64.ActiveCfg = Release|Any CPU
+		{7A2EAF9A-467E-42A8-BC8D-23B4480AF4FD}.Release|x64.Build.0 = Release|Any CPU
+		{7A2EAF9A-467E-42A8-BC8D-23B4480AF4FD}.Release|x86.ActiveCfg = Release|Any CPU
+		{7A2EAF9A-467E-42A8-BC8D-23B4480AF4FD}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {235C6525-B875-4543-B9C2-C3F88A79161C}
 	EndGlobalSection
 EndGlobal

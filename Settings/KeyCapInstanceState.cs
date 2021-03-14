@@ -22,15 +22,35 @@
 // SOFTWARE.
 ////////////////////////////////////////////////////////////////////////////////
 
+using System.Collections.Generic;
+using System.Linq;
+
 namespace KeyCap.Settings
 {
-    /// <summary>
-    /// Constants for use across the application
-    /// </summary>
-    static class KeyCapConstants
+    public class KeyCapInstanceState
     {
-        public static readonly char CharFileSplit = ';';
-        public static readonly int MaxRecentProjects = 10;
-        public static readonly int MaxOutputs = byte.MaxValue;
+        public bool AutoStart { get; private set; }
+        public string DefaultConfigFile { get; private set; }
+        public List<string> Arguments { get; private set; }
+
+        public KeyCapInstanceState(IReadOnlyList<string> args)
+        {
+            Arguments = args.Select(x => x.ToLower()).ToList();
+            AutoStart = IsArgPresent(CommandLineArgument.AutoStart);
+            DefaultConfigFile = GetStringArg(CommandLineArgument.F);
+        }
+
+        private bool IsArgPresent(CommandLineArgument eArgument)
+        {
+            return Arguments.Contains("-" + eArgument.ToString().ToLower());
+        }
+
+        private string GetStringArg(CommandLineArgument eArgument)
+        {
+            var nIndex = Arguments.IndexOf("-" + eArgument.ToString().ToLower());
+            if (nIndex == -1 || nIndex + 1 == Arguments.Count)
+                return null;
+            return Arguments[nIndex + 1];
+        }
     }
 }

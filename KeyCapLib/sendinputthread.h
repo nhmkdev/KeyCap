@@ -1,4 +1,4 @@
-﻿////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
 // The MIT License (MIT)
 //
 // Copyright (c) 2019 Tim Stair
@@ -21,16 +21,12 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 ////////////////////////////////////////////////////////////////////////////////
+#pragma once
+#ifndef SEND_INPUT_THREAD_H_     // equivalently, #if !defined HEADER_H_
+#define SEND_INPUT_THREAD_H_
 
-namespace KeyCap.Settings
-{
-    /// <summary>
-    /// Constants for use across the application
-    /// </summary>
-    static class KeyCapConstants
-    {
-        public static readonly char CharFileSplit = ';';
-        public static readonly int MaxRecentProjects = 10;
-        public static readonly int MaxOutputs = byte.MaxValue;
-    }
-}
+#include "stdafx.h"
+
+DWORD WINAPI SendInputThread(LPVOID lpParam);
+
+#endif

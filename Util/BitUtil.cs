@@ -22,15 +22,27 @@
 // SOFTWARE.
 ////////////////////////////////////////////////////////////////////////////////
 
-namespace KeyCap.Settings
+using System;
+
+namespace KeyCap.Util
 {
-    /// <summary>
-    /// Constants for use across the application
-    /// </summary>
-    static class KeyCapConstants
+    public static class BitUtil
     {
-        public static readonly char CharFileSplit = ';';
-        public static readonly int MaxRecentProjects = 10;
-        public static readonly int MaxOutputs = byte.MaxValue;
+        /// <summary>
+        /// Determines if the input type is flagged (as the there are multiple flags)
+        /// </summary>
+        /// <param name="eFlagBit">Flag to check for (assumes this is a bit index)</param>
+        /// <param name="byFlags">byte to check for the flag within</param>
+        /// <returns>true if the flag bit is 1, false otherwise</returns>
+        public static bool IsFlagged(int nFlags, Enum eFlagBit)
+        {
+            var nEnumFlag = Convert.ToInt32(eFlagBit);
+            return nEnumFlag == (nFlags & nEnumFlag);
+        }
+
+        public static int UpdateFlag(int nFlag, bool bFlagSetting, Enum eFlagBit)
+        {
+            return nFlag | (bFlagSetting ? Convert.ToInt32(eFlagBit) : 0);
+        }
     }
 }

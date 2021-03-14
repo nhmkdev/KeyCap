@@ -25,25 +25,10 @@
 // KeyCapture.cpp : Defines the entry point for key capture and re-map
 //
 
-#include "stdafx.h"
-#include "KeyCapture.h"
-#include "MouseInput.h"
-#include "KeyboardInput.h"
-
-// === enums
-
-enum HOOK_RESULT
-{
-	HOOK_CREATION_SUCCESS = 0,
-	HOOK_CREATION_FAILURE,
-	INPUT_MISSING,
-	INPUT_ZERO,
-	INPUT_BAD
-};
-
-// === consts and defines
-
-const int HASH_TABLE_SIZE = 256;
+#include "keycapture.h"
+#include "keyboardproc.h"
+#include "mouseinput.h"
+#include "configfile.h"
 
 // === prototypes
 // avoid mangling the function names (necessary for export and usage in C#)
@@ -53,17 +38,14 @@ extern "C"
 	__declspec(dllexport) void ShutdownCapture();
 }
 
-LRESULT CALLBACK LowLevelKeyboardProc(int nCode,WPARAM wParam,LPARAM lParam);
-DWORD WINAPI SendInputThread( LPVOID lpParam );
-void SendTriggerEndInputKeys(KeyDefinition* pTriggerDefinition);
-bool CheckKeyFlags(char nFlags, bool bAlt, bool bControl, bool bShift);
+// non extern functions
+void InitiallizeEntryContainerListItem(RemapEntryContainerListItem* pKeyItem, RemapEntry* pEntry);
 
-// === sweet globals
-KeyTranslationListItem* g_KeyTranslationTable[HASH_TABLE_SIZE];
-
-KeyTranslation* g_KeyTranslationHead = NULL;
-void* g_KeyTranslationEnd = NULL; // pointer indicating the end of the input file data
+// sweet globals
 HHOOK g_hookMain = NULL;
+RemapEntryContainerListItem* g_KeyTranslationTable[WIN_KEY_COUNT];
+RemapEntry* g_KeyTranslationHead = NULL;
+void* g_KeyTranslationEnd = NULL; // pointer indicating the end of the input file data
 
 /*
 Performs the load file operation and initiates the keyboard capture process
@@ -75,100 +57,68 @@ returns: A HOOK_RESULT value depending on the outcome of the file load and keybo
 */
 __declspec(dllexport) int LoadAndCaptureFromFile(HINSTANCE hInstance, char* sFile)
 {
-	assert(2 == sizeof(KeyDefinition)); // if this is invalid the configuration tool and kfg files will not be valid
+	ValidateStructs();
 
-	// convert to wide string for CreateFile
-	wchar_t wPath[MAX_PATH + 1];
-	size_t nConvertedCount = 0;
-	mbstowcs_s(&nConvertedCount, wPath, sFile, MAX_PATH + 1);
-
-	if (0 == nConvertedCount)
+	int nLoadResult = LoadFile(sFile, &g_KeyTranslationHead, &g_KeyTranslationEnd);
+	switch (nLoadResult)
 	{
-		return INPUT_MISSING;
+		case INPUT_MISSING:
+		case INPUT_ZERO:
+		case INPUT_BAD:
+			ShutdownCapture();
+			return nLoadResult;
 	}
 
-	// check file exists
-    if (0xFFFFFFFF == GetFileAttributes(wPath))
-	{
-        return INPUT_MISSING;
-	}
-
-	// Read Settings File
-    HANDLE hFile = CreateFile(wPath, GENERIC_READ, 0, 0, OPEN_ALWAYS, 0, 0);
-	if(INVALID_HANDLE_VALUE == hFile)
-	{
-		return INPUT_BAD;
-	}
-
-	BY_HANDLE_FILE_INFORMATION lpFileInformation;
-	GetFileInformationByHandle(hFile, &lpFileInformation);
-	g_KeyTranslationEnd = NULL;
-
-	if(lpFileInformation.nFileSizeLow)
-	{
-		g_KeyTranslationHead = (KeyTranslation*)malloc(lpFileInformation.nFileSizeLow);
-		DWORD dwBytesRead = 0;
-		// read the entire file into memory
-		// NOTE: This assumes the file is less than DWORD max in size(!)
-		if(ReadFile(hFile, g_KeyTranslationHead, lpFileInformation.nFileSizeLow, &dwBytesRead, NULL)) 
-		{
-			if(dwBytesRead == lpFileInformation.nFileSizeLow) // verify everything was read in...
-			{
-				g_KeyTranslationEnd = (char*)g_KeyTranslationHead + lpFileInformation.nFileSizeLow;
-			}
-		}
-	} // 0 < file size
-	CloseHandle(hFile);
-
-	// validate a proper end was set
-	if(!g_KeyTranslationEnd)
-	{
-		ShutdownCapture();
-		return INPUT_BAD;
-	}
 	// validate file (and compile the "hash" table g_KeyTranslationTable)
-	memset(g_KeyTranslationTable, 0, HASH_TABLE_SIZE * sizeof(KeyTranslationListItem*));
+	memset(g_KeyTranslationTable, 0, WIN_KEY_COUNT * sizeof(RemapEntryContainerListItem*));
 
-	// wipe the histories
-	memset(g_MouseToggleHistory, FALSE, MOUSE_BUTTON_COUNT);
-	memset(g_KeyToggleHistory, FALSE, MAX_VKEY);
-
-	KeyTranslation* pKey = g_KeyTranslationHead;
+	RemapEntry* pEntry = g_KeyTranslationHead;
 	bool bValidTranslationSet = false;
 		
-	while(NULL != pKey)
+	// The translation table contains linked lists of all the output sets for a given key due to the flag keys (shift/alt/ctrl)
+	while(NULL != pEntry)
 	{
-		if(0 == pKey->nKDefOutput)
+		if(0 == pEntry->outputCount)
 		{
 			ShutdownCapture();
 			return INPUT_BAD;
 		}
-			
-		if(NULL == g_KeyTranslationTable[pKey->kDef.nVkKey])
+		// TODO: just get a pointer to g_KeyTranslationTable[pKey->inputConfig.virtualKey] ?
+#ifdef _DEBUG
+		char* pInputConfigDescription = GetInputConfigDescription(pEntry->inputConfig);
+		LogDebugMessage("Loading %s Outputs: %d", pInputConfigDescription, pEntry->outputCount);
+		free(pInputConfigDescription);
+#endif
+		// if the entry doesn't exist yet for the given input vkey create a new one with a null next pointer
+		if(NULL == g_KeyTranslationTable[pEntry->inputConfig.virtualKey])
 		{
-			g_KeyTranslationTable[pKey->kDef.nVkKey] = (KeyTranslationListItem*)malloc(sizeof(KeyTranslationListItem));
-			g_KeyTranslationTable[pKey->kDef.nVkKey]->pTrans = pKey;
-			g_KeyTranslationTable[pKey->kDef.nVkKey]->pNext = NULL;
+			g_KeyTranslationTable[pEntry->inputConfig.virtualKey] = (RemapEntryContainerListItem*)malloc(sizeof(RemapEntryContainerListItem));
+			InitiallizeEntryContainerListItem(g_KeyTranslationTable[pEntry->inputConfig.virtualKey], pEntry);
+			g_KeyTranslationTable[pEntry->inputConfig.virtualKey]->pNext = NULL;
 		}
+		
+		// if the entry does exist create a new entry and append it to the existing linked list
 		else
 		{
-			KeyTranslationListItem* pKeyItem = g_KeyTranslationTable[pKey->kDef.nVkKey];
+			RemapEntryContainerListItem* pKeyItem = g_KeyTranslationTable[pEntry->inputConfig.virtualKey];
 			while(NULL != pKeyItem->pNext)
 			{
 				pKeyItem = pKeyItem->pNext;
 			}
-			pKeyItem->pNext = (KeyTranslationListItem*)malloc(sizeof(KeyTranslationListItem));
+			pKeyItem->pNext = (RemapEntryContainerListItem*)malloc(sizeof(RemapEntryContainerListItem));
 			pKeyItem = pKeyItem->pNext;
-			pKeyItem->pTrans = pKey;
+			InitiallizeEntryContainerListItem(pKeyItem, pEntry);
 			pKeyItem->pNext = NULL;
 		}
-		pKey = (KeyTranslation*)(&pKey->nKDefOutput + (1 + (pKey->nKDefOutput * sizeof(KeyDefinition))));
-		if(pKey > g_KeyTranslationEnd)
+		// jump to the next entry
+		pEntry = (RemapEntry*)(&pEntry->outputCount + (sizeof(unsigned int) + (pEntry->outputCount * sizeof(OutputConfig))));
+		if(pEntry > g_KeyTranslationEnd)
 		{
+			LogDebugMessage("Load Failed. Attempted to read bytes beyond file boundary.");
 			ShutdownCapture();
 			return INPUT_BAD;
 		}
-		else if(pKey == g_KeyTranslationEnd)
+		else if(pEntry == g_KeyTranslationEnd)
 		{
 			bValidTranslationSet = true;
 			break;
@@ -178,7 +128,7 @@ __declspec(dllexport) int LoadAndCaptureFromFile(HINSTANCE hInstance, char* sFil
 	if(bValidTranslationSet)
 	{
 		// Note: This fails in VisualStudio if managed debugging is NOT enabled in the project(!)
-		HHOOK g_hookMain = SetWindowsHookEx( WH_KEYBOARD_LL, LowLevelKeyboardProc, hInstance, NULL);
+		g_hookMain = SetWindowsHookEx( WH_KEYBOARD_LL, LowLevelKeyboardProc, hInstance, NULL);
 		if(NULL == g_hookMain)
 		{
 			ShutdownCapture();
@@ -196,15 +146,79 @@ __declspec(dllexport) int LoadAndCaptureFromFile(HINSTANCE hInstance, char* sFil
 	}
 }
 
+void InitiallizeEntryContainerListItem(RemapEntryContainerListItem* pKeyItem, RemapEntry* pEntry)
+{
+	pKeyItem->pEntryContainer = (RemapEntryContainer*)malloc(sizeof(RemapEntryContainer));
+	pKeyItem->pEntryContainer->pEntryState = (RemapEntryState*)calloc(1, sizeof(RemapEntryState));
+	pKeyItem->pEntryContainer->pEntry = pEntry;
+}
+
+void ShutdownInputThreads(bool forceShutdown)
+{
+	// signal shutdown for all entries with a thread handle
+	for (int nIdx = 0; nIdx < WIN_KEY_COUNT; nIdx++)
+	{
+		if (NULL != g_KeyTranslationTable[nIdx])
+		{
+			RemapEntryContainerListItem* pListItem = g_KeyTranslationTable[nIdx];
+			RemapEntryContainerListItem* pNextItem = NULL;
+			while (NULL != pListItem)
+			{
+				pNextItem = pListItem->pNext;
+				if (NULL != pListItem->pEntryContainer->pEntryState->threadHandle)
+				{
+					pListItem->pEntryContainer->pEntryState->bShutdown = true;
+				}
+				pListItem = pNextItem;
+			}
+		}
+	}
+
+	// a forced shutdown will kill threads (mostly for application exit)
+	if(!forceShutdown) return;
+
+	// monitor and terminate threads for all entries with a thread handle
+	for (int nIdx = 0; nIdx < WIN_KEY_COUNT; nIdx++)
+	{
+		if (NULL != g_KeyTranslationTable[nIdx])
+		{
+			RemapEntryContainerListItem* pListItem = g_KeyTranslationTable[nIdx];
+			RemapEntryContainerListItem* pNextItem = NULL;
+			while (NULL != pListItem)
+			{
+				pNextItem = pListItem->pNext;
+				if (NULL != pListItem->pEntryContainer->pEntryState->threadHandle)
+				{
+					DWORD dwExitCode = WAIT_TIMEOUT;
+					for (int shutdownIteration = 0; shutdownIteration < THREAD_SHUTDOWN_MAX_ATTEMPTS && dwExitCode != WAIT_OBJECT_0; shutdownIteration++)
+					{
+						// check on the state of the thread (for 100ms) (MS says not to use GetExitCodeThread unless the thread is known to be exited)
+						dwExitCode = WaitForSingleObject(pListItem->pEntryContainer->pEntryState->threadHandle, THREAD_SHUTDOWN_ATTEMPT_DELAY_MS);
+					}
+					if (dwExitCode != WAIT_OBJECT_0)
+					{
+						LogDebugMessage("Force terminating thread!");
+						TerminateThread(pListItem->pEntryContainer->pEntryState->threadHandle, 1);
+					}
+				}
+				pListItem = pNextItem;
+			}
+		}
+	}
+}
+
 /*
 Shuts down the key capture hook and frees any allocated memory
 */
 __declspec(dllexport) void ShutdownCapture()
 {
+	// stop any active threads
+	ShutdownInputThreads(true);
+	
 	// disable the hook
 	if(NULL != g_hookMain)
 	{
-		printf("Unhooked\n");
+		LogDebugMessage("Unhooked");
 		UnhookWindowsHookEx(g_hookMain);
 		g_hookMain = NULL;
 	}
@@ -212,165 +226,32 @@ __declspec(dllexport) void ShutdownCapture()
 	// memory clean up
 	if(NULL != g_KeyTranslationHead)
 	{
-		printf("Cleared Memory!\n");
+		LogDebugMessage("Cleared Memory!");
 		free(g_KeyTranslationHead);
 		g_KeyTranslationHead = NULL;
 	}
 
 	// clean up "hash" table
-	for(int nIdx = 0; nIdx < HASH_TABLE_SIZE; nIdx++)
+	for(int nIdx = 0; nIdx < WIN_KEY_COUNT; nIdx++)
 	{
 		if(NULL != g_KeyTranslationTable[nIdx])
 		{
-			KeyTranslationListItem* pKeyItem = g_KeyTranslationTable[nIdx];
-			KeyTranslationListItem* pKeyNextItem = NULL;
-			while(NULL != pKeyItem)
+			RemapEntryContainerListItem* pListItem = g_KeyTranslationTable[nIdx];
+			RemapEntryContainerListItem* pNextItem = NULL;
+			while(NULL != pListItem)
 			{
-				pKeyNextItem = pKeyItem->pNext;
-				free(pKeyItem);
-				pKeyItem = pKeyNextItem;
+				pNextItem = pListItem->pNext;
+				free(pListItem->pEntryContainer->pEntryState);
+				free(pListItem->pEntryContainer);
+				// NOTE: the entry itself was freed above
+				free(pListItem);
+				pListItem = pNextItem;
 			}
-			// NULL entries out
 			g_KeyTranslationTable[nIdx] = NULL;
 		}
 	}
 
 	g_KeyTranslationEnd = NULL; 
 
-	printf("Capture Shutdown\n");
-}
-
-/*
-Implementation of the win32 LowLevelKeyboardProc (see docs for information)
-
-This is a special implementation to avoid sending the actual keyup/keydown 
-messages (as those are the keys being captured). A separate thread is 
-created to send out the key(s) to send to the os.
-*/
-LRESULT CALLBACK LowLevelKeyboardProc(int nCode, WPARAM wParam, LPARAM lParam)
-{
-	KBDLLHOOKSTRUCT  *pHook = reinterpret_cast<KBDLLHOOKSTRUCT*>(lParam);
-	bool bSentInput = false;
-	
-	//bool bAlt = 0 != (pHook->flags & LLKHF_ALTDOWN);
-	bool bAlt = 0 != (GetAsyncKeyState(VK_MENU) & 0x8000);
-	bool bControl = 0 != (GetAsyncKeyState(VK_CONTROL) & 0x8000);
-	bool bShift = 0 != (GetAsyncKeyState(VK_SHIFT) & 0x8000);
-
-	// don't catch injected keys
-	if(!(pHook->flags & LLKHF_INJECTED))
-	{
-		if (HC_ACTION == nCode)  
-		{  
-			switch (wParam)  
-			{
-				case WM_KEYDOWN:
-				case WM_SYSKEYDOWN:
-					// keys being captured never send the keydown
-					{
-						KeyTranslationListItem* pKeyListItem = g_KeyTranslationTable[pHook->vkCode];
-						while(NULL != pKeyListItem)
-						{
-							KeyDefinition* pKeyDef = &pKeyListItem->pTrans->kDef;
-							if((bAlt == pKeyDef->bAlt) &&
-								(bControl == pKeyDef->bControl) &&
-								(bShift == pKeyDef->bShift))
-							{
-								CreateThread(NULL, 0, SendInputThread, pKeyListItem->pTrans, 0, NULL);
-								bSentInput = true;
-								break;
-							}
-							pKeyListItem = pKeyListItem->pNext;
-						}
-					}
-					break;
-				case WM_KEYUP:
-				case WM_SYSKEYUP:
-					// keys being captured never send the keyup
-					{
-						KeyTranslationListItem* pKeyListItem = g_KeyTranslationTable[pHook->vkCode];
-						while(NULL != pKeyListItem)
-						{
-							KeyDefinition* pKeyDef = &pKeyListItem->pTrans->kDef;
-							if((bAlt == pKeyDef->bAlt) &&
-								(bControl == pKeyDef->bControl) &&
-								(bShift == pKeyDef->bShift))
-							{
-								bSentInput = true;
-								break;
-							}
-							pKeyListItem = pKeyListItem->pNext;
-						}
-					}
-
-					break;
-			}
-		}
-	}
-	return bSentInput ? 1 : CallNextHookEx( NULL, nCode, wParam, lParam );  
-}
-
-/*
-Thread responsible for sending the desired inputs to the OS (see standard win32 definition)
-*/
-DWORD WINAPI SendInputThread( LPVOID lpParam ) 
-{
-	KeyTranslation* pItem = static_cast<KeyTranslation*>(lpParam);
-	KeyDefinition* pKeyDef = (KeyDefinition*)((char*)pItem + sizeof(KeyTranslation));
-	KeyDefinition* pEndDef = (KeyDefinition*)(&pItem->nKDefOutput + (1 + (pItem->nKDefOutput * sizeof(KeyDefinition))));
-	if(pKeyDef->bDoNothing)
-	{
-		return 0; // done!
-	}
-
-	// trigger any necessary release of shift/control/alt by passing the trigger key definition
-	SendTriggerEndInputKeys(&pItem->kDef);
-
-	// iterate over the target inputs
-	while(pKeyDef < pEndDef)
-	{
-		// mouse input
-		if (pKeyDef->bMouseOut)
-		{
-			SendInputMouse(pKeyDef);
-		}
-		// just a delay
-		else if (pKeyDef->bDelay)
-		{
-			Sleep(1000 * pKeyDef->nVkKey);
-		}
-		// keyboard input
-		else
-		{
-			SendInputKeys(pKeyDef);
-		}
-		pKeyDef++; // move the pointer forward one KeyDefinition
-	}
-
-#if 0
-	if(pKeyDef->bMouseOut)
-	{
-		// TODO: Support ctrl/alt/shift flags
-		while(pKeyDef < pEndDef)
-		{
-			SendInputMouse(pKeyDef);
-			pKeyDef++; // move the pointer forward one KeyDefinition
-		}
-	}
-	else
-	{
-		// trigger any necessary release of shift/control/alt by passing the trigger key definition
-		SendInputKey(pKeyDef, &pItem->kDef);
-		pKeyDef++; // move the pointer forward one KeyDefinition
-		while(pKeyDef < pEndDef)
-		{
-			SendInputKey(pKeyDef, NULL);
-			pKeyDef++; // move the pointer forward one KeyDefinition
-		}
-	}
-#endif
-#ifdef _DEBUG
-	OutputDebugStringA("\nSendInputThread: DEAD\n");
-#endif
-	return 0;
+	LogDebugMessage("Capture Shutdown");
 }

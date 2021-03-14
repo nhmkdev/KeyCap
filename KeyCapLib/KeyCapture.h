@@ -21,51 +21,18 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 ////////////////////////////////////////////////////////////////////////////////
-
+#pragma once
 #ifndef KEY_CAPTURE_H_     // equivalently, #if !defined HEADER_H_
 #define KEY_CAPTURE_H_
 
-// === structs
-struct KeyDefinition
-{
-#if 0
-	const int KEYCAP_SHIFT = 1 << 0;
-	const int KEYCAP_CONTROL = 1 << 1;
-	const int KEYCAP_ALT = 1 << 2;
-	const int KEYCAP_DONOTHING = 1 << 3;
-	const int KEYCAP_MOUSEOUT = 1 << 4;
-	const int KEYCAP_DELAY = 1 << 5;
-	const int KEYCAP_TOGGLE = 1 << 6;
-#endif
-	unsigned char bShift : 1;
-	unsigned char bControl : 1;
-	unsigned char bAlt : 1;
-	unsigned char bDoNothing : 1;
-	unsigned char bMouseOut : 1;
-	unsigned char bDelay : 1;
-	unsigned char bToggle : 1;
-	unsigned char pad : 1;
-	unsigned char nVkKey : 8; // this stores mouse input too... TODO better name
-};
+#include "keycapturestructs.h"
+#include "keycaptureutil.h"
 
-struct KeyTranslation
-{
-	KeyDefinition kDef;
+// shared functions
+void ShutdownInputThreads(bool forceShutdown);
 
-	char nKDefOutput; // count of output key definitions
-					  // KeyDefintion[nKDefOutput]
-};
-
-struct KeyTranslationListItem
-{
-	KeyTranslation* pTrans;
-	KeyTranslationListItem* pNext;
-};
-
-// TODO: this is no longer applicable...
-const int MAX_KEY_INPUT_PER_STROKE = 9; // control, alt (OR alt-up alt-down alt-up), shift, key, key-up, shift-up,  alt-up, control-up
-
-// TODO: completely NOT thread safe
-static INPUT g_inputBuffer[MAX_KEY_INPUT_PER_STROKE]; // keyboard output table (named input as it has the INPUT structs)
+// === consts and defines
+const int THREAD_SHUTDOWN_MAX_ATTEMPTS = 5;
+const int THREAD_SHUTDOWN_ATTEMPT_DELAY_MS = 100;
 
 #endif // KEY_CAPTURE_H_

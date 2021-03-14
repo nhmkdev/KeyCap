@@ -22,52 +22,58 @@
 // SOFTWARE.
 ////////////////////////////////////////////////////////////////////////////////
 
-#include "MouseInput.h"
+#include "mouseinput.h"
+#include "keyboardinput.h"
+#include "keycaptureutil.h"
 
-unsigned char g_MouseDownMap[] = { 0, MOUSEEVENTF_LEFTDOWN, MOUSEEVENTF_RIGHTDOWN, MOUSEEVENTF_MIDDLEDOWN };
-unsigned char g_MouseUpMap[] = { 0, MOUSEEVENTF_LEFTUP, MOUSEEVENTF_RIGHTUP, MOUSEEVENTF_MIDDLEUP };
+static const unsigned char g_MouseDownMap[] = { 0, MOUSEEVENTF_LEFTDOWN, MOUSEEVENTF_RIGHTDOWN, MOUSEEVENTF_MIDDLEDOWN };
+static const unsigned char g_MouseUpMap[] = { 0, MOUSEEVENTF_LEFTUP, MOUSEEVENTF_RIGHTUP, MOUSEEVENTF_MIDDLEUP };
+
+char* GetMouseDescription(DWORD dwVkKey);
 
 /*
 Sends the desired mouse input
 
 pKeyDef: pointer to a key definition for a mouse input
 */
-void SendInputMouse(KeyDefinition *pKeyDef)
+void SendInputMouse(RemapEntryState* pRemapEntryState, OutputConfig *pKeyDef)
 {
-	if (pKeyDef->nVkKey == MOUSE_NONE)
+	INPUT inputBuffer[MAX_KEY_INPUT_PER_STROKE];
+	memset(&inputBuffer, 0, sizeof(INPUT) * MAX_KEY_INPUT_PER_STROKE);
+
+	bool bSendMouseDown = IsButtonDownRequired(pRemapEntryState, pKeyDef);
+	bool bSendMouseUp = IsButtonUpRequired(pRemapEntryState, pKeyDef);
+
+	if (pKeyDef->virtualKey == MOUSE_NONE)
 	{
 		return;
 	}
 
 	int nIndex = 0;
 
-	if (pKeyDef->bToggle)
+	if (bSendMouseDown)
 	{
-		if (g_MouseToggleHistory[pKeyDef->nVkKey])
-		{
-			AppendSingleMouse(&g_inputBuffer[nIndex++], g_MouseUpMap[pKeyDef->nVkKey]);
-		}
-		else
-		{
-			AppendSingleMouse(&g_inputBuffer[nIndex++], g_MouseDownMap[pKeyDef->nVkKey]);
-		}
-		g_MouseToggleHistory[pKeyDef->nVkKey] = !g_MouseToggleHistory[pKeyDef->nVkKey];
+		ProcessModifierKeys(pKeyDef, &inputBuffer[nIndex], &nIndex, 0);
+		AppendSingleMouse(&inputBuffer[nIndex++], g_MouseDownMap[pKeyDef->virtualKey]);
 	}
-	else
+
+	if (bSendMouseUp)
 	{
-		AppendSingleMouse(&g_inputBuffer[nIndex++], g_MouseDownMap[pKeyDef->nVkKey]);
-		AppendSingleMouse(&g_inputBuffer[nIndex++], g_MouseUpMap[pKeyDef->nVkKey]);
-		g_MouseToggleHistory[pKeyDef->nVkKey] = false;
+		AppendSingleMouse(&inputBuffer[nIndex++], g_MouseUpMap[pKeyDef->virtualKey]);
+		ProcessModifierKeys(pKeyDef, &inputBuffer[nIndex], &nIndex, KEYEVENTF_KEYUP);
 	}
-#ifdef _DEBUG
-	char outputchar[256];
+
+	LogDebugMessage("Sending Mouse Inputs");
 	for (int nTemp = 0; nTemp < nIndex; nTemp++)
 	{
-		sprintf_s(outputchar, "SendingMouse: (flags)%x %d\n", g_inputBuffer[nTemp].ki.dwFlags, g_inputBuffer[0].mi.dwFlags);
-		OutputDebugStringA(outputchar);
+		if(inputBuffer[nTemp].type == INPUT_MOUSE)
+			LogDebugMessage("%s", GetMouseDescription(inputBuffer[nTemp].mi.dwFlags));
+		else
+			LogDebugMessage("%s: %d", GetKeyFlagsString(inputBuffer[nTemp].ki.dwFlags), inputBuffer[nTemp].ki.wVk);
 	}
-#endif
-	SendInput(nIndex, g_inputBuffer, sizeof(INPUT));
+
+	UINT inputsSent = SendInput(nIndex, inputBuffer, sizeof(INPUT));
+	LogDebugMessage("Sent Mouse Inputs (%d/%d)", inputsSent, nIndex);
 }
 
 /*
@@ -85,4 +91,27 @@ void AppendSingleMouse(INPUT* inputChar, unsigned char nVkKey)
 	inputChar->mi.mouseData = 0;
 	inputChar->mi.dwExtraInfo = 0;
 	inputChar->mi.dwFlags = nVkKey;
+
+	//LogDebugMessage("Append Mouse Action: %s", GetMouseDescription(nVkKey));
+}
+
+// NOT THREAD SAFE
+char* GetMouseDescription(DWORD dwVkKey)
+{
+	switch (dwVkKey)
+	{
+	case MOUSEEVENTF_LEFTDOWN:
+		return "LeftMouseDown";
+	case MOUSEEVENTF_RIGHTDOWN:
+		return "RightMouseDown";
+	case MOUSEEVENTF_MIDDLEDOWN:
+		return "MiddleMouseDown";
+	case MOUSEEVENTF_LEFTUP:
+		return "LeftMouseUp";
+	case MOUSEEVENTF_RIGHTUP:
+		return "RightMouseUp";
+	case MOUSEEVENTF_MIDDLEUP:
+		return "MiddleMouseUp";
+	}
+	return "Unknown";
 }

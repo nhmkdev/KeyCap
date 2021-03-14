@@ -21,12 +21,11 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 ////////////////////////////////////////////////////////////////////////////////
-
+#pragma once
 #ifndef MOUSE_INPUT_H_     // equivalently, #if !defined HEADER_H_
 #define MOUSE_INPUT_H_
 
-#include "stdafx.h"
-#include "KeyCapture.h"
+#include "keycapturestructs.h"
 
 enum MOUSE_BUTTON
 {
@@ -37,12 +36,7 @@ enum MOUSE_BUTTON
 	MOUSE_BUTTON_COUNT
 };
 
-static bool g_MouseToggleHistory[MOUSE_BUTTON_COUNT];
-
-extern unsigned char g_MouseDownMap[];
-extern unsigned char g_MouseUpMap[];
-
-void SendInputMouse(KeyDefinition *pKeyDef);
+void SendInputMouse(RemapEntryState* pRemapEntryState, OutputConfig *pKeyDef);
 void AppendSingleMouse(INPUT* inputChar, unsigned char nVkKey);
 
 #endif // MOUSE_INPUT_H_

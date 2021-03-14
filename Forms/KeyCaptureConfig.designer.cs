@@ -54,7 +54,7 @@ namespace KeyCap.Forms
             this.checkOutputShift = new System.Windows.Forms.CheckBox();
             this.checkOutputControl = new System.Windows.Forms.CheckBox();
             this.checkOutputAlt = new System.Windows.Forms.CheckBox();
-            this.checkOutputNone = new System.Windows.Forms.CheckBox();
+            this.checkOutputNothing = new System.Windows.Forms.CheckBox();
             this.notifyIcon = new System.Windows.Forms.NotifyIcon(this.components);
             this.contextMenuStripNotify = new System.Windows.Forms.ContextMenuStrip(this.components);
             this.toggleToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
@@ -63,14 +63,17 @@ namespace KeyCap.Forms
             this.exitToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.panelKeySetup = new System.Windows.Forms.Panel();
             this.groupBoxOutputKey = new System.Windows.Forms.GroupBox();
+            this.checkOutputCancel = new System.Windows.Forms.CheckBox();
+            this.checkOutputDelay = new System.Windows.Forms.CheckBox();
+            this.checkOutputRepeat = new System.Windows.Forms.CheckBox();
+            this.checkOutputUp = new System.Windows.Forms.CheckBox();
+            this.checkOutputDown = new System.Windows.Forms.CheckBox();
             this.panel1 = new System.Windows.Forms.Panel();
             this.btnAddExtra = new System.Windows.Forms.Button();
             this.btnAppendExtra = new System.Windows.Forms.Button();
-            this.label2 = new System.Windows.Forms.Label();
             this.checkOutputToggle = new System.Windows.Forms.CheckBox();
-            this.label1 = new System.Windows.Forms.Label();
-            this.numericUpDownDelay = new System.Windows.Forms.NumericUpDown();
-            this.comboBoxMouseOut = new System.Windows.Forms.ComboBox();
+            this.numericUpDownOutputParameter = new System.Windows.Forms.NumericUpDown();
+            this.comboBoxOutMouse = new System.Windows.Forms.ComboBox();
             this.groupBoxInputKey = new System.Windows.Forms.GroupBox();
             this.panelKeySetupControls = new System.Windows.Forms.Panel();
             this.menuStripMain.SuspendLayout();
@@ -78,7 +81,7 @@ namespace KeyCap.Forms
             this.panelKeySetup.SuspendLayout();
             this.groupBoxOutputKey.SuspendLayout();
             this.panel1.SuspendLayout();
-            ((System.ComponentModel.ISupportInitialize)(this.numericUpDownDelay)).BeginInit();
+            ((System.ComponentModel.ISupportInitialize)(this.numericUpDownOutputParameter)).BeginInit();
             this.groupBoxInputKey.SuspendLayout();
             this.panelKeySetupControls.SuspendLayout();
             this.SuspendLayout();
@@ -93,10 +96,10 @@ namespace KeyCap.Forms
             this.txtKeyIn.Multiline = true;
             this.txtKeyIn.Name = "txtKeyIn";
             this.txtKeyIn.ReadOnly = true;
-            this.txtKeyIn.Size = new System.Drawing.Size(384, 20);
+            this.txtKeyIn.Size = new System.Drawing.Size(250, 20);
             this.txtKeyIn.TabIndex = 0;
             this.txtKeyIn.Enter += new System.EventHandler(this.txtKey_Enter);
-            this.txtKeyIn.KeyDown += new System.Windows.Forms.KeyEventHandler(this.textBox_KeyDown);
+            this.txtKeyIn.KeyDown += new System.Windows.Forms.KeyEventHandler(this.txtKeyIn_KeyDown);
             this.txtKeyIn.Leave += new System.EventHandler(this.txtKey_Leave);
             // 
             // txtKeyOut
@@ -109,10 +112,10 @@ namespace KeyCap.Forms
             this.txtKeyOut.Multiline = true;
             this.txtKeyOut.Name = "txtKeyOut";
             this.txtKeyOut.ReadOnly = true;
-            this.txtKeyOut.Size = new System.Drawing.Size(384, 20);
-            this.txtKeyOut.TabIndex = 1;
+            this.txtKeyOut.Size = new System.Drawing.Size(250, 20);
+            this.txtKeyOut.TabIndex = 50;
             this.txtKeyOut.Enter += new System.EventHandler(this.txtKey_Enter);
-            this.txtKeyOut.KeyDown += new System.Windows.Forms.KeyEventHandler(this.textBox_KeyDown);
+            this.txtKeyOut.KeyDown += new System.Windows.Forms.KeyEventHandler(this.txtKeyOut_KeyDown);
             this.txtKeyOut.Leave += new System.EventHandler(this.txtKey_Leave);
             // 
             // menuStripMain
@@ -123,7 +126,7 @@ namespace KeyCap.Forms
             this.menuStripMain.Location = new System.Drawing.Point(0, 0);
             this.menuStripMain.Name = "menuStripMain";
             this.menuStripMain.RenderMode = System.Windows.Forms.ToolStripRenderMode.System;
-            this.menuStripMain.Size = new System.Drawing.Size(792, 24);
+            this.menuStripMain.Size = new System.Drawing.Size(784, 24);
             this.menuStripMain.TabIndex = 4;
             this.menuStripMain.Text = "menuStripMain";
             // 
@@ -196,10 +199,10 @@ namespace KeyCap.Forms
             this.listViewKeys.FullRowSelect = true;
             this.listViewKeys.GridLines = true;
             this.listViewKeys.HideSelection = false;
-            this.listViewKeys.Location = new System.Drawing.Point(12, 138);
+            this.listViewKeys.Location = new System.Drawing.Point(12, 170);
             this.listViewKeys.Name = "listViewKeys";
-            this.listViewKeys.Size = new System.Drawing.Size(768, 264);
-            this.listViewKeys.TabIndex = 5;
+            this.listViewKeys.Size = new System.Drawing.Size(760, 240);
+            this.listViewKeys.TabIndex = 75;
             this.listViewKeys.UseCompatibleStateImageBehavior = false;
             this.listViewKeys.View = System.Windows.Forms.View.Details;
             this.listViewKeys.SelectedIndexChanged += new System.EventHandler(this.listViewKeys_SelectedIndexChanged);
@@ -213,7 +216,7 @@ namespace KeyCap.Forms
             // columnHeaderOutput
             // 
             this.columnHeaderOutput.Text = "Output";
-            this.columnHeaderOutput.Width = 481;
+            this.columnHeaderOutput.Width = 510;
             // 
             // btnRemove
             // 
@@ -221,7 +224,7 @@ namespace KeyCap.Forms
             this.btnRemove.Location = new System.Drawing.Point(175, 0);
             this.btnRemove.Name = "btnRemove";
             this.btnRemove.Size = new System.Drawing.Size(75, 23);
-            this.btnRemove.TabIndex = 6;
+            this.btnRemove.TabIndex = 92;
             this.btnRemove.Text = "Remove";
             this.btnRemove.UseVisualStyleBackColor = true;
             this.btnRemove.Click += new System.EventHandler(this.btnRemove_Click);
@@ -232,7 +235,7 @@ namespace KeyCap.Forms
             this.btnAdd.Location = new System.Drawing.Point(13, 0);
             this.btnAdd.Name = "btnAdd";
             this.btnAdd.Size = new System.Drawing.Size(75, 23);
-            this.btnAdd.TabIndex = 7;
+            this.btnAdd.TabIndex = 90;
             this.btnAdd.Text = "Add";
             this.btnAdd.UseVisualStyleBackColor = true;
             this.btnAdd.Click += new System.EventHandler(this.btnAdd_Click);
@@ -244,7 +247,7 @@ namespace KeyCap.Forms
             this.btnAppend.Location = new System.Drawing.Point(94, 0);
             this.btnAppend.Name = "btnAppend";
             this.btnAppend.Size = new System.Drawing.Size(75, 23);
-            this.btnAppend.TabIndex = 8;
+            this.btnAppend.TabIndex = 91;
             this.btnAppend.Text = "Append";
             this.btnAppend.UseVisualStyleBackColor = true;
             this.btnAppend.Click += new System.EventHandler(this.btnAppend_Click);
@@ -252,10 +255,10 @@ namespace KeyCap.Forms
             // btnStart
             // 
             this.btnStart.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Left)));
-            this.btnStart.Location = new System.Drawing.Point(12, 438);
+            this.btnStart.Location = new System.Drawing.Point(12, 446);
             this.btnStart.Name = "btnStart";
             this.btnStart.Size = new System.Drawing.Size(78, 23);
-            this.btnStart.TabIndex = 9;
+            this.btnStart.TabIndex = 80;
             this.btnStart.Text = "Start";
             this.btnStart.UseVisualStyleBackColor = true;
             this.btnStart.Click += new System.EventHandler(this.btnStart_Click);
@@ -263,9 +266,9 @@ namespace KeyCap.Forms
             // checkInputAlt
             // 
             this.checkInputAlt.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
-            this.checkInputAlt.Location = new System.Drawing.Point(396, 19);
+            this.checkInputAlt.Location = new System.Drawing.Point(262, 20);
             this.checkInputAlt.Name = "checkInputAlt";
-            this.checkInputAlt.Size = new System.Drawing.Size(60, 20);
+            this.checkInputAlt.Size = new System.Drawing.Size(80, 20);
             this.checkInputAlt.TabIndex = 10;
             this.checkInputAlt.Text = "Alt";
             this.checkInputAlt.UseVisualStyleBackColor = true;
@@ -273,9 +276,9 @@ namespace KeyCap.Forms
             // checkInputControl
             // 
             this.checkInputControl.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
-            this.checkInputControl.Location = new System.Drawing.Point(458, 19);
+            this.checkInputControl.Location = new System.Drawing.Point(348, 20);
             this.checkInputControl.Name = "checkInputControl";
-            this.checkInputControl.Size = new System.Drawing.Size(60, 20);
+            this.checkInputControl.Size = new System.Drawing.Size(80, 20);
             this.checkInputControl.TabIndex = 11;
             this.checkInputControl.Text = "Control";
             this.checkInputControl.UseVisualStyleBackColor = true;
@@ -283,9 +286,9 @@ namespace KeyCap.Forms
             // checkInputShift
             // 
             this.checkInputShift.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
-            this.checkInputShift.Location = new System.Drawing.Point(531, 19);
+            this.checkInputShift.Location = new System.Drawing.Point(434, 20);
             this.checkInputShift.Name = "checkInputShift";
-            this.checkInputShift.Size = new System.Drawing.Size(60, 20);
+            this.checkInputShift.Size = new System.Drawing.Size(80, 20);
             this.checkInputShift.TabIndex = 12;
             this.checkInputShift.Text = "Shift";
             this.checkInputShift.UseVisualStyleBackColor = true;
@@ -293,42 +296,43 @@ namespace KeyCap.Forms
             // checkOutputShift
             // 
             this.checkOutputShift.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
-            this.checkOutputShift.Location = new System.Drawing.Point(531, 19);
+            this.checkOutputShift.Location = new System.Drawing.Point(434, 18);
             this.checkOutputShift.Name = "checkOutputShift";
-            this.checkOutputShift.Size = new System.Drawing.Size(60, 20);
-            this.checkOutputShift.TabIndex = 15;
+            this.checkOutputShift.Size = new System.Drawing.Size(80, 20);
+            this.checkOutputShift.TabIndex = 53;
             this.checkOutputShift.Text = "Shift";
             this.checkOutputShift.UseVisualStyleBackColor = true;
             // 
             // checkOutputControl
             // 
             this.checkOutputControl.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
-            this.checkOutputControl.Location = new System.Drawing.Point(458, 19);
+            this.checkOutputControl.Location = new System.Drawing.Point(348, 18);
             this.checkOutputControl.Name = "checkOutputControl";
-            this.checkOutputControl.Size = new System.Drawing.Size(60, 20);
-            this.checkOutputControl.TabIndex = 14;
+            this.checkOutputControl.Size = new System.Drawing.Size(80, 20);
+            this.checkOutputControl.TabIndex = 52;
             this.checkOutputControl.Text = "Control";
             this.checkOutputControl.UseVisualStyleBackColor = true;
             // 
             // checkOutputAlt
             // 
             this.checkOutputAlt.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
-            this.checkOutputAlt.Location = new System.Drawing.Point(396, 18);
+            this.checkOutputAlt.Location = new System.Drawing.Point(262, 17);
             this.checkOutputAlt.Name = "checkOutputAlt";
-            this.checkOutputAlt.Size = new System.Drawing.Size(60, 20);
-            this.checkOutputAlt.TabIndex = 13;
+            this.checkOutputAlt.Size = new System.Drawing.Size(80, 20);
+            this.checkOutputAlt.TabIndex = 51;
             this.checkOutputAlt.Text = "Alt";
             this.checkOutputAlt.UseVisualStyleBackColor = true;
             // 
-            // checkOutputNone
+            // checkOutputNothing
             // 
-            this.checkOutputNone.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
-            this.checkOutputNone.Location = new System.Drawing.Point(396, 44);
-            this.checkOutputNone.Name = "checkOutputNone";
-            this.checkOutputNone.Size = new System.Drawing.Size(126, 20);
-            this.checkOutputNone.TabIndex = 16;
-            this.checkOutputNone.Text = "Do Nothing";
-            this.checkOutputNone.UseVisualStyleBackColor = true;
+            this.checkOutputNothing.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
+            this.checkOutputNothing.Location = new System.Drawing.Point(520, 44);
+            this.checkOutputNothing.Name = "checkOutputNothing";
+            this.checkOutputNothing.Size = new System.Drawing.Size(80, 20);
+            this.checkOutputNothing.TabIndex = 59;
+            this.checkOutputNothing.Text = " Nothing";
+            this.checkOutputNothing.UseVisualStyleBackColor = true;
+            this.checkOutputNothing.CheckedChanged += new System.EventHandler(this.checkOutputDoNothing_CheckedChanged);
             // 
             // notifyIcon
             // 
@@ -385,37 +389,96 @@ namespace KeyCap.Forms
             this.panelKeySetup.Controls.Add(this.listViewKeys);
             this.panelKeySetup.Location = new System.Drawing.Point(0, 27);
             this.panelKeySetup.Name = "panelKeySetup";
-            this.panelKeySetup.Size = new System.Drawing.Size(792, 405);
+            this.panelKeySetup.Size = new System.Drawing.Size(784, 413);
             this.panelKeySetup.TabIndex = 17;
             // 
             // groupBoxOutputKey
             // 
             this.groupBoxOutputKey.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left) 
             | System.Windows.Forms.AnchorStyles.Right)));
+            this.groupBoxOutputKey.Controls.Add(this.checkOutputCancel);
+            this.groupBoxOutputKey.Controls.Add(this.checkOutputDelay);
+            this.groupBoxOutputKey.Controls.Add(this.checkOutputRepeat);
+            this.groupBoxOutputKey.Controls.Add(this.checkOutputUp);
+            this.groupBoxOutputKey.Controls.Add(this.checkOutputDown);
             this.groupBoxOutputKey.Controls.Add(this.panel1);
-            this.groupBoxOutputKey.Controls.Add(this.label2);
             this.groupBoxOutputKey.Controls.Add(this.checkOutputToggle);
-            this.groupBoxOutputKey.Controls.Add(this.label1);
-            this.groupBoxOutputKey.Controls.Add(this.numericUpDownDelay);
+            this.groupBoxOutputKey.Controls.Add(this.numericUpDownOutputParameter);
             this.groupBoxOutputKey.Controls.Add(this.txtKeyOut);
-            this.groupBoxOutputKey.Controls.Add(this.checkOutputNone);
-            this.groupBoxOutputKey.Controls.Add(this.comboBoxMouseOut);
+            this.groupBoxOutputKey.Controls.Add(this.checkOutputNothing);
+            this.groupBoxOutputKey.Controls.Add(this.comboBoxOutMouse);
             this.groupBoxOutputKey.Controls.Add(this.checkOutputControl);
             this.groupBoxOutputKey.Controls.Add(this.checkOutputAlt);
             this.groupBoxOutputKey.Controls.Add(this.checkOutputShift);
             this.groupBoxOutputKey.Location = new System.Drawing.Point(12, 61);
             this.groupBoxOutputKey.Name = "groupBoxOutputKey";
-            this.groupBoxOutputKey.Size = new System.Drawing.Size(768, 71);
+            this.groupBoxOutputKey.Size = new System.Drawing.Size(760, 103);
             this.groupBoxOutputKey.TabIndex = 19;
             this.groupBoxOutputKey.TabStop = false;
             this.groupBoxOutputKey.Text = "Output Key";
+            // 
+            // checkOutputCancel
+            // 
+            this.checkOutputCancel.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
+            this.checkOutputCancel.Location = new System.Drawing.Point(598, 44);
+            this.checkOutputCancel.Name = "checkOutputCancel";
+            this.checkOutputCancel.Size = new System.Drawing.Size(156, 20);
+            this.checkOutputCancel.TabIndex = 62;
+            this.checkOutputCancel.Text = "Cancel Outputs";
+            this.checkOutputCancel.UseVisualStyleBackColor = true;
+            this.checkOutputCancel.CheckedChanged += new System.EventHandler(this.checkOutputCancel_CheckedChanged);
+            // 
+            // checkOutputDelay
+            // 
+            this.checkOutputDelay.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
+            this.checkOutputDelay.Location = new System.Drawing.Point(348, 69);
+            this.checkOutputDelay.Name = "checkOutputDelay";
+            this.checkOutputDelay.Size = new System.Drawing.Size(80, 20);
+            this.checkOutputDelay.TabIndex = 61;
+            this.checkOutputDelay.Text = "Delay";
+            this.checkOutputDelay.UseVisualStyleBackColor = true;
+            this.checkOutputDelay.CheckedChanged += new System.EventHandler(this.checkOutputDelay_CheckedChanged);
+            // 
+            // checkOutputRepeat
+            // 
+            this.checkOutputRepeat.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
+            this.checkOutputRepeat.Location = new System.Drawing.Point(262, 69);
+            this.checkOutputRepeat.Name = "checkOutputRepeat";
+            this.checkOutputRepeat.Size = new System.Drawing.Size(80, 20);
+            this.checkOutputRepeat.TabIndex = 60;
+            this.checkOutputRepeat.Text = "Repeat";
+            this.checkOutputRepeat.UseVisualStyleBackColor = true;
+            // 
+            // checkOutputUp
+            // 
+            this.checkOutputUp.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
+            this.checkOutputUp.Checked = true;
+            this.checkOutputUp.CheckState = System.Windows.Forms.CheckState.Checked;
+            this.checkOutputUp.Location = new System.Drawing.Point(262, 43);
+            this.checkOutputUp.Name = "checkOutputUp";
+            this.checkOutputUp.Size = new System.Drawing.Size(80, 20);
+            this.checkOutputUp.TabIndex = 55;
+            this.checkOutputUp.Text = "Up";
+            this.checkOutputUp.UseVisualStyleBackColor = true;
+            // 
+            // checkOutputDown
+            // 
+            this.checkOutputDown.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
+            this.checkOutputDown.Checked = true;
+            this.checkOutputDown.CheckState = System.Windows.Forms.CheckState.Checked;
+            this.checkOutputDown.Location = new System.Drawing.Point(348, 44);
+            this.checkOutputDown.Name = "checkOutputDown";
+            this.checkOutputDown.Size = new System.Drawing.Size(80, 20);
+            this.checkOutputDown.TabIndex = 56;
+            this.checkOutputDown.Text = "Down";
+            this.checkOutputDown.UseVisualStyleBackColor = true;
             // 
             // panel1
             // 
             this.panel1.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Right)));
             this.panel1.Controls.Add(this.btnAddExtra);
             this.panel1.Controls.Add(this.btnAppendExtra);
-            this.panel1.Location = new System.Drawing.Point(218, 41);
+            this.panel1.Location = new System.Drawing.Point(582, 74);
             this.panel1.Name = "panel1";
             this.panel1.Size = new System.Drawing.Size(172, 23);
             this.panel1.TabIndex = 19;
@@ -426,7 +489,7 @@ namespace KeyCap.Forms
             this.btnAddExtra.Location = new System.Drawing.Point(16, 0);
             this.btnAddExtra.Name = "btnAddExtra";
             this.btnAddExtra.Size = new System.Drawing.Size(75, 23);
-            this.btnAddExtra.TabIndex = 7;
+            this.btnAddExtra.TabIndex = 60;
             this.btnAddExtra.Text = "Add";
             this.btnAddExtra.UseVisualStyleBackColor = true;
             this.btnAddExtra.Click += new System.EventHandler(this.btnAdd_Click);
@@ -438,65 +501,46 @@ namespace KeyCap.Forms
             this.btnAppendExtra.Location = new System.Drawing.Point(97, 0);
             this.btnAppendExtra.Name = "btnAppendExtra";
             this.btnAppendExtra.Size = new System.Drawing.Size(75, 23);
-            this.btnAppendExtra.TabIndex = 8;
+            this.btnAppendExtra.TabIndex = 61;
             this.btnAppendExtra.Text = "Append";
             this.btnAppendExtra.UseVisualStyleBackColor = true;
             this.btnAppendExtra.Click += new System.EventHandler(this.btnAppend_Click);
             // 
-            // label2
-            // 
-            this.label2.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Right)));
-            this.label2.Location = new System.Drawing.Point(597, 19);
-            this.label2.Name = "label2";
-            this.label2.Size = new System.Drawing.Size(69, 20);
-            this.label2.TabIndex = 21;
-            this.label2.Text = "Mouse:";
-            this.label2.TextAlign = System.Drawing.ContentAlignment.MiddleRight;
-            // 
             // checkOutputToggle
             // 
             this.checkOutputToggle.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
-            this.checkOutputToggle.Location = new System.Drawing.Point(531, 44);
+            this.checkOutputToggle.Location = new System.Drawing.Point(434, 44);
             this.checkOutputToggle.Name = "checkOutputToggle";
-            this.checkOutputToggle.Size = new System.Drawing.Size(75, 20);
-            this.checkOutputToggle.TabIndex = 20;
+            this.checkOutputToggle.Size = new System.Drawing.Size(80, 20);
+            this.checkOutputToggle.TabIndex = 57;
             this.checkOutputToggle.Text = "Toggle";
             this.checkOutputToggle.UseVisualStyleBackColor = true;
+            this.checkOutputToggle.CheckedChanged += new System.EventHandler(this.checkOutputToggle_CheckedChanged);
             // 
-            // label1
+            // numericUpDownOutputParameter
             // 
-            this.label1.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Right)));
-            this.label1.Location = new System.Drawing.Point(622, 45);
-            this.label1.Name = "label1";
-            this.label1.Size = new System.Drawing.Size(73, 20);
-            this.label1.TabIndex = 19;
-            this.label1.Text = "Delay (sec):";
-            this.label1.TextAlign = System.Drawing.ContentAlignment.MiddleRight;
-            // 
-            // numericUpDownDelay
-            // 
-            this.numericUpDownDelay.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Right)));
-            this.numericUpDownDelay.Location = new System.Drawing.Point(701, 45);
-            this.numericUpDownDelay.Maximum = new decimal(new int[] {
-            20,
+            this.numericUpDownOutputParameter.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
+            this.numericUpDownOutputParameter.Location = new System.Drawing.Point(434, 69);
+            this.numericUpDownOutputParameter.Maximum = new decimal(new int[] {
+            65535,
             0,
             0,
             0});
-            this.numericUpDownDelay.Name = "numericUpDownDelay";
-            this.numericUpDownDelay.Size = new System.Drawing.Size(61, 20);
-            this.numericUpDownDelay.TabIndex = 18;
-            this.numericUpDownDelay.ValueChanged += new System.EventHandler(this.numericUpDownDelay_ValueChanged);
+            this.numericUpDownOutputParameter.Name = "numericUpDownOutputParameter";
+            this.numericUpDownOutputParameter.Size = new System.Drawing.Size(80, 20);
+            this.numericUpDownOutputParameter.TabIndex = 58;
+            this.numericUpDownOutputParameter.ValueChanged += new System.EventHandler(this.numericUpDownDelay_ValueChanged);
             // 
-            // comboBoxMouseOut
+            // comboBoxOutMouse
             // 
-            this.comboBoxMouseOut.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
-            this.comboBoxMouseOut.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
-            this.comboBoxMouseOut.FormattingEnabled = true;
-            this.comboBoxMouseOut.Location = new System.Drawing.Point(672, 18);
-            this.comboBoxMouseOut.Name = "comboBoxMouseOut";
-            this.comboBoxMouseOut.Size = new System.Drawing.Size(90, 21);
-            this.comboBoxMouseOut.TabIndex = 17;
-            this.comboBoxMouseOut.SelectedIndexChanged += new System.EventHandler(this.comboBoxSpecialOut_SelectedIndexChanged);
+            this.comboBoxOutMouse.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
+            this.comboBoxOutMouse.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
+            this.comboBoxOutMouse.FormattingEnabled = true;
+            this.comboBoxOutMouse.Location = new System.Drawing.Point(520, 16);
+            this.comboBoxOutMouse.Name = "comboBoxOutMouse";
+            this.comboBoxOutMouse.Size = new System.Drawing.Size(90, 21);
+            this.comboBoxOutMouse.TabIndex = 54;
+            this.comboBoxOutMouse.SelectedIndexChanged += new System.EventHandler(this.comboBoxMouseOut_SelectedIndexChanged);
             // 
             // groupBoxInputKey
             // 
@@ -508,7 +552,7 @@ namespace KeyCap.Forms
             this.groupBoxInputKey.Controls.Add(this.checkInputShift);
             this.groupBoxInputKey.Location = new System.Drawing.Point(12, 3);
             this.groupBoxInputKey.Name = "groupBoxInputKey";
-            this.groupBoxInputKey.Size = new System.Drawing.Size(768, 52);
+            this.groupBoxInputKey.Size = new System.Drawing.Size(760, 52);
             this.groupBoxInputKey.TabIndex = 18;
             this.groupBoxInputKey.TabStop = false;
             this.groupBoxInputKey.Text = "Input Key";
@@ -519,7 +563,7 @@ namespace KeyCap.Forms
             this.panelKeySetupControls.Controls.Add(this.btnAdd);
             this.panelKeySetupControls.Controls.Add(this.btnRemove);
             this.panelKeySetupControls.Controls.Add(this.btnAppend);
-            this.panelKeySetupControls.Location = new System.Drawing.Point(530, 438);
+            this.panelKeySetupControls.Location = new System.Drawing.Point(522, 446);
             this.panelKeySetupControls.Name = "panelKeySetupControls";
             this.panelKeySetupControls.Size = new System.Drawing.Size(250, 23);
             this.panelKeySetupControls.TabIndex = 18;
@@ -528,13 +572,14 @@ namespace KeyCap.Forms
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.ClientSize = new System.Drawing.Size(792, 473);
+            this.ClientSize = new System.Drawing.Size(784, 481);
             this.Controls.Add(this.panelKeySetupControls);
             this.Controls.Add(this.panelKeySetup);
             this.Controls.Add(this.btnStart);
             this.Controls.Add(this.menuStripMain);
             this.MainMenuStrip = this.menuStripMain;
-            this.MinimumSize = new System.Drawing.Size(800, 500);
+            this.MinimizeBox = false;
+            this.MinimumSize = new System.Drawing.Size(800, 520);
             this.Name = "KeyCaptureConfig";
             this.ShowInTaskbar = false;
             this.Text = "KeyCap Configuration";
@@ -548,7 +593,7 @@ namespace KeyCap.Forms
             this.groupBoxOutputKey.ResumeLayout(false);
             this.groupBoxOutputKey.PerformLayout();
             this.panel1.ResumeLayout(false);
-            ((System.ComponentModel.ISupportInitialize)(this.numericUpDownDelay)).EndInit();
+            ((System.ComponentModel.ISupportInitialize)(this.numericUpDownOutputParameter)).EndInit();
             this.groupBoxInputKey.ResumeLayout(false);
             this.groupBoxInputKey.PerformLayout();
             this.panelKeySetupControls.ResumeLayout(false);
@@ -580,7 +625,7 @@ namespace KeyCap.Forms
         private System.Windows.Forms.CheckBox checkOutputShift;
         private System.Windows.Forms.CheckBox checkOutputControl;
         private System.Windows.Forms.CheckBox checkOutputAlt;
-        private System.Windows.Forms.CheckBox checkOutputNone;
+        private System.Windows.Forms.CheckBox checkOutputNothing;
         private System.Windows.Forms.NotifyIcon notifyIcon;
         private System.Windows.Forms.ContextMenuStrip contextMenuStripNotify;
         private System.Windows.Forms.ToolStripMenuItem toggleToolStripMenuItem;
@@ -588,19 +633,22 @@ namespace KeyCap.Forms
         private System.Windows.Forms.ToolStripMenuItem exitToolStripMenuItem;
         private System.Windows.Forms.Panel panelKeySetup;
         private System.Windows.Forms.Panel panelKeySetupControls;
-        private System.Windows.Forms.ComboBox comboBoxMouseOut;
+        private System.Windows.Forms.ComboBox comboBoxOutMouse;
         private System.Windows.Forms.ToolStripSeparator toolStripMenuItem1;
         private System.Windows.Forms.GroupBox groupBoxInputKey;
         private System.Windows.Forms.GroupBox groupBoxOutputKey;
-        private System.Windows.Forms.Label label1;
-        private System.Windows.Forms.NumericUpDown numericUpDownDelay;
+        private System.Windows.Forms.NumericUpDown numericUpDownOutputParameter;
         private System.Windows.Forms.ToolStripMenuItem previousConfigurationsToolStripMenuItem;
         private System.Windows.Forms.CheckBox checkOutputToggle;
         private System.Windows.Forms.ToolStripMenuItem newToolStripMenuItem;
-        private System.Windows.Forms.Label label2;
         private System.Windows.Forms.Panel panel1;
         private System.Windows.Forms.Button btnAddExtra;
         private System.Windows.Forms.Button btnAppendExtra;
+        private System.Windows.Forms.CheckBox checkOutputUp;
+        private System.Windows.Forms.CheckBox checkOutputDown;
+        private System.Windows.Forms.CheckBox checkOutputRepeat;
+        private System.Windows.Forms.CheckBox checkOutputDelay;
+        private System.Windows.Forms.CheckBox checkOutputCancel;
     }
 }
 

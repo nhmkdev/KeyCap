@@ -21,19 +21,17 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 ////////////////////////////////////////////////////////////////////////////////
-
+#pragma once
 #ifndef KEYBOARD_INPUT_H_     // equivalently, #if !defined HEADER_H_
 #define KEYBOARD_INPUT_H_
 
-#include "stdafx.h"
-#include "KeyCapture.h"
+#include "keycapturestructs.h"
 
-void SendInputKeys(KeyDefinition* pKeyDef);
+void SendInputKeys(RemapEntryState* pRemapEntryState, OutputConfig* pKeyDef);
+void SendTriggerEndInputKeys(RemapEntry* pRemapEntry);
 void AppendSingleKey(short keyScan, INPUT* inputChar, DWORD dwFlags);
+void ProcessModifierKeys(OutputConfig* pKeyDef, INPUT* pInput, int* nIndex, DWORD dwFlags);
+char* GetKeyFlagsString(DWORD dwFlags);
 
 const int MAX_VKEY = 256;
-
-// input histories for toggle usage
-extern bool g_KeyToggleHistory[];
-
-#endif // KEYBOARD_INPUT_H_
+#endif
