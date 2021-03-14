@@ -2,17 +2,23 @@
 
 Download the [Latest Release](https://github.com/nhmkdev/KeyCap/releases/latest)
 
+# Updates in progress
+
+Docs/code are being updated to v2 branch (just merged into master for further refinement/release).
+
 ## Description
 *Windows only* application for capture keyboard input and remapping it to:
 * another key or sequence of keys
 * mouse input
 * nothing at all
 * on/off toggles for keys and inputs (this allows a single keystroke to initiate a hold and a second keystroke to end the hold)
+* Repetition (with custom delay)
 
 ## Example Uses
 * (original inspiration) Shortcutting a sequence of shortcuts. I originally created the application long ago to help with a sequence of keyboard shortcuts necessary to perform file merges when integrating a branch with [Perforce](https://www.perforce.com/) + [Araxis Merge](https://www.araxis.com/)
 * [Starbound](http://playstarbound.com/) Keyboard shortcuts to toggle off/on mouse buttons. This makes extensive mining in the game a lot less painful. [Mass Effect 2](http://masseffect.bioware.com/me2/) planet scanning also can be a lot easier...
 * [Dreamfall Chapters](http://redthreadgames.com/games/chapters/) has a run button though it can be nice to have a button that toggles whether you are running or not instead of holding one down.
+* [Citadel: Forged With Fire](https://www.citadelthegame.com/) has a number of long mouse hold actions. Toggling this off/on instead of holding the button for long periods of time is extremely nice.
 
 ## Run on Startup
 
@@ -38,22 +44,38 @@ This program does perform keyboard capture and is essentially the first componen
 
 ## Technical Documentation
 
-### File Format
+### .kfg File Format
 
-The file is a repeated sequence of the following information.
+The file is prefixed with two 32-bit ints:
 
-Byte array representation of each input/output pair:
+| File Data Prefix | File Format Version |
+| --- | --- |
+| 0x0E0CA000 | 0x1
 
-| Flags | Value | Outputs Count | Flags | Value | (repeats) Flag and value for all outputs |
-| --- | --- | --- | --- | --- | --- |
+The remainder of the file is a repeated sequence of the following information. 
+One input may be associated with numerous outputs.
+Byte array representation of each input/output(s) pair:
+
+| Flags | VirtualKey | Parameter | Outputs Count | Output Flags | Output VirtualKey | Output Parameter | (repeats for all outputs) ... |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+
+There is no count for the number of inputs. Instead the file is read until no further input/output(s) pairings can be read.
 
 #### Flags
 
 The flags indicate information that modifies the value (alt/shift/ctrl and special functionality when mapping to another output)
 
+#### VirtualKey
+
+A [VirtualKey](https://docs.microsoft.com/en-us/windows/win32/inputdev/virtual-key-codes) value.
+
+#### Parameter
+
+A special value associated with the input/output (as necessary based on the function).
+
 #### Output Count
 
-This is limited to a byte, so 255 maximum.
+This is limited to a single byte despite the use of an int, so 255 maximum.
 
 ## History
 
