@@ -1,7 +1,7 @@
 ﻿////////////////////////////////////////////////////////////////////////////////
 // The MIT License (MIT)
 //
-// Copyright (c) 2019 Tim Stair
+// Copyright (c) 2021 Tim Stair
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -30,7 +30,7 @@ using System.Text;
 namespace KeyCap.Format
 {
     /// <summary>
-    /// Definition of a pair of inputs, the captured input and actual input to pass to the os
+    /// Definition of a pair of inputs, the captured input and actual input (OutputConfigs) to pass to the os
     /// </summary>
     public class RemapEntry
     {
@@ -63,7 +63,7 @@ namespace KeyCap.Format
         public RemapEntry(FileStream zFileStream)
         {
             InputConfig = new InputConfig(zFileStream);
-            m_nHash = (int)(InputConfig.Flags & 0xFF) + (int)((InputConfig.VirtualKey & 0xFF) << 8);
+            m_nHash = CalculateHashCode(InputConfig);
 
             var nOutputConfigs = zFileStream.ReadByte();
             if (0 >= nOutputConfigs)
@@ -71,7 +71,8 @@ namespace KeyCap.Format
                 throw new Exception("Output definition length must be > 0. Invalid File!");
             }
 
-            // TODO: comment on why this is
+            // read the 3 additional bytes representing the 32bit int containing the nOutputConfigs above (limited to 255)
+            // See RemapEntry struct inkeycapturestructs.h for the padding bytes
             zFileStream.Read(new byte[3], 0, 3);
 
             try
@@ -104,7 +105,7 @@ namespace KeyCap.Format
             var zStream = new MemoryStream();
             InputConfig.SerializeToStream(zStream);
             zStream.WriteByte((byte)OutputConfigs.Count);
-            // TODO: comment on padding
+            // output count is only 1 byte, pad out to a 32bit int
             zStream.Write(new byte[3], 0, 3);
             OutputConfigs.ForEach(oc => oc.SerializeToStream(zStream));
             return zStream.ToArray();

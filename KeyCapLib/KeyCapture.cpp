@@ -1,7 +1,7 @@
 ////////////////////////////////////////////////////////////////////////////////
 // The MIT License (MIT)
 //
-// Copyright (c) 2019 Tim Stair
+// Copyright (c) 2021 Tim Stair
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -76,6 +76,7 @@ __declspec(dllexport) int LoadAndCaptureFromFile(HINSTANCE hInstance, char* sFil
 	bool bValidTranslationSet = false;
 		
 	// The translation table contains linked lists of all the output sets for a given key due to the flag keys (shift/alt/ctrl)
+	// Example: input 'a' will be in the same list as 'shift+a' 'alt+a' 'ctrl+a' (or any combos like 'alt+shift+a')
 	while(NULL != pEntry)
 	{
 		if(0 == pEntry->outputCount)
@@ -129,21 +130,16 @@ __declspec(dllexport) int LoadAndCaptureFromFile(HINSTANCE hInstance, char* sFil
 	{
 		// Note: This fails in VisualStudio if managed debugging is NOT enabled in the project(!)
 		g_hookMain = SetWindowsHookEx( WH_KEYBOARD_LL, LowLevelKeyboardProc, hInstance, NULL);
-		if(NULL == g_hookMain)
-		{
-			ShutdownCapture();
-			return HOOK_CREATION_FAILURE;
-		}
-		else
+		if(NULL != g_hookMain)
 		{
 			return HOOK_CREATION_SUCCESS;
 		}
-	}
-	else
-	{
 		ShutdownCapture();
-		return INPUT_BAD;
+		return HOOK_CREATION_FAILURE;
 	}
+
+	ShutdownCapture();
+	return INPUT_BAD;
 }
 
 void InitiallizeEntryContainerListItem(RemapEntryContainerListItem* pKeyItem, RemapEntry* pEntry)

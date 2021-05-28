@@ -1,7 +1,7 @@
 ﻿////////////////////////////////////////////////////////////////////////////////
 // The MIT License (MIT)
 //
-// Copyright (c) 2019 Tim Stair
+// Copyright (c) 2021 Tim Stair
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -51,6 +51,7 @@ namespace KeyCap.Format
         {
             Flags = StreamUtil.ReadIntFromStream(zStream);
             VirtualKey = StreamUtil.ReadByteFromStream(zStream);
+            // VirtualKey is only a byte so read the remaining padding bytes for the 32bit int
             StreamUtil.ReadBytesFromStream(zStream, 3);
             Parameter = StreamUtil.ReadIntFromStream(zStream);
         }

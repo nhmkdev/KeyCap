@@ -1,7 +1,7 @@
 ﻿////////////////////////////////////////////////////////////////////////////////
 // The MIT License (MIT)
 //
-// Copyright (c) 2019 Tim Stair
+// Copyright (c) 2021 Tim Stair
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -56,7 +56,6 @@ namespace KeyCap.Format
             Up = 1 << 8,
             Repeat = 1 << 9,
             CancelActiveOutputs = 1 << 10,
-            // all ThreadKill ?
             // supports up to 32 entries
         }
 

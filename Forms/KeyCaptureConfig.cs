@@ -1,7 +1,7 @@
 ////////////////////////////////////////////////////////////////////////////////
 // The MIT License (MIT)
 //
-// Copyright (c) 2019 Tim Stair
+// Copyright (c) 2021 Tim Stair
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -175,9 +175,9 @@ namespace KeyCap.Forms
             }
         }
 
-#endregion
+        #endregion
 
-#region Text Capture Handling
+        #region Text Capture Handling
 
         private void txtKeyIn_KeyDown(object sender, KeyEventArgs e)
         {
@@ -210,9 +210,9 @@ namespace KeyCap.Forms
             ((TextBox)sender).BackColor = SystemColors.Control;
         }
 
-#endregion
+    #endregion
 
-#region AbstractDirtyForm overrides
+    #region AbstractDirtyForm overrides
 
         protected override bool SaveFormData(string sFileName)
         {
@@ -255,9 +255,9 @@ namespace KeyCap.Forms
             return true;
         }
 
-#endregion
+    #endregion
 
-#region Menu Events
+    #region Menu Events
 
         private void loadToolStripMenuItem_Click(object sender, EventArgs e)
         {
@@ -296,9 +296,9 @@ namespace KeyCap.Forms
             InitOpen(zItem.Text);
         }
 
-#endregion
+    #endregion
 
-#region Control Events
+    #region Control Events
 
         private void listViewKeys_SelectedIndexChanged(object sender, EventArgs e)
         {
