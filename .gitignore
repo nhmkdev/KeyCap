@@ -11,6 +11,7 @@ bin/Debug/
 bin/Release/*
 !bin/Release/History.txt
 !bin/Release/KeyCap.odt
+!bin/Release/Readme.txt
 KeyCapLib/Debug/
 KeyCapLib/Release/
 
