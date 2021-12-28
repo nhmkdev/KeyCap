@@ -1,7 +1,7 @@
 ////////////////////////////////////////////////////////////////////////////////
 // The MIT License (MIT)
 //
-// Copyright (c) 2021 Tim Stair
+// Copyright (c) 2022 Tim Stair
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -137,6 +137,46 @@ namespace KeyCap.Forms
             Close();
         }
 
+        private void btnAddOutputString_Click(object sender, EventArgs e)
+        {
+            const string MACRO_STRING_KEY = "macro_string_key";
+            var zQuery = new QueryPanelDialog("Enter String Macro", 400, false);
+            zQuery.SetIcon(this.Icon);
+            zQuery.AddTextBox("String", string.Empty, false, MACRO_STRING_KEY);
+            if (DialogResult.OK != zQuery.ShowDialog(this))
+            {
+                return;
+            }
+            var sMacro = zQuery.GetString(MACRO_STRING_KEY);
+            if (string.IsNullOrWhiteSpace(sMacro))
+            {
+                MessageBox.Show(this, "Please specify a string of output characters.", "Error!", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                return;
+            }
+            var zCurrentInputConfig = (InputConfig)txtKeyIn.Tag;
+            if (null == zCurrentInputConfig)
+            {
+                ShowKeysNotDefinedError();
+                return;
+            }
+
+            try
+            {
+                var zRemapEntry = new RemapEntry(zCurrentInputConfig, CreateOutputConfigFromCharacter(sMacro[0]));
+                for (var nIdx = 1; nIdx < sMacro.Length; nIdx++)
+                {
+                    zRemapEntry.AppendOutputConfig(CreateOutputConfigFromCharacter(sMacro[nIdx]));
+                }
+                if (!IsInputAlreadyDefined(zRemapEntry))
+                {
+                    AddRemapEntryToListView(zRemapEntry, true);
+                }
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show(this, "Unfortunately you have specified an unsupported character (at this time)." + ex.ToString(), "Error!", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+        }
 
         private void KeyCaptureConfig_FormClosing(object sender, FormClosingEventArgs e)
         {
@@ -212,7 +252,7 @@ namespace KeyCap.Forms
 
     #endregion
 
-    #region AbstractDirtyForm overrides
+        #region AbstractDirtyForm overrides
 
         protected override bool SaveFormData(string sFileName)
         {
@@ -257,7 +297,7 @@ namespace KeyCap.Forms
 
     #endregion
 
-    #region Menu Events
+        #region Menu Events
 
         private void loadToolStripMenuItem_Click(object sender, EventArgs e)
         {
@@ -298,7 +338,7 @@ namespace KeyCap.Forms
 
     #endregion
 
-    #region Control Events
+        #region Control Events
 
         private void listViewKeys_SelectedIndexChanged(object sender, EventArgs e)
         {
@@ -366,15 +406,27 @@ namespace KeyCap.Forms
             OutputConfig zOutputConfig = null;
             RemapEntry zRemapEntry = null;
             if (!RetrieveAddConfigs(ref zInputConfig, ref zOutputConfig, ref zRemapEntry)) return;
+            AddRemapEntryToListView(zRemapEntry, true);
+        }
 
-            var zItem = new ListViewItem(new string[] { 
-                zRemapEntry.GetInputString(), 
-                zRemapEntry.GetOutputString() });
-            zItem.Tag = zRemapEntry;
+        private void AddRemapEntryToListView(RemapEntry zRemapEntry, bool bMarkDirty)
+        {
+            var zItem = new ListViewItem(new string[]
+            {
+                zRemapEntry.GetInputString(),
+                zRemapEntry.GetOutputString()
+            })
+            {
+                Tag = zRemapEntry,
+                ToolTipText = zRemapEntry.GetOutputString()
+            };
             listViewKeys.Items.Add(zItem);
             listViewKeys.SelectedItems.Clear();
             zItem.Selected = true;
-            MarkDirty();
+            if (bMarkDirty)
+            {
+                MarkDirty();
+            }
         }
 
         private void btnAppend_Click(object sender, EventArgs e)
@@ -652,20 +704,26 @@ namespace KeyCap.Forms
 
             zRemapEntry = new RemapEntry(zInputConfig, zOutputConfig);
 
+            // flip this result for indicator of a good remap entry
+            return !IsInputAlreadyDefined(zRemapEntry);
+        }
+
+        private bool IsInputAlreadyDefined(RemapEntry zNewRemapEntry)
+        {
             // verify this is not already defined
             foreach (ListViewItem zListItem in listViewKeys.Items)
             {
                 var zKeyOldDef = (RemapEntry)zListItem.Tag;
-                if (zRemapEntry.GetHashCode() != zKeyOldDef.GetHashCode())
+                if (zNewRemapEntry.GetHashCode() != zKeyOldDef.GetHashCode())
                 {
                     continue;
                 }
 
                 MessageBox.Show(this, "Duplicate inputs are not allowed!", "Error!", MessageBoxButtons.OK, MessageBoxIcon.Exclamation);
-                return false;
+                return true;
             }
 
-            return true;
+            return false;
         }
 
         private bool RetrieveAppendConfigs(ref OutputConfig zOutputConfig, RemapEntry zRemapEntry)
@@ -705,6 +763,100 @@ namespace KeyCap.Forms
 
             return true;
         }
+
+        private OutputConfig CreateOutputConfigFromCharacter(char cInput)
+        {
+            var bShift = false;
+            var byteKey = GetKeysByte(cInput, ref bShift);
+            var nFlags = (bShift ? (int)OutputConfig.OutputFlag.Shift : 0) |
+                (int)OutputConfig.OutputFlag.Down | (int)OutputConfig.OutputFlag.Up;
+            return new OutputConfig(nFlags, byteKey);
+        }
+
+        private byte GetKeysByte(char cInput, ref bool bShift)
+        {
+            bShift = char.IsUpper(cInput);
+            try
+            {
+                return (byte)(Keys)Enum.Parse(typeof(Keys), cInput.ToString(), true);
+            }
+            catch (Exception)
+            {
+                // HACK
+                // ignore and try the switch
+            }
+#warning HACK This is super limited to a very specific keyboard
+            switch (cInput)
+            {
+                case ' ':
+                    return (byte)Keys.Space;
+                case '!':
+                    bShift = true;
+                    return (byte)Keys.D1;
+                case '@':
+                    bShift = true;
+                    return (byte)Keys.D2;
+                case '#':
+                    bShift = true;
+                    return (byte)Keys.D3;
+                case '$':
+                    bShift = true;
+                    return (byte)Keys.D4;
+                case '%':
+                    bShift = true;
+                    return (byte)Keys.D5;
+                case '^':
+                    bShift = true;
+                    return (byte)Keys.D6;
+                case '&':
+                    bShift = true;
+                    return (byte)Keys.D7;
+                case '*':
+                    bShift = true;
+                    return (byte)Keys.D8;
+                case '(':
+                    bShift = true;
+                    return (byte)Keys.D9;
+                case ')':
+                    bShift = true;
+                    return (byte)Keys.D0;
+                case '~':
+                    bShift = true;
+                    return (byte)Keys.Oemtilde;
+                case '{':
+                    bShift = true;
+                    return (byte)Keys.OemOpenBrackets;
+                case '}':
+                    bShift = true;
+                    return (byte)Keys.Oem6;
+                case '|':
+                    bShift = true;
+                    return (byte)Keys.Oem5;
+                case ':':
+                    bShift = true;
+                    return (byte)Keys.Oem1;
+                case '"':
+                    bShift = true;
+                    return (byte)Keys.Oem7;
+                case '<':
+                    bShift = true;
+                    return (byte)Keys.Oemcomma;
+                case '>':
+                    bShift = true;
+                    return (byte)Keys.OemPeriod;
+                case '?':
+                    bShift = true;
+                    return (byte)Keys.OemQuestion;
+            }
+
+            throw new Exception("Unsupported character: " + cInput);
+        }
+
+        private void ShowKeysNotDefinedError()
+        {
+            MessageBox.Show(this, "Please specify both an input and output key.", "Error!", MessageBoxButtons.OK, MessageBoxIcon.Error);
+        }
+
 
         #endregion
 

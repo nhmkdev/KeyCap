@@ -63,6 +63,7 @@ namespace KeyCap.Forms
             this.exitToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.panelKeySetup = new System.Windows.Forms.Panel();
             this.groupBoxOutputKey = new System.Windows.Forms.GroupBox();
+            this.btnAddOutputString = new System.Windows.Forms.Button();
             this.checkOutputCancel = new System.Windows.Forms.CheckBox();
             this.checkOutputDelay = new System.Windows.Forms.CheckBox();
             this.checkOutputRepeat = new System.Windows.Forms.CheckBox();
@@ -396,6 +397,7 @@ namespace KeyCap.Forms
             // 
             this.groupBoxOutputKey.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left) 
             | System.Windows.Forms.AnchorStyles.Right)));
+            this.groupBoxOutputKey.Controls.Add(this.btnAddOutputString);
             this.groupBoxOutputKey.Controls.Add(this.checkOutputCancel);
             this.groupBoxOutputKey.Controls.Add(this.checkOutputDelay);
             this.groupBoxOutputKey.Controls.Add(this.checkOutputRepeat);
@@ -416,6 +418,17 @@ namespace KeyCap.Forms
             this.groupBoxOutputKey.TabIndex = 19;
             this.groupBoxOutputKey.TabStop = false;
             this.groupBoxOutputKey.Text = "Output Key";
+            // 
+            // btnAddOutputString
+            // 
+            this.btnAddOutputString.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Left)));
+            this.btnAddOutputString.Location = new System.Drawing.Point(6, 74);
+            this.btnAddOutputString.Name = "btnAddOutputString";
+            this.btnAddOutputString.Size = new System.Drawing.Size(116, 23);
+            this.btnAddOutputString.TabIndex = 62;
+            this.btnAddOutputString.Text = "Add Output String";
+            this.btnAddOutputString.UseVisualStyleBackColor = true;
+            this.btnAddOutputString.Click += new System.EventHandler(this.btnAddOutputString_Click);
             // 
             // checkOutputCancel
             // 
@@ -649,6 +662,7 @@ namespace KeyCap.Forms
         private System.Windows.Forms.CheckBox checkOutputRepeat;
         private System.Windows.Forms.CheckBox checkOutputDelay;
         private System.Windows.Forms.CheckBox checkOutputCancel;
+        private System.Windows.Forms.Button btnAddOutputString;
     }
 }
 
