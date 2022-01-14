@@ -1,5 +1,8 @@
 KeyCap Version History
 --------------------------
+2.0.0.3
+- Added ability to more easily create macros for strings of characters (very limited keyboard support)
+
 2.0.0.1
 - Added ability to cancel all active threads (repeats, delays, etc.)
 - Fixed a critical bug with shutdown (basically it wouldn't)
