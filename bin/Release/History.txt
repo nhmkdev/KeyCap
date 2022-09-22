@@ -1,6 +1,7 @@
 KeyCap Version History
 --------------------------
 2.0.0.3
+- Updated to .NET Framework 4.8
 - Added ability to more easily create macros for strings of characters (very limited keyboard support)
 
 2.0.0.1
