@@ -461,6 +461,7 @@ namespace KeyCap.Forms
             this.checkOutputRepeat.TabIndex = 60;
             this.checkOutputRepeat.Text = "Repeat";
             this.checkOutputRepeat.UseVisualStyleBackColor = true;
+            this.checkOutputRepeat.CheckedChanged += new System.EventHandler(this.checkOutputRepeat_CheckedChanged);
             // 
             // checkOutputUp
             // 
@@ -533,15 +534,30 @@ namespace KeyCap.Forms
             // numericUpDownOutputParameter
             // 
             this.numericUpDownOutputParameter.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
+            this.numericUpDownOutputParameter.Increment = new decimal(new int[] {
+            100,
+            0,
+            0,
+            0});
             this.numericUpDownOutputParameter.Location = new System.Drawing.Point(434, 69);
             this.numericUpDownOutputParameter.Maximum = new decimal(new int[] {
             65535,
             0,
             0,
             0});
+            this.numericUpDownOutputParameter.Minimum = new decimal(new int[] {
+            100,
+            0,
+            0,
+            0});
             this.numericUpDownOutputParameter.Name = "numericUpDownOutputParameter";
             this.numericUpDownOutputParameter.Size = new System.Drawing.Size(80, 20);
             this.numericUpDownOutputParameter.TabIndex = 58;
+            this.numericUpDownOutputParameter.Value = new decimal(new int[] {
+            100,
+            0,
+            0,
+            0});
             this.numericUpDownOutputParameter.ValueChanged += new System.EventHandler(this.numericUpDownDelay_ValueChanged);
             // 
             // comboBoxOutMouse

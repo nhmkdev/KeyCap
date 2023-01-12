@@ -1,7 +1,7 @@
 ﻿////////////////////////////////////////////////////////////////////////////////
 // The MIT License (MIT)
 //
-// Copyright (c) 2022 Tim Stair
+// Copyright (c) 2023 Tim Stair
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -114,7 +114,7 @@ namespace KeyCap.Format
             // delay (every other flag ignored)
             if (IsFlaggedAs(OutputFlag.Delay))
             {
-                return "[Delay({0}s)]".FormatString(Parameter);
+                return "[Delay({0}ms)]".FormatString(Parameter);
             }
 
             if (IsFlaggedAs(OutputFlag.DoNothing))

@@ -1,7 +1,7 @@
 ////////////////////////////////////////////////////////////////////////////////
 // The MIT License (MIT)
 //
-// Copyright (c) 2022 Tim Stair
+// Copyright (c) 2023 Tim Stair
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -22,10 +22,13 @@
 // SOFTWARE.
 ////////////////////////////////////////////////////////////////////////////////
 
+// #define LOG_KEYS
+
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Drawing;
+using System.Linq;
 using System.Text;
 using System.Threading;
 using System.Windows.Forms;
@@ -44,6 +47,7 @@ namespace KeyCap.Forms
         private readonly List<string> m_listRecentFiles = new List<string>();
         private readonly KeyCapInstanceState m_zInstanceState;
         private readonly IniManager m_zIniManager = new IniManager(Application.ProductName, false, true, false);
+        private HashSet<Control> m_setOutputControls = new HashSet<Control>();
 
         private FormWindowState m_ePrevWindowState = FormWindowState.Normal;
         private bool m_bShutdownApplication = false;
@@ -69,12 +73,6 @@ namespace KeyCap.Forms
             Text = m_sBaseTitle;
             
             m_zInstanceState = new KeyCapInstanceState(args);
-
-            // load the command line specified file
-            if (m_zInstanceState.DefaultConfigFile != null)
-            {
-                InitOpen(m_zInstanceState.DefaultConfigFile);
-            }
         }
 
         #region Form Events
@@ -105,13 +103,82 @@ namespace KeyCap.Forms
                 }
             }
 
+            InitOutputControlsSet();
+            ConfigureToolTips();
+
+            // load the command line specified file
+            if (m_zInstanceState.DefaultConfigFile != null)
+            {
+                InitOpen(m_zInstanceState.DefaultConfigFile);
+            }
+
             // initialize capture from command line specified file
             if (0 != m_sLoadedFile.Length && m_zInstanceState.AutoStart)
             {
-                btnStart_Click(sender, new EventArgs());
+                btnStart_Click(sender, EventArgs.Empty);
                 new Thread(MinimizeThread) { Name = "MinimizeThread" }.Start();
             }
         }
+
+        private void InitOutputControlsSet()
+        {
+            m_setOutputControls = new HashSet<Control>(new Control[]
+            {
+                checkOutputAlt,
+                checkOutputControl,
+                checkOutputShift,
+                checkOutputUp,
+                checkOutputDown,
+                checkOutputToggle,
+                checkOutputNothing,
+                checkOutputCancel,
+                checkOutputRepeat,
+                checkOutputDelay,
+                numericUpDownOutputParameter,
+                comboBoxOutMouse,
+            });
+        }
+
+        private void KeyCaptureConfig_FormClosing(object sender, FormClosingEventArgs e)
+        {
+            // exit requested (can only be canceled with the save on close cancel)
+            if (m_bShutdownApplication)
+            {
+                SaveOnClose(e);
+                if (e.Cancel)
+                {
+                    m_bShutdownApplication = false;
+                    return;
+                }
+                FlushIniSettings();
+            }
+            else
+            {
+                switch (e.CloseReason)
+                {
+                    case CloseReason.TaskManagerClosing:
+                    case CloseReason.WindowsShutDown:
+                        SaveOnClose(e);
+                        break;
+                    default:
+                        e.Cancel = true;
+                        Hide();
+                        break;
+                }
+            }
+        }
+
+        private void KeyCaptureConfig_Resize(object sender, EventArgs e)
+        {
+            if (WindowState != FormWindowState.Minimized)
+            {
+                m_ePrevWindowState = WindowState;
+            }
+        }
+
+        #endregion
+
+        #region Form Click Events
 
         private void newToolStripMenuItem_Click(object sender, EventArgs e)
         {
@@ -178,66 +245,29 @@ namespace KeyCap.Forms
             }
         }
 
-        private void KeyCaptureConfig_FormClosing(object sender, FormClosingEventArgs e)
-        {
-            // exit requested (can only be canceled with the save on close cancel)
-            if (m_bShutdownApplication)
-            {
-                SaveOnClose(e);
-                if (e.Cancel)
-                {
-                    m_bShutdownApplication = false;
-                    return;
-                }
-                FlushIniSettings();
-            }
-            else
-            {
-                switch (e.CloseReason)
-                {
-                    case CloseReason.TaskManagerClosing:
-                    case CloseReason.WindowsShutDown:
-                        SaveOnClose(e);
-                        break;
-                    default:
-                        e.Cancel = true;
-                        Hide();
-                        break;
-                }
-            }
-        }
-
-        private void KeyCaptureConfig_Resize(object sender, EventArgs e)
-        {
-            if (WindowState != FormWindowState.Minimized)
-            {
-                m_ePrevWindowState = WindowState;
-            }
-        }
-
         #endregion
 
         #region Text Capture Handling
 
         private void txtKeyIn_KeyDown(object sender, KeyEventArgs e)
         {
-            //            Console.Out.WriteLine("Key Input: {0} 0x{1}".FormatString(e.KeyCode, e.KeyCode.ToString("x")));
+#if LOG_KEYS
+            Console.Out.WriteLine("Key Input: {0} 0x{1}".FormatString(e.KeyCode, e.KeyCode.ToString("x")));
+#endif
             UpdateTextBox((TextBox)sender, e, new InputConfig((byte)e.KeyCode, e));
         }
 
         private void txtKeyOut_KeyDown(object sender, KeyEventArgs e)
         {
-            //            Console.Out.WriteLine("Key Input: {0} 0x{1}".FormatString(e.KeyCode, e.KeyCode.ToString("x")));
-            UpdateTextBox((TextBox)sender, e, new OutputConfig(0, (byte)e.KeyCode, 0, e));
-            // delay is toggled off if a key is specified
+#if LOG_KEYS
+            Console.Out.WriteLine("Key Input: {0} 0x{1}".FormatString(e.KeyCode, e.KeyCode.ToString("x")));
+#endif
+            // Anything previously configured that would conflict with the output is reset
+            checkOutputNothing.Checked = false;
+            checkOutputCancel.Checked = false;
             checkOutputDelay.Checked = false;
-        }
 
-        private void UpdateTextBox<T>(TextBox txtBox, KeyEventArgs e, T config) where T : BaseIOConfig
-        {
-            txtBox.Text = config.GetDescription();
-            txtBox.Tag = config;
-            e.Handled = true;
+            UpdateTextBox((TextBox)sender, e, new OutputConfig(0, (byte)e.KeyCode, 0, e));
         }
 
         private void txtKey_Enter(object sender, EventArgs e)
@@ -250,7 +280,7 @@ namespace KeyCap.Forms
             ((TextBox)sender).BackColor = SystemColors.Control;
         }
 
-    #endregion
+        #endregion
 
         #region AbstractDirtyForm overrides
 
@@ -295,7 +325,7 @@ namespace KeyCap.Forms
             return true;
         }
 
-    #endregion
+        #endregion
 
         #region Menu Events
 
@@ -336,7 +366,7 @@ namespace KeyCap.Forms
             InitOpen(zItem.Text);
         }
 
-    #endregion
+        #endregion
 
         #region Control Events
 
@@ -352,60 +382,12 @@ namespace KeyCap.Forms
             ListViewAssist.ResizeColumnHeaders(listViewKeys);
         }
 
-        private void comboBoxMouseOut_SelectedIndexChanged(object sender, EventArgs e)
-        {
-
-            if (comboBoxOutMouse.SelectedIndex == 0)
-            {
-                txtKeyOut.Text = string.Empty;
-                txtKeyOut.Tag = null;
-            }
-            else
-            {
-                var zOutputConfig = new OutputConfig(
-                    (int)OutputConfig.OutputFlag.MouseOut,
-                    (byte)(OutputConfig.MouseButton)comboBoxOutMouse.SelectedItem);
-                txtKeyOut.Text = zOutputConfig.GetDescription();
-                txtKeyOut.Tag = zOutputConfig;
-            }
-        }
-
-        private void checkOutputDelay_CheckedChanged(object sender, EventArgs e)
-        {
-            if (checkOutputDelay.Checked)
-            {
-                numericUpDownDelay_ValueChanged(sender, e);
-            }
-        }
-
-        private void numericUpDownDelay_ValueChanged(object sender, EventArgs e)
-        {
-            var nFlag = 0;
-            if (checkOutputDelay.Checked)
-            {
-                nFlag = (int) OutputConfig.OutputFlag.Delay;
-            }
-            // TODO: support other types that use the param this way...
-            if (nFlag == 0)
-            {
-                return;
-            }
-
-            var zOutputConfig = new OutputConfig(
-                nFlag,
-                0,
-                (int) numericUpDownOutputParameter.Value);
-
-            txtKeyOut.Text = zOutputConfig.GetDescription();
-            txtKeyOut.Tag = zOutputConfig;
-        }
-
         private void btnAdd_Click(object sender, EventArgs e)
         {
             InputConfig zInputConfig = null;
             OutputConfig zOutputConfig = null;
             RemapEntry zRemapEntry = null;
-            if (!RetrieveAddConfigs(ref zInputConfig, ref zOutputConfig, ref zRemapEntry)) return;
+            if (!RetrieveConfigsForAdd(ref zInputConfig, ref zOutputConfig, ref zRemapEntry)) return;
             AddRemapEntryToListView(zRemapEntry, true);
         }
 
@@ -496,76 +478,130 @@ namespace KeyCap.Forms
             }
         }
 
+        #endregion
+
+        #region Input / Output Settings Control Events
+
+        private void comboBoxMouseOut_SelectedIndexChanged(object sender, EventArgs e)
+        {
+            SetOutKeyConfig(comboBoxOutMouse.SelectedIndex == 0 ? null : new OutputConfig(
+                (int)OutputConfig.OutputFlag.MouseOut,
+                (byte)(OutputConfig.MouseButton)comboBoxOutMouse.SelectedItem));
+
+        }
+
+        private void checkOutputDelay_CheckedChanged(object sender, EventArgs e)
+        {
+            ToggleControlsEnabled(m_setOutputControls, !checkOutputDelay.Checked, (Control)sender, numericUpDownOutputParameter);
+            if (checkOutputDelay.Checked)
+            {
+                numericUpDownDelay_ValueChanged(sender, e);
+                ToggleCheckboxesChecked(false,
+                    checkOutputAlt,
+                    checkOutputShift,
+                    checkOutputControl,
+                    checkOutputCancel,
+                    checkOutputRepeat,
+                    checkOutputNothing
+                );
+            }
+        }
+
+        private void numericUpDownDelay_ValueChanged(object sender, EventArgs e)
+        {
+            SetOutKeyConfig(checkOutputDelay.Checked 
+                ? new OutputConfig((int)OutputConfig.OutputFlag.Delay, 0, (int)numericUpDownOutputParameter.Value) 
+                : null);
+        }
+
         private void checkOutputToggle_CheckedChanged(object sender, EventArgs e)
         {
-            checkOutputUp.Checked = checkOutputToggle.Checked;
-            checkOutputDown.Checked = checkOutputToggle.Checked;
-
-            checkOutputUp.Enabled = !checkOutputToggle.Checked;
-            checkOutputDown.Enabled = !checkOutputToggle.Checked;
-            checkOutputRepeat.Enabled = !checkOutputToggle.Checked;
-            checkOutputDelay.Enabled = !checkOutputToggle.Checked;
-            checkOutputNothing.Enabled = !checkOutputToggle.Checked;
-
-            checkOutputAlt.Enabled = !checkOutputToggle.Checked;
-            checkOutputShift.Enabled = !checkOutputToggle.Checked;
-            checkOutputControl.Enabled = !checkOutputToggle.Checked;
+            ToggleControlsEnabled(m_setOutputControls, !checkOutputToggle.Checked, (Control)sender, comboBoxOutMouse);
             if (checkOutputToggle.Checked)
             {
-                checkOutputAlt.Checked = 
-                checkOutputShift.Checked = 
-                checkOutputControl.Checked =
-                checkOutputRepeat.Checked =
-                checkOutputDelay.Checked =
-                checkOutputNothing.Checked = false;
+                ToggleCheckboxesChecked(true, checkOutputUp, checkOutputDown);
+                ToggleCheckboxesChecked(false, 
+                    checkOutputAlt, 
+                    checkOutputShift, 
+                    checkOutputControl, 
+                    checkOutputCancel, 
+                    checkOutputRepeat, 
+                    checkOutputDelay, 
+                    checkOutputNothing);
+            }
+        }
+
+        private void checkOutputRepeat_CheckedChanged(object sender, EventArgs e)
+        {
+            ToggleControlsEnabled(m_setOutputControls, !checkOutputRepeat.Checked, 
+                checkOutputRepeat, 
+                checkOutputAlt, 
+                checkOutputControl, 
+                checkOutputShift, 
+                comboBoxOutMouse,
+                numericUpDownOutputParameter);
+            if (checkOutputRepeat.Checked)
+            {
+                ToggleCheckboxesChecked(true, checkOutputUp, checkOutputDown);
+                ToggleCheckboxesChecked(false, checkOutputCancel, checkOutputToggle, checkOutputDelay, checkOutputNothing);
             }
         }
 
         private void checkOutputDoNothing_CheckedChanged(object sender, EventArgs e)
         {
-            comboBoxOutMouse.Enabled = 
-            checkOutputAlt.Enabled =
-            checkOutputShift.Enabled = 
-            checkOutputControl.Enabled = 
-            checkOutputUp.Enabled = 
-            checkOutputDown.Enabled = 
-            checkOutputToggle.Enabled = 
-            checkOutputDelay.Enabled =
-            checkOutputRepeat.Enabled =
-            checkOutputCancel.Enabled =
-                !checkOutputNothing.Checked;
-            if (checkOutputNothing.Checked)
-            {
-                var zOutputConfig = new OutputConfig((int)OutputConfig.OutputFlag.DoNothing, 0);
-                txtKeyOut.Text = zOutputConfig.GetDescription();
-                txtKeyOut.Tag = zOutputConfig;
-            }
+            ToggleControlsEnabled(m_setOutputControls, !checkOutputNothing.Checked, (Control)sender);
+            SetOutKeyConfig(checkOutputNothing.Checked
+                ? new OutputConfig((int)OutputConfig.OutputFlag.DoNothing, 0)
+                : null);
         }
 
         private void checkOutputCancel_CheckedChanged(object sender, EventArgs e)
         {
-            comboBoxOutMouse.Enabled =
-            checkOutputAlt.Enabled =
-            checkOutputShift.Enabled =
-            checkOutputControl.Enabled =
-            checkOutputUp.Enabled =
-            checkOutputDown.Enabled =
-            checkOutputToggle.Enabled =
-            checkOutputDelay.Enabled =
-            checkOutputRepeat.Enabled =
-            checkOutputNothing.Enabled = 
-                !checkOutputCancel.Checked;
-            if (checkOutputCancel.Checked)
-            {
-                var zOutputConfig = new OutputConfig((int)OutputConfig.OutputFlag.CancelActiveOutputs, 0);
-                txtKeyOut.Text = zOutputConfig.GetDescription();
-                txtKeyOut.Tag = zOutputConfig;
-            }
+            ToggleControlsEnabled(m_setOutputControls, !checkOutputCancel.Checked, (Control)sender);
+            SetOutKeyConfig(checkOutputCancel.Checked ? new OutputConfig((int)OutputConfig.OutputFlag.CancelActiveOutputs, 0) : null);
         }
 
         #endregion
 
         #region Support Methods
+
+        private void UpdateTextBox<T>(TextBox txtBox, KeyEventArgs e, T config) where T : BaseIOConfig
+        {
+            txtBox.Text = config.GetDescription();
+            txtBox.Tag = config;
+            e.Handled = true;
+        }
+
+        private void SetOutKeyConfig(OutputConfig zOutputConfig = null)
+        {
+            if (zOutputConfig == null)
+            {
+                txtKeyOut.Text = string.Empty;
+                txtKeyOut.Tag = null;
+            }
+            else
+            {
+                txtKeyOut.Text = zOutputConfig.GetDescription();
+                txtKeyOut.Tag = zOutputConfig;
+            }
+        }
+
+        private void ToggleControlsEnabled(HashSet<Control> setAllControls, bool bEnabled, params Control[] arrayIgnoredControls)
+        {
+            arrayIgnoredControls = arrayIgnoredControls ?? Array.Empty<Control>();
+            foreach (var zControl in setAllControls.Where(c => -1 == Array.IndexOf(arrayIgnoredControls, c)))
+            {
+                zControl.Enabled = bEnabled;
+            }
+        }
+
+        private void ToggleCheckboxesChecked(bool bChecked, params CheckBox[] arrayCheckBoxes)
+        {
+            foreach (var zControl in arrayCheckBoxes)
+            {
+                zControl.Checked = bChecked;
+            }
+        }
 
         /// <summary>
         /// Updates the recent loaded file list
@@ -654,6 +690,33 @@ namespace KeyCap.Forms
             Icon = notifyIcon.Icon;
         }
 
+        private void ConfigureToolTips()
+        {
+            var zToolTip = new ToolTip()
+            {
+                AutoPopDelay = 5000,
+                InitialDelay = 500,
+                ReshowDelay = 250,
+                ShowAlways = false,
+            };
+
+            zToolTip.SetToolTip(checkInputAlt, "Requires Alt to be pressed");
+            zToolTip.SetToolTip(checkInputControl, "Requires Ctrl to be pressed");
+            zToolTip.SetToolTip(checkInputShift, "Requires Shift to be pressed");
+
+            zToolTip.SetToolTip(checkOutputAlt, "Generates Alt event");
+            zToolTip.SetToolTip(checkOutputControl, "Generates Ctrl event");
+            zToolTip.SetToolTip(checkOutputShift, "Generates Shift event");
+            zToolTip.SetToolTip(checkOutputUp, "Generates key up event (key released)");
+            zToolTip.SetToolTip(checkOutputDown, "Generates key down event (key held)");
+            zToolTip.SetToolTip(checkOutputToggle, "When enabled the same input key will alternate generating key up/down events.\n\n NOTE: Toggle does not support alt/ctrl/shift outputs.");
+            zToolTip.SetToolTip(checkOutputNothing, "Consumes input, generating no events");
+            zToolTip.SetToolTip(checkOutputCancel, "Cancels all active outputs");
+            zToolTip.SetToolTip(checkOutputRepeat, "Generates the specified event perpetually");
+            zToolTip.SetToolTip(checkOutputDelay, "Generates a delay based on the value specified (milliseconds)");
+            zToolTip.SetToolTip(numericUpDownOutputParameter, "The duration of the delay or gap between repetitions (milliseconds)");
+        }
+
         /// <summary>
         /// Applications cannot start minimized (at least they can't be switched immediately in the form load event)
         /// </summary>
@@ -683,7 +746,7 @@ namespace KeyCap.Forms
             m_zIniManager.FlushIniSettings();
         }
 
-        private bool RetrieveAddConfigs(ref InputConfig zInputConfig, ref OutputConfig zOutputConfig, ref RemapEntry zRemapEntry)
+        private bool RetrieveConfigsForAdd(ref InputConfig zInputConfig, ref OutputConfig zOutputConfig, ref RemapEntry zRemapEntry)
         {
             var zCurrentInputConfig = (InputConfig)txtKeyIn.Tag;
             var zCurrentOutputConfig = (OutputConfig)txtKeyOut.Tag;
@@ -859,6 +922,5 @@ namespace KeyCap.Forms
 
 
         #endregion
-
     }
 }

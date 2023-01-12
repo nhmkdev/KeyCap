@@ -1,7 +1,7 @@
 ////////////////////////////////////////////////////////////////////////////////
 // The MIT License (MIT)
 //
-// Copyright (c) 2022 Tim Stair
+// Copyright (c) 2023 Tim Stair
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -120,7 +120,7 @@ DWORD InitiateSendInput(RemapEntry* pRemapEntry, RemapEntryState* pRemapEntrySta
 			else if (pOutputConfig->outputFlag.bDelay)
 			{
 				//Want to delay break...
-				int iterations = pOutputConfig->parameter * 10;
+				int iterations = pOutputConfig->parameter / 100;
 				for (int nDelayCount = 0; nDelayCount < iterations; nDelayCount++)
 				{
 					Sleep(100);

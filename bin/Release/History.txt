@@ -1,5 +1,11 @@
 KeyCap Version History
 --------------------------
+2.0.0.4
+- Refactors and improvements with the output controls (blocking unsupported configurations)
+- Updated all delays/repeats to operate on increments of 100ms
+- Delays are now specified in milliseconds(!)
+- Added tool tips to the options for inputs/outputs
+
 2.0.0.3
 - Updated to .NET Framework 4.8
 - Added ability to more easily create macros for strings of characters (very limited keyboard support)
