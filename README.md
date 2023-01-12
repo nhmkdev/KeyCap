@@ -30,8 +30,10 @@ Alternatively, copy the following to a text file named `KeyCap.reg` and then edi
 Windows Registry Editor Version 5.00
 
 [HKEY_CURRENT_USER\Software\Microsoft\Windows\CurrentVersion\Run]
-"KeyCap"="D:\\Util\\KeyCap\\KeyCap.exe D:\\Util\\KeyCap\\Config.kfg"
+"KeyCap"="D:\\Util\\KeyCap\\KeyCap.exe -f D:\\Util\\KeyCap\\Config.kfg"
 ```
+
+You can also include the `-autostart` argument if you wish to immediately start capturing keys with the loaded config.
 
 ## TODO:
 * Fix bugs!
