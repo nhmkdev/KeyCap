@@ -1,5 +1,9 @@
 KeyCap Version History
 --------------------------
+2.1.0.0
+- Updated long press to use the input parameter to configure the minimum milliseconds.
+- The minimum millseconds appears to be about 250ms (only if Windows Keyboard control panel is specifically configured to emit events at the highest rate)
+
 2.0.0.5
 - Added long press as an input option (at this time it requires being held for about 1 second)
 
