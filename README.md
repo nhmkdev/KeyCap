@@ -2,10 +2,6 @@
 
 Download the [Latest Release](https://github.com/nhmkdev/KeyCap/releases/latest)
 
-# Updates in progress
-
-Docs/code are being updated to v2 branch (just merged into master for further refinement/release).
-
 ## Description
 *Windows only* application for capture keyboard input and remapping it to:
 * another key or sequence of keys
@@ -35,9 +31,6 @@ Windows Registry Editor Version 5.00
 
 You can also include the `-autostart` argument if you wish to immediately start capturing keys with the loaded config.
 
-## TODO:
-* Fix bugs!
-
 ## Warning
 This program does perform keyboard capture and is essentially the first component of a key logger. I humbly request you NOT use the information included in the source code to create a malicious application.
 
@@ -54,12 +47,19 @@ The file is prefixed with two 32-bit ints:
 | --- | --- |
 | 0x0E0CA000 | 0x1
 
-The remainder of the file is a repeated sequence of the following information. 
-One input may be associated with numerous outputs.
+The remainder of the file is a repeated sequence of the following information. One input may be associated with numerous outputs.
+
 Byte array representation of each input/output(s) pair:
 
-| Flags | VirtualKey | Parameter | Outputs Count | Output Flags | Output VirtualKey | Output Parameter | (repeats for all outputs) ... |
-| --- | --- | --- | --- | --- | --- | --- | --- |
+`(#)` is the number of bytes the given information is alloted.
+
+**Input Bytes**
+| Input Flags (4) | Input VirtualKey (1) | Padding (3) | Parameter (4) | Outputs Count (1) | Padding (3) | (all outputs for input) |
+| --- | --- | --- | --- | --- | --- | --- |
+
+**Output Bytes**
+| Output Flags (4) | Output VirtualKey (1) | Padding (3) | Output Parameter (4) |
+| --- | --- | --- | --- |
 
 There is no count for the number of inputs. Instead the file is read until no further input/output(s) pairings can be read.
 
