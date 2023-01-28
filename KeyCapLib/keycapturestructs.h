@@ -34,11 +34,13 @@ struct InputFlag
 	const int KEYCAP_SHIFT = 1 << 0;
 	const int KEYCAP_CONTROL = 1 << 1;
 	const int KEYCAP_ALT = 1 << 2;
+	const int KEYCAP_LONGPRESS = 1 << 3;
 #endif
 	BYTE bShift : 1;
 	BYTE bControl : 1;
 	BYTE bAlt : 1;
-	BYTE padOne : 5;
+	BYTE bLongPress : 1;
+	BYTE padOne : 4;
 	BYTE padTwo : 8;
 	BYTE padThree : 8;
 	BYTE padFour : 8;

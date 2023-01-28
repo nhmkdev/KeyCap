@@ -1,5 +1,8 @@
 KeyCap Version History
 --------------------------
+2.0.0.5
+- Added long press as an input option (at this time it requires being held for about 1 second)
+
 2.0.0.4
 - Refactors and improvements with the output controls (blocking unsupported configurations)
 - Updated all delays/repeats to operate on increments of 100ms

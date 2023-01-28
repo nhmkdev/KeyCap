@@ -66,12 +66,22 @@ char* GetBoolString(BYTE nValue)
 char* GetInputConfigDescription(InputConfig inputConfig)
 {
 	char* pDescription = (char*)malloc(DESCRIPTION_BUFFER_SIZE);
-	sprintf_s(pDescription, DESCRIPTION_BUFFER_SIZE, "InputConfig [Key: %d 0x%02x][Alt: %s][Ctrl: %s][Shift: %s]",
-		inputConfig.virtualKey,
-		inputConfig.virtualKey,
-		GetBoolString(inputConfig.inputFlag.bAlt),
-		GetBoolString(inputConfig.inputFlag.bControl),
-		GetBoolString(inputConfig.inputFlag.bShift));
+	if(inputConfig.inputFlag.bLongPress)
+	{
+		sprintf_s(pDescription, DESCRIPTION_BUFFER_SIZE, "InputConfig [Key: %d 0x%02x][LongPress: %s]",
+			inputConfig.virtualKey,
+			inputConfig.virtualKey,
+			GetBoolString(inputConfig.inputFlag.bLongPress));
+	}
+	else
+	{
+		sprintf_s(pDescription, DESCRIPTION_BUFFER_SIZE, "InputConfig [Key: %d 0x%02x][Alt: %s][Ctrl: %s][Shift: %s]",
+			inputConfig.virtualKey,
+			inputConfig.virtualKey,
+			GetBoolString(inputConfig.inputFlag.bAlt),
+			GetBoolString(inputConfig.inputFlag.bControl),
+			GetBoolString(inputConfig.inputFlag.bShift));
+	}
 	return pDescription;
 }
 

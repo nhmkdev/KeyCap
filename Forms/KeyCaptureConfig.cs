@@ -47,6 +47,7 @@ namespace KeyCap.Forms
         private readonly List<string> m_listRecentFiles = new List<string>();
         private readonly KeyCapInstanceState m_zInstanceState;
         private readonly IniManager m_zIniManager = new IniManager(Application.ProductName, false, true, false);
+        private HashSet<Control> m_setInputControls = new HashSet<Control>();
         private HashSet<Control> m_setOutputControls = new HashSet<Control>();
 
         private FormWindowState m_ePrevWindowState = FormWindowState.Normal;
@@ -103,7 +104,7 @@ namespace KeyCap.Forms
                 }
             }
 
-            InitOutputControlsSet();
+            InitControlSets();
             ConfigureToolTips();
 
             // load the command line specified file
@@ -120,8 +121,15 @@ namespace KeyCap.Forms
             }
         }
 
-        private void InitOutputControlsSet()
+        private void InitControlSets()
         {
+            m_setInputControls = new HashSet<Control>(new Control[]
+            {
+                checkInputAlt,
+                checkInputControl,
+                checkInputShift,
+                checkInputLongPress
+            });
             m_setOutputControls = new HashSet<Control>(new Control[]
             {
                 checkOutputAlt,
@@ -254,7 +262,7 @@ namespace KeyCap.Forms
 #if LOG_KEYS
             Console.Out.WriteLine("Key Input: {0} 0x{1}".FormatString(e.KeyCode, e.KeyCode.ToString("x")));
 #endif
-            UpdateTextBox((TextBox)sender, e, new InputConfig((byte)e.KeyCode, e));
+            UpdateTextBox((TextBox)sender, e, new InputConfig((byte)e.KeyCode));
         }
 
         private void txtKeyOut_KeyDown(object sender, KeyEventArgs e)
@@ -482,6 +490,15 @@ namespace KeyCap.Forms
 
         #region Input / Output Settings Control Events
 
+        private void checkInputLongPress_CheckedChanged(object sender, EventArgs e)
+        {
+            ToggleControlsEnabled(m_setInputControls, !checkInputLongPress.Checked, (Control)sender);
+            if (checkInputLongPress.Checked)
+            {
+                ToggleCheckboxesChecked(false, checkInputAlt, checkInputControl, checkInputShift);
+            }
+        }
+
         private void comboBoxMouseOut_SelectedIndexChanged(object sender, EventArgs e)
         {
             SetOutKeyConfig(comboBoxOutMouse.SelectedIndex == 0 ? null : new OutputConfig(
@@ -628,11 +645,13 @@ namespace KeyCap.Forms
             var bAlt = checkInputAlt.Checked;
             var bControl = checkInputControl.Checked;
             var bShift = checkInputShift.Checked;
+            var bLongPress = checkInputLongPress.Checked;
 
             var nFlags = 0;
             nFlags = BitUtil.UpdateFlag(nFlags, bAlt, InputConfig.InputFlag.Alt);
             nFlags = BitUtil.UpdateFlag(nFlags, bControl, InputConfig.InputFlag.Control);
             nFlags = BitUtil.UpdateFlag(nFlags, bShift, InputConfig.InputFlag.Shift);
+            nFlags = BitUtil.UpdateFlag(nFlags, bLongPress, InputConfig.InputFlag.LongPress);
             zInputConfig.Flags = nFlags;
             return zInputConfig;
         }

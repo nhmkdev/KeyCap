@@ -24,6 +24,8 @@
 
 extern RemapEntryContainerListItem* g_KeyTranslationTable[WIN_KEY_COUNT];
 
+ULONGLONG g_KeyDownTime[WIN_KEY_COUNT];
+
 /*
 Implementation of the win32 LowLevelKeyboardProc (see docs for information)
 
@@ -33,7 +35,7 @@ created to send out the key(s) to send to the os.
 */
 LRESULT CALLBACK LowLevelKeyboardProc(int nCode, WPARAM wParam, LPARAM lParam)
 {
-	KBDLLHOOKSTRUCT  *pHook = reinterpret_cast<KBDLLHOOKSTRUCT*>(lParam);
+	KBDLLHOOKSTRUCT *pHook = reinterpret_cast<KBDLLHOOKSTRUCT*>(lParam);
 	bool bSentInput = false;
 
 	bool bAlt = 0 != (GetAsyncKeyState(VK_MENU) & 0x8000);
@@ -51,13 +53,16 @@ LRESULT CALLBACK LowLevelKeyboardProc(int nCode, WPARAM wParam, LPARAM lParam)
 		case WM_SYSKEYDOWN:
 			// detect a keydown that matches a remaped key (and start the input thread to respond accordingly then indicate to the OS that the key has been handled)
 			{
-				RemapEntryContainerListItem* pKeyListItem = g_KeyTranslationTable[pHook->vkCode];
+				// NOTE: key down events will come in while a key is being held
+
+				const RemapEntryContainerListItem* pKeyListItem = g_KeyTranslationTable[pHook->vkCode];
 				while (NULL != pKeyListItem)
 				{
-					InputConfig* pKeyDef = &pKeyListItem->pEntryContainer->pEntry->inputConfig;
+					const InputConfig* pKeyDef = &pKeyListItem->pEntryContainer->pEntry->inputConfig;
 					if ((bAlt == pKeyDef->inputFlag.bAlt) &&
 						(bControl == pKeyDef->inputFlag.bControl) &&
-						(bShift == pKeyDef->inputFlag.bShift))
+						(bShift == pKeyDef->inputFlag.bShift)
+						&& !pKeyDef->inputFlag.bLongPress)
 					{
 #ifdef _DEBUG
 						char* pInputConfigDescription = GetInputConfigDescription(*pKeyDef);
@@ -69,7 +74,24 @@ LRESULT CALLBACK LowLevelKeyboardProc(int nCode, WPARAM wParam, LPARAM lParam)
 						{
 							pKeyListItem->pEntryContainer->pEntryState->threadHandle = CreateThread(NULL, 0, SendInputThread, pKeyListItem->pEntryContainer, 0, NULL);
 						}
-						// no matter if a new SendInputThread was started or not block further processing with the inputs
+						// block further processing with the inputs
+						bSentInput = true;
+						break;
+					}
+					if(!bAlt
+						&& !bControl
+						&& !bShift
+						&& pKeyDef->inputFlag.bLongPress)
+					{
+						if (g_KeyDownTime[pKeyDef->virtualKey] == 0) // ignore all keydown events on this key after recording the initial key down time
+						{
+							const ULONGLONG tickCount = GetTickCount64();
+							g_KeyDownTime[pKeyDef->virtualKey] = tickCount;
+#ifdef _DEBUG
+							LogDebugMessage("Detected LONGPRESS Key Down: %d Tick: %d", pKeyDef->virtualKey, tickCount);
+#endif
+						}
+						// block further processing with the inputs
 						bSentInput = true;
 						break;
 					}
@@ -85,10 +107,42 @@ LRESULT CALLBACK LowLevelKeyboardProc(int nCode, WPARAM wParam, LPARAM lParam)
 				while (NULL != pKeyListItem)
 				{
 					InputConfig* pKeyDef = &pKeyListItem->pEntryContainer->pEntry->inputConfig;
-					if ((bAlt == pKeyDef->inputFlag.bAlt) &&
-						(bControl == pKeyDef->inputFlag.bControl) &&
-						(bShift == pKeyDef->inputFlag.bShift))
+					if (bAlt == pKeyDef->inputFlag.bAlt
+						&& bControl == pKeyDef->inputFlag.bControl 
+						&& bShift == pKeyDef->inputFlag.bShift
+						&& !pKeyDef->inputFlag.bLongPress)
 					{
+						// block further processing with the inputs
+						bSentInput = true;
+						break;
+					}
+					if (!bAlt 
+						&& !bControl 
+						&& !bShift
+						&& pKeyDef->inputFlag.bLongPress)
+					{
+						ULONGLONG tickCount = GetTickCount64();
+						if (tickCount - g_KeyDownTime[pKeyDef->virtualKey] > 1000)
+						{
+#ifdef _DEBUG
+							char* pInputConfigDescription = GetInputConfigDescription(*pKeyDef);
+							LogDebugMessage("Detected LONGPRESS Key Up: %s Outputs: %d", pInputConfigDescription, pKeyListItem->pEntryContainer->pEntry->outputCount);
+							free(pInputConfigDescription);
+#endif
+							// If there is NOT an existing thread OR the existing thread is running a repeat another key press is allowed
+							if (NULL == pKeyListItem->pEntryContainer->pEntryState->threadHandle || pKeyListItem->pEntryContainer->pEntryState->bRepeating)
+							{
+								pKeyListItem->pEntryContainer->pEntryState->threadHandle = CreateThread(NULL, 0, SendInputThread, pKeyListItem->pEntryContainer, 0, NULL);
+							}
+						}
+						else
+						{
+							LogDebugMessage("Detected LONGPRESS Key UP (too short): %d Tick: %d (Old Tick: %d)", pKeyDef->virtualKey, tickCount, g_KeyDownTime[pKeyDef->virtualKey]);
+							// when a longpress "fails" just send the normal keypress
+							CreateThread(NULL, 0, SendInputKeypress, pKeyDef, 0, NULL);
+						}
+						g_KeyDownTime[pKeyDef->virtualKey] = 0;
+						// block further processing with the inputs
 						bSentInput = true;
 						break;
 					}

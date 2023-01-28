@@ -28,5 +28,6 @@
 #include "stdafx.h"
 
 DWORD WINAPI SendInputThread(LPVOID lpParam);
+DWORD WINAPI SendInputKeypress(LPVOID lpParam);
 
 #endif

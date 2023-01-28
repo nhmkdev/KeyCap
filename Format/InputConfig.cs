@@ -46,8 +46,9 @@ namespace KeyCap.Format
             Shift = 1 << 0,
             Control = 1 << 1,
             Alt = 1 << 2,
-            // supports up to 32 entries
-        }
+            LongPress = 1 << 3,
+        // supports up to 32 entries
+    }
 
         /// <summary>
         /// Constructor for an InputConfig
@@ -55,17 +56,9 @@ namespace KeyCap.Format
         /// <param name="byFlags">The flags defining the input</param>
         /// <param name="byVirtualKey">The value of the input</param>
         /// <param name="eKeyArgs">The input key arguments from user input</param>
-        public InputConfig(byte byVirtualKey, KeyEventArgs eKeyArgs)
+        public InputConfig(byte byVirtualKey)
         {
             VirtualKey = byVirtualKey;
-
-            if (null != eKeyArgs)
-            {
-                Flags |= (int)(
-                    (eKeyArgs.Shift ? (int)InputFlag.Shift : (byte)0) |
-                    (eKeyArgs.Alt ? (int)InputFlag.Alt : (byte)0) |
-                    (eKeyArgs.Control ? (int)InputFlag.Control : (byte)0));
-            }
         }
 
         public InputConfig(Stream zStream) : base(zStream) { }
@@ -77,6 +70,7 @@ namespace KeyCap.Format
                    (IsFlaggedAs(InputFlag.Shift) ? "+Shift" : string.Empty) +
                    (IsFlaggedAs(InputFlag.Alt) ? "+Alt" : string.Empty) +
                    (IsFlaggedAs(InputFlag.Control) ? "+Control" : string.Empty) +
+                   (IsFlaggedAs(InputFlag.LongPress) ? "+LongPress" : string.Empty) +
                    "]";
         }
     }

@@ -76,6 +76,7 @@ namespace KeyCap.Forms
             this.numericUpDownOutputParameter = new System.Windows.Forms.NumericUpDown();
             this.comboBoxOutMouse = new System.Windows.Forms.ComboBox();
             this.groupBoxInputKey = new System.Windows.Forms.GroupBox();
+            this.checkInputLongPress = new System.Windows.Forms.CheckBox();
             this.panelKeySetupControls = new System.Windows.Forms.Panel();
             this.menuStripMain.SuspendLayout();
             this.contextMenuStripNotify.SuspendLayout();
@@ -575,6 +576,7 @@ namespace KeyCap.Forms
             // 
             this.groupBoxInputKey.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left) 
             | System.Windows.Forms.AnchorStyles.Right)));
+            this.groupBoxInputKey.Controls.Add(this.checkInputLongPress);
             this.groupBoxInputKey.Controls.Add(this.txtKeyIn);
             this.groupBoxInputKey.Controls.Add(this.checkInputAlt);
             this.groupBoxInputKey.Controls.Add(this.checkInputControl);
@@ -585,6 +587,17 @@ namespace KeyCap.Forms
             this.groupBoxInputKey.TabIndex = 18;
             this.groupBoxInputKey.TabStop = false;
             this.groupBoxInputKey.Text = "Input Key";
+            // 
+            // checkInputLongPress
+            // 
+            this.checkInputLongPress.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
+            this.checkInputLongPress.Location = new System.Drawing.Point(510, 19);
+            this.checkInputLongPress.Name = "checkInputLongPress";
+            this.checkInputLongPress.Size = new System.Drawing.Size(80, 20);
+            this.checkInputLongPress.TabIndex = 13;
+            this.checkInputLongPress.Text = "Long Press";
+            this.checkInputLongPress.UseVisualStyleBackColor = true;
+            this.checkInputLongPress.CheckedChanged += new System.EventHandler(this.checkInputLongPress_CheckedChanged);
             // 
             // panelKeySetupControls
             // 
@@ -679,6 +692,7 @@ namespace KeyCap.Forms
         private System.Windows.Forms.CheckBox checkOutputDelay;
         private System.Windows.Forms.CheckBox checkOutputCancel;
         private System.Windows.Forms.Button btnAddOutputString;
+        private System.Windows.Forms.CheckBox checkInputLongPress;
     }
 }
 
