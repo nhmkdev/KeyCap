@@ -78,6 +78,7 @@ namespace KeyCap.Forms
             this.groupBoxInputKey = new System.Windows.Forms.GroupBox();
             this.checkInputLongPress = new System.Windows.Forms.CheckBox();
             this.panelKeySetupControls = new System.Windows.Forms.Panel();
+            this.numericUpDownInputParameter = new System.Windows.Forms.NumericUpDown();
             this.menuStripMain.SuspendLayout();
             this.contextMenuStripNotify.SuspendLayout();
             this.panelKeySetup.SuspendLayout();
@@ -86,6 +87,7 @@ namespace KeyCap.Forms
             ((System.ComponentModel.ISupportInitialize)(this.numericUpDownOutputParameter)).BeginInit();
             this.groupBoxInputKey.SuspendLayout();
             this.panelKeySetupControls.SuspendLayout();
+            ((System.ComponentModel.ISupportInitialize)(this.numericUpDownInputParameter)).BeginInit();
             this.SuspendLayout();
             // 
             // txtKeyIn
@@ -576,6 +578,7 @@ namespace KeyCap.Forms
             // 
             this.groupBoxInputKey.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left) 
             | System.Windows.Forms.AnchorStyles.Right)));
+            this.groupBoxInputKey.Controls.Add(this.numericUpDownInputParameter);
             this.groupBoxInputKey.Controls.Add(this.checkInputLongPress);
             this.groupBoxInputKey.Controls.Add(this.txtKeyIn);
             this.groupBoxInputKey.Controls.Add(this.checkInputAlt);
@@ -610,6 +613,34 @@ namespace KeyCap.Forms
             this.panelKeySetupControls.Size = new System.Drawing.Size(250, 23);
             this.panelKeySetupControls.TabIndex = 18;
             // 
+            // numericUpDownInputParameter
+            // 
+            this.numericUpDownInputParameter.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
+            this.numericUpDownInputParameter.Increment = new decimal(new int[] {
+            50,
+            0,
+            0,
+            0});
+            this.numericUpDownInputParameter.Location = new System.Drawing.Point(593, 19);
+            this.numericUpDownInputParameter.Maximum = new decimal(new int[] {
+            2000,
+            0,
+            0,
+            0});
+            this.numericUpDownInputParameter.Minimum = new decimal(new int[] {
+            100,
+            0,
+            0,
+            0});
+            this.numericUpDownInputParameter.Name = "numericUpDownInputParameter";
+            this.numericUpDownInputParameter.Size = new System.Drawing.Size(80, 20);
+            this.numericUpDownInputParameter.TabIndex = 63;
+            this.numericUpDownInputParameter.Value = new decimal(new int[] {
+            500,
+            0,
+            0,
+            0});
+            // 
             // KeyCaptureConfig
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
@@ -639,6 +670,7 @@ namespace KeyCap.Forms
             this.groupBoxInputKey.ResumeLayout(false);
             this.groupBoxInputKey.PerformLayout();
             this.panelKeySetupControls.ResumeLayout(false);
+            ((System.ComponentModel.ISupportInitialize)(this.numericUpDownInputParameter)).EndInit();
             this.ResumeLayout(false);
             this.PerformLayout();
 
@@ -693,6 +725,7 @@ namespace KeyCap.Forms
         private System.Windows.Forms.CheckBox checkOutputCancel;
         private System.Windows.Forms.Button btnAddOutputString;
         private System.Windows.Forms.CheckBox checkInputLongPress;
+        private System.Windows.Forms.NumericUpDown numericUpDownInputParameter;
     }
 }
 

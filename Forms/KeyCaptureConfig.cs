@@ -653,6 +653,12 @@ namespace KeyCap.Forms
             nFlags = BitUtil.UpdateFlag(nFlags, bShift, InputConfig.InputFlag.Shift);
             nFlags = BitUtil.UpdateFlag(nFlags, bLongPress, InputConfig.InputFlag.LongPress);
             zInputConfig.Flags = nFlags;
+
+            if (bLongPress)
+            {
+                zInputConfig.Parameter = (int)numericUpDownInputParameter.Value;
+            }
+
             return zInputConfig;
         }
 
@@ -713,7 +719,7 @@ namespace KeyCap.Forms
         {
             var zToolTip = new ToolTip()
             {
-                AutoPopDelay = 5000,
+                AutoPopDelay = 10000,
                 InitialDelay = 500,
                 ReshowDelay = 250,
                 ShowAlways = false,
@@ -722,6 +728,8 @@ namespace KeyCap.Forms
             zToolTip.SetToolTip(checkInputAlt, "Requires Alt to be pressed");
             zToolTip.SetToolTip(checkInputControl, "Requires Ctrl to be pressed");
             zToolTip.SetToolTip(checkInputShift, "Requires Shift to be pressed");
+            zToolTip.SetToolTip(checkInputLongPress, "Require the key to be held for a minimum amount of time");
+            zToolTip.SetToolTip(numericUpDownInputParameter, "The minimum duration of the long press (milliseconds). \n\nNOTE: The 'Repeat Delay' setting in the Windows Keyboard control panel has a direct impact on how low this can be.");
 
             zToolTip.SetToolTip(checkOutputAlt, "Generates Alt event");
             zToolTip.SetToolTip(checkOutputControl, "Generates Ctrl event");

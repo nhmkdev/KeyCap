@@ -24,6 +24,10 @@
 
 extern RemapEntryContainerListItem* g_KeyTranslationTable[WIN_KEY_COUNT];
 
+const int LONG_PRESS_MIN = 100;
+const int KEY_DOWN_UNSET = 0; // key not being held
+const int KEY_DOWN_EVENT_FIRED = 1; // key is held and already sent output
+// other values stored in g_KeyDownTime are the original key down time as returned by GetTickCount64
 ULONGLONG g_KeyDownTime[WIN_KEY_COUNT];
 
 /*
@@ -83,13 +87,49 @@ LRESULT CALLBACK LowLevelKeyboardProc(int nCode, WPARAM wParam, LPARAM lParam)
 						&& !bShift
 						&& pKeyDef->inputFlag.bLongPress)
 					{
-						if (g_KeyDownTime[pKeyDef->virtualKey] == 0) // ignore all keydown events on this key after recording the initial key down time
+						switch(g_KeyDownTime[pKeyDef->virtualKey])
+						{
+						case KEY_DOWN_UNSET:
 						{
 							const ULONGLONG tickCount = GetTickCount64();
 							g_KeyDownTime[pKeyDef->virtualKey] = tickCount;
 #ifdef _DEBUG
 							LogDebugMessage("Detected LONGPRESS Key Down: %d Tick: %d", pKeyDef->virtualKey, tickCount);
 #endif
+						}
+							break;
+
+						case KEY_DOWN_EVENT_FIRED:
+							// nothing for now
+							break;
+						default:
+						{
+							const ULONGLONG tickCount = GetTickCount64();
+							const unsigned int longPressMinimum = max(LONG_PRESS_MIN, pKeyDef->parameter);
+#if false
+							// windows has a built repeat rate limiter so the shortest time is 250ms
+							const ULONGLONG diff = tickCount - g_KeyDownTime[pKeyDef->virtualKey];
+							LogDebugMessage("diff: %d", diff);
+#endif
+							if (tickCount - g_KeyDownTime[pKeyDef->virtualKey] >= longPressMinimum)
+							{
+#ifdef _DEBUG
+								char* pInputConfigDescription = GetInputConfigDescription(*pKeyDef);
+								LogDebugMessage("Detected LONGPRESS [Key Down: %s] [Outputs: %d][longPressMinimum: %d]", 
+									pInputConfigDescription, 
+									pKeyListItem->pEntryContainer->pEntry->outputCount, 
+									longPressMinimum);
+								free(pInputConfigDescription);
+#endif
+								// If there is NOT an existing thread OR the existing thread is running a repeat another key press is allowed
+								if (NULL == pKeyListItem->pEntryContainer->pEntryState->threadHandle || pKeyListItem->pEntryContainer->pEntryState->bRepeating)
+								{
+									pKeyListItem->pEntryContainer->pEntryState->threadHandle = CreateThread(NULL, 0, SendInputThread, pKeyListItem->pEntryContainer, 0, NULL);
+								}
+								g_KeyDownTime[pKeyDef->virtualKey] = KEY_DOWN_EVENT_FIRED;
+							}
+						}
+							break;
 						}
 						// block further processing with the inputs
 						bSentInput = true;
@@ -121,27 +161,14 @@ LRESULT CALLBACK LowLevelKeyboardProc(int nCode, WPARAM wParam, LPARAM lParam)
 						&& !bShift
 						&& pKeyDef->inputFlag.bLongPress)
 					{
-						ULONGLONG tickCount = GetTickCount64();
-						if (tickCount - g_KeyDownTime[pKeyDef->virtualKey] > 1000)
+						if (g_KeyDownTime[pKeyDef->virtualKey] != KEY_DOWN_EVENT_FIRED)
 						{
-#ifdef _DEBUG
-							char* pInputConfigDescription = GetInputConfigDescription(*pKeyDef);
-							LogDebugMessage("Detected LONGPRESS Key Up: %s Outputs: %d", pInputConfigDescription, pKeyListItem->pEntryContainer->pEntry->outputCount);
-							free(pInputConfigDescription);
-#endif
-							// If there is NOT an existing thread OR the existing thread is running a repeat another key press is allowed
-							if (NULL == pKeyListItem->pEntryContainer->pEntryState->threadHandle || pKeyListItem->pEntryContainer->pEntryState->bRepeating)
-							{
-								pKeyListItem->pEntryContainer->pEntryState->threadHandle = CreateThread(NULL, 0, SendInputThread, pKeyListItem->pEntryContainer, 0, NULL);
-							}
-						}
-						else
-						{
+							const ULONGLONG tickCount = GetTickCount64();
 							LogDebugMessage("Detected LONGPRESS Key UP (too short): %d Tick: %d (Old Tick: %d)", pKeyDef->virtualKey, tickCount, g_KeyDownTime[pKeyDef->virtualKey]);
 							// when a longpress "fails" just send the normal keypress
 							CreateThread(NULL, 0, SendInputKeypress, pKeyDef, 0, NULL);
 						}
-						g_KeyDownTime[pKeyDef->virtualKey] = 0;
+						g_KeyDownTime[pKeyDef->virtualKey] = KEY_DOWN_UNSET;
 						// block further processing with the inputs
 						bSentInput = true;
 						break;

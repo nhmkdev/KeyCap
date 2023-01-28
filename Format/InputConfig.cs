@@ -22,6 +22,7 @@
 // SOFTWARE.
 ////////////////////////////////////////////////////////////////////////////////
 
+using Support.UI;
 using System.IO;
 using System.Windows.Forms;
 
@@ -70,7 +71,7 @@ namespace KeyCap.Format
                    (IsFlaggedAs(InputFlag.Shift) ? "+Shift" : string.Empty) +
                    (IsFlaggedAs(InputFlag.Alt) ? "+Alt" : string.Empty) +
                    (IsFlaggedAs(InputFlag.Control) ? "+Control" : string.Empty) +
-                   (IsFlaggedAs(InputFlag.LongPress) ? "+LongPress" : string.Empty) +
+                   (IsFlaggedAs(InputFlag.LongPress) ? "+LongPress[{0}ms]".FormatString(Parameter.ToString()) : string.Empty) +
                    "]";
         }
     }
