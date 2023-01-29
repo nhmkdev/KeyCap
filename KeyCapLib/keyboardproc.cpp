@@ -161,7 +161,8 @@ LRESULT CALLBACK LowLevelKeyboardProc(int nCode, WPARAM wParam, LPARAM lParam)
 						&& !bShift
 						&& pKeyDef->inputFlag.bLongPress)
 					{
-						if (g_KeyDownTime[pKeyDef->virtualKey] != KEY_DOWN_EVENT_FIRED)
+						if (g_KeyDownTime[pKeyDef->virtualKey] != KEY_DOWN_EVENT_FIRED &&
+							g_KeyDownTime[pKeyDef->virtualKey] != KEY_DOWN_UNSET)
 						{
 							const ULONGLONG tickCount = GetTickCount64();
 							LogDebugMessage("Detected LONGPRESS Key UP (too short): %d Tick: %d (Old Tick: %d)", pKeyDef->virtualKey, tickCount, g_KeyDownTime[pKeyDef->virtualKey]);
