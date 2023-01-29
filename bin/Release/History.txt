@@ -1,5 +1,8 @@
 KeyCap Version History
 --------------------------
+2.1.0.1
+- Attempt to make released key combinations (ctrl+c for example) less likely to fire a long press input/output if the modifier key is released first.
+
 2.1.0.0
 - Updated long press to use the input parameter to configure the minimum milliseconds.
 - The minimum millseconds appears to be about 250ms (only if Windows Keyboard control panel is specifically configured to emit events at the highest rate)
