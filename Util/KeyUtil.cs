@@ -29,6 +29,21 @@ namespace KeyCap.Util
 {
     static class KeyUtil
     {
+        public static bool IsFlagKey(Keys key)
+        {
+            switch (key)
+            {
+                case Keys.Menu:
+                case Keys.Alt:
+                case Keys.ControlKey:
+                case Keys.Control:
+                case Keys.ShiftKey:
+                case Keys.Shift:
+                    return true;
+            }
+            return false;
+        }
+
         public static byte GetKeyByte(char cInput, ref bool bShift)
         {
             bShift = char.IsUpper(cInput);

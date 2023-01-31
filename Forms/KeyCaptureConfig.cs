@@ -346,6 +346,10 @@ namespace KeyCap.Forms
 
         private void txtKeyIn_KeyDown(object sender, KeyEventArgs e)
         {
+            if (KeyUtil.IsFlagKey(e.KeyCode))
+            {
+                return;
+            }
 #if LOG_KEYS
             Console.Out.WriteLine("Key Input: {0} 0x{1}".FormatString(e.KeyCode, e.KeyCode.ToString("x")));
 #endif
@@ -355,6 +359,10 @@ namespace KeyCap.Forms
 
         private void txtKeyOut_KeyDown(object sender, KeyEventArgs e)
         {
+            if (KeyUtil.IsFlagKey(e.KeyCode))
+            {
+                return;
+            }
 #if LOG_KEYS
             Console.Out.WriteLine("Key Input: {0} 0x{1}".FormatString(e.KeyCode, e.KeyCode.ToString("x")));
 #endif
