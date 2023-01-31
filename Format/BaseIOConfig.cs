@@ -66,6 +66,13 @@ namespace KeyCap.Format
             return BitUtil.IsFlagged(Flags, eFlag);
         }
 
+        public void UpdateFlag(System.Enum eFlag, bool bSet)
+        {
+            Flags = BitUtil.UpdateFlag(Flags, eFlag, bSet);
+        }
+
+        public abstract string GetActionOnlyDescription();
+
         public abstract string GetDescription();
 
         public void SerializeToStream(Stream zStream)

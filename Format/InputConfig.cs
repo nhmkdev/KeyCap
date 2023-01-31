@@ -64,6 +64,11 @@ namespace KeyCap.Format
 
         public InputConfig(Stream zStream) : base(zStream) { }
 
+        public override string GetActionOnlyDescription()
+        {
+            return "[" + (Keys)VirtualKey + "]";
+        }
+
         public override string GetDescription()
         {
             return "[" +

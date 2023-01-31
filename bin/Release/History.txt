@@ -1,5 +1,15 @@
 KeyCap Version History
 --------------------------
+2.2.0.0
+- Added ability to double click to load up an existing entry for convenience
+- Added ability to update/replace an existing entry (cannot edit items performing multiple outputs at this time)
+- Changed mouse clicks to just be buttons instead of a pull down
+- Moved the controls to add/update/append/remove to a single location
+- Tweaked the call to send the original key on a "failed" (too short) long press to run immediately instead of via a thread
+- Added confirmation dialog on remove
+- Changed application type to avoid the console window popping up at statup
+- Massive refactors of the UI to support the other changes (fewer nightmares)
+
 2.1.0.1
 - Attempt to make released key combinations (ctrl+c for example) less likely to fire a long press input/output if the modifier key is released first.
 

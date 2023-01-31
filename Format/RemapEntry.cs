@@ -34,8 +34,8 @@ namespace KeyCap.Format
     /// </summary>
     public class RemapEntry
     {
-        private InputConfig InputConfig { get; set; }
-        private List<OutputConfig> OutputConfigs { get; set; }
+        public InputConfig InputConfig { get; private set; }
+        public List<OutputConfig> OutputConfigs { get; private set; }
 
         public int OutputConfigCount
         {

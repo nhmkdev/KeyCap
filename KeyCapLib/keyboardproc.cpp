@@ -167,7 +167,7 @@ LRESULT CALLBACK LowLevelKeyboardProc(int nCode, WPARAM wParam, LPARAM lParam)
 							const ULONGLONG tickCount = GetTickCount64();
 							LogDebugMessage("Detected LONGPRESS Key UP (too short): %d Tick: %d (Old Tick: %d)", pKeyDef->virtualKey, tickCount, g_KeyDownTime[pKeyDef->virtualKey]);
 							// when a longpress "fails" just send the normal keypress
-							CreateThread(NULL, 0, SendInputKeypress, pKeyDef, 0, NULL);
+							SendInputKeypress(pKeyDef);
 						}
 						g_KeyDownTime[pKeyDef->virtualKey] = KEY_DOWN_UNSET;
 						// block further processing with the inputs

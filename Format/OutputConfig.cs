@@ -105,13 +105,8 @@ namespace KeyCap.Format
 
         public OutputConfig(Stream zStream) : base(zStream) { }
 
-        /// <summary>
-        /// Gets the string description for this InputConfig
-        /// </summary>
-        /// <returns>String representation of this definition</returns>
-        public override string GetDescription()
+        public override string GetActionOnlyDescription()
         {
-            // delay (every other flag ignored)
             if (IsFlaggedAs(OutputFlag.Delay))
             {
                 return "[Delay({0}ms)]".FormatString(Parameter);
@@ -119,12 +114,41 @@ namespace KeyCap.Format
 
             if (IsFlaggedAs(OutputFlag.DoNothing))
             {
-                return "[Do Nothing]".FormatString(Parameter);
+                return "[Do Nothing]";
             }
 
             if (IsFlaggedAs(OutputFlag.CancelActiveOutputs))
             {
-                return "[Cancel Active Outputs]".FormatString(Parameter);
+                return "[Cancel Active Outputs]";
+            }
+
+            if (IsFlaggedAs(OutputFlag.MouseOut))
+            {
+                return "[" + (MouseButton)VirtualKey + "]";
+            }
+
+            return "[" + (Keys)VirtualKey + "]";
+        }
+
+        /// <summary>
+        /// Gets the string description for this OutputConfig
+        /// </summary>
+        /// <returns>String representation of this definition</returns>
+        public override string GetDescription()
+        {
+            if (IsFlaggedAs(OutputFlag.Delay))
+            {
+                return "[Delay({0}ms)]".FormatString(Parameter);
+            }
+
+            if (IsFlaggedAs(OutputFlag.DoNothing))
+            {
+                return "[Do Nothing]";
+            }
+
+            if (IsFlaggedAs(OutputFlag.CancelActiveOutputs))
+            {
+                return "[Cancel Active Outputs]";
             }
 
             if (IsFlaggedAs(OutputFlag.MouseOut))
@@ -146,11 +170,14 @@ namespace KeyCap.Format
                    || IsFlaggedAs(OutputFlag.Up)
                    || IsFlaggedAs(OutputFlag.MouseOut)
                    || IsFlaggedAs(OutputFlag.Delay)
-                    || IsFlaggedAs(OutputFlag.DoNothing);
+                   || IsFlaggedAs(OutputFlag.DoNothing)
+                   || IsFlaggedAs(OutputFlag.CancelActiveOutputs);
         }
 
+# warning full description should not be used for the key in/out textbox
+
         /// <summary>
-        /// Gets the output description for the up/down/press based on the state of the flags
+        /// Gets the FULL output description for the up/down/press based on the state of the flags
         /// </summary>
         /// <param name="sActionPrefix">The prefix indicating the type of input</param>
         /// <returns></returns>

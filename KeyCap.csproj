@@ -5,7 +5,7 @@
     <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
     <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
     <ProjectGuid>{F25A3BB8-AF8D-4642-8C3A-87CB44A5D013}</ProjectGuid>
-    <OutputType>Exe</OutputType>
+    <OutputType>WinExe</OutputType>
     <AppDesignerFolder>Properties</AppDesignerFolder>
     <RootNamespace>KeyCap</RootNamespace>
     <AssemblyName>KeyCap</AssemblyName>
@@ -73,10 +73,12 @@
     <Compile Include="Format\OutputConfig.cs" />
     <Compile Include="Format\InputConfig.cs" />
     <Compile Include="Format\RemapEntry.cs" />
+    <Compile Include="Forms\ControlActiveProcessor.cs" />
     <Compile Include="Settings\KeyCapInstanceState.cs" />
     <Compile Include="Support\UI\QueryPanel.cs" />
     <Compile Include="Support\UI\QueryPanelDialog.cs" />
     <Compile Include="Util\BitUtil.cs" />
+    <Compile Include="Util\KeyUtil.cs" />
     <Compile Include="Util\StreamUtil.cs" />
     <Compile Include="Forms\KeyCaptureConfig.cs">
       <SubType>Form</SubType>

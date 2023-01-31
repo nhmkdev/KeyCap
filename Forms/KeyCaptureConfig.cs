@@ -28,7 +28,6 @@ using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Drawing;
-using System.Linq;
 using System.Text;
 using System.Threading;
 using System.Windows.Forms;
@@ -38,21 +37,27 @@ using KeyCap.Util;
 using KeyCap.Wrapper;
 using Support.IO;
 using Support.UI;
+using static KeyCap.Format.InputConfig;
+using static KeyCap.Format.OutputConfig;
 
 namespace KeyCap.Forms
 {
     public partial class KeyCaptureConfig
     {
+        private bool m_bHandlingGenericInputOutputEvent = false;
         private readonly ConfigFileManager m_zConfigFileManager = new ConfigFileManager();
         private readonly List<string> m_listRecentFiles = new List<string>();
         private readonly KeyCapInstanceState m_zInstanceState;
         private readonly IniManager m_zIniManager = new IniManager(Application.ProductName, false, true, false);
-        private HashSet<Control> m_setInputControls = new HashSet<Control>();
-        private HashSet<Control> m_setOutputControls = new HashSet<Control>();
+        private Dictionary<Control, ControlActiveProcessor> m_dictionaryControlActive =
+            new Dictionary<Control, ControlActiveProcessor>();
+
+        private readonly UIInputConfig m_zActiveInputConfig = new UIInputConfig(0);
+        private readonly UIOutputConfig m_zActiveOutputConfig = new UIOutputConfig(0, false);
 
         private FormWindowState m_ePrevWindowState = FormWindowState.Normal;
         private bool m_bShutdownApplication = false;
-        
+
         /// <summary>
         /// Text to display on the button to start/stop capturing
         /// </summary>
@@ -72,30 +77,24 @@ namespace KeyCap.Forms
             m_sBaseTitle = Application.ProductName + " Configuration " + Application.ProductVersion;
             m_sFileOpenFilter = Application.ProductName + " Config files (*.kfg)|*.kfg|All files (*.*)|*.*";
             Text = m_sBaseTitle;
-            
+
             m_zInstanceState = new KeyCapInstanceState(args);
         }
 
-        #region Form Events
+        #region Initialization
 
         private void KeyCaptureConfig_Load(object sender, EventArgs e)
         {
             // must be in the load event to avoid the location being incorrect
             IniManager.RestoreState(this, m_zIniManager.GetValue(Name));
 
-            // setup the various mouse output options
-            foreach (OutputConfig.MouseButton sName in Enum.GetValues(typeof(OutputConfig.MouseButton)))
-            {
-                comboBoxOutMouse.Items.Add(sName);
-            }
-            comboBoxOutMouse.SelectedIndex = 0;
-
             // set the notification icon accordingly
             notifyIcon.Icon = Resources.KeyCapIdle;
             Icon = notifyIcon.Icon;
 
             // populate the previously loaded configurations
-            var arrayFiles = m_zIniManager.GetValue(IniSettings.PreviousFiles).Split(new char[] { KeyCapConstants.CharFileSplit }, StringSplitOptions.RemoveEmptyEntries);
+            var arrayFiles = m_zIniManager.GetValue(IniSettings.PreviousFiles)
+                .Split(new char[] { KeyCapConstants.CharFileSplit }, StringSplitOptions.RemoveEmptyEntries);
             if (0 < arrayFiles.Length)
             {
                 foreach (var sFile in arrayFiles)
@@ -103,6 +102,10 @@ namespace KeyCap.Forms
                     m_listRecentFiles.Add(sFile);
                 }
             }
+
+            btnMouseLeft.Tag = MouseButton.MouseLeft;
+            btnMouseMiddle.Tag = MouseButton.MouseMiddle;
+            btnMouseRight.Tag = MouseButton.MouseRight;
 
             InitControlSets();
             ConfigureToolTips();
@@ -123,29 +126,110 @@ namespace KeyCap.Forms
 
         private void InitControlSets()
         {
-            m_setInputControls = new HashSet<Control>(new Control[]
-            {
-                checkInputAlt,
-                checkInputControl,
-                checkInputShift,
-                checkInputLongPress
-            });
-            m_setOutputControls = new HashSet<Control>(new Control[]
-            {
-                checkOutputAlt,
-                checkOutputControl,
-                checkOutputShift,
-                checkOutputUp,
-                checkOutputDown,
-                checkOutputToggle,
-                checkOutputNothing,
-                checkOutputCancel,
-                checkOutputRepeat,
-                checkOutputDelay,
-                numericUpDownOutputParameter,
-                comboBoxOutMouse,
-            });
+            m_dictionaryControlActive =
+                new Dictionary<Control, ControlActiveProcessor>()
+                {
+                    [checkInputLongPress] = new ControlActiveProcessor(checkInputLongPress)
+                    {
+                        disabledControls = new List<Control> { checkInputAlt, checkInputControl, checkInputShift },
+                        enabledControls = new List<Control> { numericUpDownInputParameter },
+                        uncheckedControls = new List<CheckBox> { checkInputAlt, checkInputControl, checkInputShift },
+                    },
+                    [checkOutputCancel] = new ControlActiveProcessor(checkOutputCancel)
+                    {
+                        disabledControls = new List<Control>{checkOutputAlt, checkOutputControl, checkOutputShift, checkOutputUp, checkOutputDown,
+                            checkOutputToggle, checkOutputNothing, checkOutputRepeat, checkOutputDelay, numericUpDownOutputParameter },
+                        uncheckedControls = new List<CheckBox> { checkOutputToggle, checkOutputNothing, checkOutputRepeat, checkOutputDelay },
+                        OnActiveChange = (bActive) =>
+                        {
+                            if (bActive) m_zActiveOutputConfig.Reset();
+                            UpdateTextBox(txtKeyOut, null, CreateOutputConfigFromUI());
+                        },
+                    },
+                    [checkOutputNothing] = new ControlActiveProcessor(checkOutputNothing)
+                    {
+                        disabledControls = new List<Control>{checkOutputAlt, checkOutputControl, checkOutputShift, checkOutputUp, checkOutputDown,
+                            checkOutputToggle, checkOutputCancel, checkOutputRepeat, checkOutputDelay, numericUpDownOutputParameter, },
+                        uncheckedControls = new List<CheckBox> { checkOutputToggle, checkOutputCancel, checkOutputRepeat, checkOutputDelay },
+                        OnActiveChange = (bActive) =>
+                        {
+                            if (bActive) m_zActiveOutputConfig.Reset();
+                            UpdateTextBox(txtKeyOut, null, CreateOutputConfigFromUI());
+                        },
+                    },
+                    [checkOutputToggle] = new ControlActiveProcessor(checkOutputToggle)
+                    {
+                        disabledControls = new List<Control>{checkOutputAlt, checkOutputControl, checkOutputShift, checkOutputUp, checkOutputDown,
+                            checkOutputNothing, checkOutputCancel, checkOutputRepeat, checkOutputDelay, numericUpDownOutputParameter},
+                        uncheckedControls = new List<CheckBox> { checkOutputAlt, checkOutputControl, checkOutputShift, checkOutputNothing,
+                            checkOutputCancel, checkOutputRepeat, checkOutputDelay },
+                        checkedControls = new List<CheckBox> { checkOutputDown, checkOutputUp },
+                    },
+                    [checkOutputRepeat] = new ControlActiveProcessor(checkOutputRepeat)
+                    {
+                        disabledControls = new List<Control> { checkOutputUp, checkOutputDown, checkOutputNothing, checkOutputCancel, checkOutputDelay, checkOutputToggle },
+                        enabledControls = new List<Control> { numericUpDownOutputParameter },
+                        uncheckedControls = new List<CheckBox> { checkOutputToggle, checkOutputNothing, checkOutputCancel, checkOutputDelay },
+                        checkedControls = new List<CheckBox> { checkOutputDown, checkOutputUp },
+                        OnActiveChange = (bActive) =>
+                        {
+                            numericUpDownOutputParameter_ValueChanged(numericUpDownOutputParameter, null);
+                            UpdateTextBox(txtKeyOut, null, CreateOutputConfigFromUI());
+                        }
+                    },
+                    [checkOutputDelay] = new ControlActiveProcessor(checkOutputDelay)
+                    {
+                        disabledControls = new List<Control> { checkOutputUp, checkOutputDown, checkOutputNothing, checkOutputCancel, checkOutputRepeat,
+                            checkOutputToggle, checkOutputAlt, checkOutputControl, checkOutputShift},
+                        enabledControls = new List<Control> { numericUpDownOutputParameter },
+                        uncheckedControls = new List<CheckBox> { checkOutputToggle, checkOutputNothing, checkOutputCancel, checkOutputRepeat },
+                        OnActiveChange = (bActive) =>
+                        {
+                            numericUpDownOutputParameter_ValueChanged(numericUpDownOutputParameter, null);
+                            if (bActive) m_zActiveOutputConfig.Reset();
+                            UpdateTextBox(txtKeyOut, null, CreateOutputConfigFromUI());
+                        }
+                    }
+                };
         }
+
+        private void ConfigureToolTips()
+        {
+            var zToolTip = new ToolTip()
+            {
+                AutoPopDelay = 10000,
+                InitialDelay = 500,
+                ReshowDelay = 250,
+                ShowAlways = false,
+            };
+
+            zToolTip.SetToolTip(checkInputAlt, "Requires Alt to be pressed");
+            zToolTip.SetToolTip(checkInputControl, "Requires Ctrl to be pressed");
+            zToolTip.SetToolTip(checkInputShift, "Requires Shift to be pressed");
+            zToolTip.SetToolTip(checkInputLongPress, "Require the key to be held for a minimum amount of time");
+            zToolTip.SetToolTip(numericUpDownInputParameter, "The minimum duration of the long press (milliseconds). \n\nNOTE: The 'Repeat Delay' setting in the Windows Keyboard control panel has a direct impact on how low this can be.");
+
+            zToolTip.SetToolTip(checkOutputAlt, "Generates Alt event");
+            zToolTip.SetToolTip(checkOutputControl, "Generates Ctrl event");
+            zToolTip.SetToolTip(checkOutputShift, "Generates Shift event");
+            zToolTip.SetToolTip(checkOutputUp, "Generates key up event (key released)");
+            zToolTip.SetToolTip(checkOutputDown, "Generates key down event (key held)");
+            zToolTip.SetToolTip(checkOutputToggle, "When enabled the same input key will alternate generating key up/down events.\n\n NOTE: Toggle does not support alt/ctrl/shift outputs.");
+            zToolTip.SetToolTip(checkOutputNothing, "Consumes input, generating no events");
+            zToolTip.SetToolTip(checkOutputCancel, "Cancels all active outputs");
+            zToolTip.SetToolTip(checkOutputRepeat, "Generates the specified event perpetually");
+            zToolTip.SetToolTip(checkOutputDelay, "Generates a delay based on the value specified (milliseconds)");
+            zToolTip.SetToolTip(numericUpDownOutputParameter, "The duration of the delay or gap between repetitions (milliseconds)");
+
+            zToolTip.SetToolTip(btnAdd, "Adds the configured input/output");
+            zToolTip.SetToolTip(btnUpdate, "Updates/replaces the configured input/output");
+            zToolTip.SetToolTip(btnAppend, "Appends the configured output");
+            zToolTip.SetToolTip(btnRemove, "Removes the selected entries");
+        }
+
+        #endregion
+
+        #region Entire Form Events
 
         private void KeyCaptureConfig_FormClosing(object sender, FormClosingEventArgs e)
         {
@@ -158,6 +242,7 @@ namespace KeyCap.Forms
                     m_bShutdownApplication = false;
                     return;
                 }
+
                 FlushIniSettings();
             }
             else
@@ -186,7 +271,7 @@ namespace KeyCap.Forms
 
         #endregion
 
-        #region Form Click Events
+        #region Form Menu Click Events
 
         private void newToolStripMenuItem_Click(object sender, EventArgs e)
         {
@@ -196,6 +281,7 @@ namespace KeyCap.Forms
             {
                 return;
             }
+
             listViewKeys.Items.Clear();
             InitNew();
         }
@@ -207,49 +293,50 @@ namespace KeyCap.Forms
             {
                 WindowState = m_ePrevWindowState;
             }
+
             KeyCaptureLib.Shutdown();
             m_zIniManager.SetValue(Name, IniManager.GetFormSettings(this));
             Close();
         }
 
-        private void btnAddOutputString_Click(object sender, EventArgs e)
+        #endregion
+
+        #region Key Capture Process
+
+        private void btnStart_Click(object sender, EventArgs e)
         {
-            const string MACRO_STRING_KEY = "macro_string_key";
-            var zQuery = new QueryPanelDialog("Enter String Macro", 400, false);
-            zQuery.SetIcon(this.Icon);
-            zQuery.AddTextBox("String", string.Empty, false, MACRO_STRING_KEY);
-            if (DialogResult.OK != zQuery.ShowDialog(this))
+            if (0 == listViewKeys.Items.Count)
             {
-                return;
-            }
-            var sMacro = zQuery.GetString(MACRO_STRING_KEY);
-            if (string.IsNullOrWhiteSpace(sMacro))
-            {
-                MessageBox.Show(this, "Please specify a string of output characters.", "Error!", MessageBoxButtons.OK, MessageBoxIcon.Error);
-                return;
-            }
-            var zCurrentInputConfig = (InputConfig)txtKeyIn.Tag;
-            if (null == zCurrentInputConfig)
-            {
-                ShowKeysNotDefinedError();
-                return;
+                return; // no keys, no point!
             }
 
-            try
+            if (btnStart.Text.Equals(ActionText.Stop.ToString()))
             {
-                var zRemapEntry = new RemapEntry(zCurrentInputConfig, CreateOutputConfigFromCharacter(sMacro[0]));
-                for (var nIdx = 1; nIdx < sMacro.Length; nIdx++)
-                {
-                    zRemapEntry.AppendOutputConfig(CreateOutputConfigFromCharacter(sMacro[nIdx]));
-                }
-                if (!IsInputAlreadyDefined(zRemapEntry))
-                {
-                    AddRemapEntryToListView(zRemapEntry, true);
-                }
+                KeyCaptureLib.Shutdown();
+                ConfigureControlsForCapture(false);
             }
-            catch (Exception ex)
+            else if (btnStart.Text.Equals(ActionText.Start.ToString()))
             {
-                MessageBox.Show(this, "Unfortunately you have specified an unsupported character (at this time)." + ex.ToString(), "Error!", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                InitSave(false);
+                if (!Dirty)
+                {
+                    ConfigureControlsForCapture(true);
+                    var eReturn = KeyCaptureLib.LoadFileAndCapture(m_sLoadedFile);
+                    switch (eReturn)
+                    {
+                        case CaptureMessage.HookCreationSuccess:
+                            break;
+                        case CaptureMessage.HookCreationFailure:
+                        case CaptureMessage.InputBad:
+                        case CaptureMessage.InputMissing:
+                        case CaptureMessage.InputZero:
+                        default:
+#warning should this show a message box?
+                            Console.WriteLine("Error: " + eReturn);
+                            ConfigureControlsForCapture(false);
+                            break;
+                    }
+                }
             }
         }
 
@@ -262,7 +349,8 @@ namespace KeyCap.Forms
 #if LOG_KEYS
             Console.Out.WriteLine("Key Input: {0} 0x{1}".FormatString(e.KeyCode, e.KeyCode.ToString("x")));
 #endif
-            UpdateTextBox((TextBox)sender, e, new InputConfig((byte)e.KeyCode));
+            m_zActiveInputConfig.VirtualKey = (byte)e.KeyCode;
+            UpdateTextBox((TextBox)sender, e, CreateInputConfigFromUI());
         }
 
         private void txtKeyOut_KeyDown(object sender, KeyEventArgs e)
@@ -270,12 +358,16 @@ namespace KeyCap.Forms
 #if LOG_KEYS
             Console.Out.WriteLine("Key Input: {0} 0x{1}".FormatString(e.KeyCode, e.KeyCode.ToString("x")));
 #endif
-            // Anything previously configured that would conflict with the output is reset
+            // reset these specific flags if a key is set
             checkOutputNothing.Checked = false;
             checkOutputCancel.Checked = false;
             checkOutputDelay.Checked = false;
+            checkOutputDown.Checked = true;
+            checkOutputUp.Checked = true;
 
-            UpdateTextBox((TextBox)sender, e, new OutputConfig(0, (byte)e.KeyCode, 0, e));
+            m_zActiveOutputConfig.VirtualKey = (byte)e.KeyCode;
+            m_zActiveOutputConfig.MouseClick = false;
+            UpdateTextBox((TextBox)sender, e, CreateOutputConfigFromUI());
         }
 
         private void txtKey_Enter(object sender, EventArgs e)
@@ -288,6 +380,68 @@ namespace KeyCap.Forms
             ((TextBox)sender).BackColor = SystemColors.Control;
         }
 
+        private void btnMouseGeneric_Click(object sender, EventArgs e)
+        {
+            m_zActiveOutputConfig.VirtualKey = (byte)(MouseButton)((Button)sender).Tag;
+            m_zActiveOutputConfig.MouseClick = true;
+            UpdateTextBox(txtKeyOut, null, CreateOutputConfigFromUI());
+        }
+
+        #endregion
+
+        #region Output String Generation
+
+        private OutputConfig CreateOutputConfigFromCharacter(char cInput)
+        {
+            var bShift = false;
+            var byteKey = KeyUtil.GetKeyByte(cInput, ref bShift);
+            var nFlags = (bShift ? (int)OutputConfig.OutputFlag.Shift : 0) |
+                         (int)OutputConfig.OutputFlag.Down | (int)OutputConfig.OutputFlag.Up;
+            return new OutputConfig(nFlags, byteKey);
+        }
+
+        private void btnAddOutputString_Click(object sender, EventArgs e)
+        {
+            const string MACRO_STRING_KEY = "macro_string_key";
+            var zQuery = new QueryPanelDialog("Enter String Macro", 400, false);
+            zQuery.SetIcon(this.Icon);
+            zQuery.AddTextBox("String", string.Empty, false, MACRO_STRING_KEY);
+            if (DialogResult.OK != zQuery.ShowDialog(this))
+            {
+                return;
+            }
+
+            var sMacro = zQuery.GetString(MACRO_STRING_KEY);
+            if (string.IsNullOrWhiteSpace(sMacro))
+            {
+                MessageBox.Show(this, "Please specify a string of output characters.", "Error!", MessageBoxButtons.OK,
+                    MessageBoxIcon.Error);
+                return;
+            }
+
+            if (!ValidateInputHasAction()) return;
+
+            try
+            {
+                var zRemapEntry = new RemapEntry(CreateInputConfigFromUI(), CreateOutputConfigFromCharacter(sMacro[0]));
+                for (var nIdx = 1; nIdx < sMacro.Length; nIdx++)
+                {
+                    zRemapEntry.AppendOutputConfig(CreateOutputConfigFromCharacter(sMacro[nIdx]));
+                }
+
+                if (!IsInputAlreadyDefined(zRemapEntry))
+                {
+                    AddRemapEntryToListView(zRemapEntry, true);
+                }
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show(this,
+                    "Unfortunately you have specified an unsupported character (at this time)." + ex.ToString(),
+                    "Error!", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+        }
+
         #endregion
 
         #region AbstractDirtyForm overrides
@@ -297,8 +451,9 @@ namespace KeyCap.Forms
             var listConfigs = new List<RemapEntry>(listViewKeys.Items.Count);
             foreach (ListViewItem zItem in listViewKeys.Items)
             {
-                listConfigs.Add((RemapEntry) zItem.Tag);
+                listConfigs.Add((RemapEntry)zItem.Tag);
             }
+
             m_zConfigFileManager.SaveFile(listConfigs, sFileName);
             // on save the project list should be updated
             UpdateProjectsList(sFileName);
@@ -330,6 +485,7 @@ namespace KeyCap.Forms
             {
                 MessageBox.Show(e.Message);
             }
+
             return true;
         }
 
@@ -376,12 +532,12 @@ namespace KeyCap.Forms
 
         #endregion
 
-        #region Control Events
+        #region ListView Events
 
         private void listViewKeys_SelectedIndexChanged(object sender, EventArgs e)
         {
             btnAppend.Enabled = (1 == listViewKeys.SelectedIndices.Count);
-            btnAppendExtra.Enabled = (1 == listViewKeys.SelectedIndices.Count);
+            btnUpdate.Enabled = (1 == listViewKeys.SelectedIndices.Count);
             btnRemove.Enabled = (0 < listViewKeys.SelectedIndices.Count);
         }
 
@@ -390,32 +546,98 @@ namespace KeyCap.Forms
             ListViewAssist.ResizeColumnHeaders(listViewKeys);
         }
 
+        private void listViewKeys_MouseDoubleClick(object sender, MouseEventArgs e)
+        {
+            // attempt to load the item into the controls
+            if (listViewKeys.SelectedItems.Count != 1)
+            {
+                return;
+            }
+
+            m_bHandlingGenericInputOutputEvent = true;
+            ResetInputOutputUI();
+
+            var zRemapEntry = (RemapEntry)listViewKeys.SelectedItems[0].Tag;
+            var zInputConfig = zRemapEntry.InputConfig;
+            var zFirstOutputConfig = zRemapEntry.OutputConfigs[0];
+
+            m_zActiveInputConfig.VirtualKey = zRemapEntry.InputConfig.VirtualKey;
+            m_zActiveOutputConfig.VirtualKey = zFirstOutputConfig.VirtualKey;
+            m_zActiveOutputConfig.MouseClick = zFirstOutputConfig.IsFlaggedAs(OutputFlag.MouseOut);
+
+            // input handling
+            if (zInputConfig.IsFlaggedAs(InputFlag.LongPress))
+            {
+                checkInputLongPress.Checked = true;
+            }
+            else
+            {
+                checkInputLongPress.Checked = false;
+                checkInputAlt.Checked = zInputConfig.IsFlaggedAs(InputFlag.Alt);
+                checkInputShift.Checked = zInputConfig.IsFlaggedAs(InputFlag.Shift);
+                checkInputControl.Checked = zInputConfig.IsFlaggedAs(InputFlag.Control);
+            }
+
+            UpdateTextBox(txtKeyIn, null, zInputConfig);
+
+            checkOutputAlt.Enabled = true;
+            checkOutputShift.Enabled = true;
+            checkOutputControl.Enabled = true;
+
+            m_bHandlingGenericInputOutputEvent = false;
+
+            // output handling
+            if (zFirstOutputConfig.IsFlaggedAs(OutputFlag.Toggle))
+            {
+                checkOutputToggle.Checked = true;
+            }
+            else if (zFirstOutputConfig.IsFlaggedAs(OutputFlag.CancelActiveOutputs))
+            {
+                checkOutputCancel.Checked = true;
+            }
+            else if (zFirstOutputConfig.IsFlaggedAs(OutputFlag.DoNothing))
+            {
+                checkOutputNothing.Checked = true;
+            }
+            else if (zFirstOutputConfig.IsFlaggedAs(OutputFlag.Delay))
+            {
+                checkOutputDelay.Checked = true;
+                numericUpDownOutputParameter.Value = zFirstOutputConfig.Parameter;
+            }
+            else if (zFirstOutputConfig.IsFlaggedAs(OutputFlag.Repeat))
+            {
+                checkOutputRepeat.Checked = true;
+                numericUpDownOutputParameter.Value = zFirstOutputConfig.Parameter;
+            }
+            else
+            {
+                checkOutputUp.Checked = zFirstOutputConfig.IsFlaggedAs(OutputFlag.Up);
+                checkOutputDown.Checked = zFirstOutputConfig.IsFlaggedAs(OutputFlag.Down);
+            }
+            checkOutputAlt.Checked = zFirstOutputConfig.IsFlaggedAs(OutputFlag.Alt);
+            checkOutputShift.Checked = zFirstOutputConfig.IsFlaggedAs(OutputFlag.Shift);
+            checkOutputControl.Checked = zFirstOutputConfig.IsFlaggedAs(OutputFlag.Control);
+            UpdateTextBox(txtKeyOut, null, CreateOutputConfigFromUI());
+        }
+
+        #endregion
+
+        #region Config Action Events
+
         private void btnAdd_Click(object sender, EventArgs e)
         {
-            InputConfig zInputConfig = null;
-            OutputConfig zOutputConfig = null;
             RemapEntry zRemapEntry = null;
-            if (!RetrieveConfigsForAdd(ref zInputConfig, ref zOutputConfig, ref zRemapEntry)) return;
+            if (!CreateRemapEntryFromActiveConfigs(ref zRemapEntry)) return;
             AddRemapEntryToListView(zRemapEntry, true);
         }
 
-        private void AddRemapEntryToListView(RemapEntry zRemapEntry, bool bMarkDirty)
+        private void btnUpdate_Click(object sender, EventArgs e)
         {
-            var zItem = new ListViewItem(new string[]
+            if (listViewKeys.SelectedItems.Count == 1)
             {
-                zRemapEntry.GetInputString(),
-                zRemapEntry.GetOutputString()
-            })
-            {
-                Tag = zRemapEntry,
-                ToolTipText = zRemapEntry.GetOutputString()
-            };
-            listViewKeys.Items.Add(zItem);
-            listViewKeys.SelectedItems.Clear();
-            zItem.Selected = true;
-            if (bMarkDirty)
-            {
-                MarkDirty();
+                RemapEntry zRemapEntry = null;
+                if (!CreateRemapEntryFromActiveConfigs(ref zRemapEntry, (RemapEntry)listViewKeys.SelectedItems[0].Tag)) return;
+                AddRemapEntryToListView(zRemapEntry, true, listViewKeys.SelectedItems[0]);
             }
         }
 
@@ -429,7 +651,7 @@ namespace KeyCap.Forms
             var zItem = listViewKeys.SelectedItems[0];
             var zRemapEntry = (RemapEntry)zItem.Tag;
             OutputConfig zOutputConfig = null;
-            if (!RetrieveAppendConfigs(ref zOutputConfig, zRemapEntry)) return;
+            if (!RetrieveOutputConfigForAppend(zRemapEntry, ref zOutputConfig)) return;
 
             zRemapEntry.AppendOutputConfig(zOutputConfig);
             zItem.SubItems[1].Text = zRemapEntry.GetOutputString();
@@ -444,179 +666,114 @@ namespace KeyCap.Forms
                 return;
             }
 
+            if(DialogResult.No == MessageBox.Show(
+                   "Are you sure you want to remove the selected items?", 
+                   "Remove Confirmation", 
+                   MessageBoxButtons.YesNo, 
+                   MessageBoxIcon.Question, 
+                   MessageBoxDefaultButton.Button1))
+            {
+                return;
+            }
+
             foreach (ListViewItem zItem in listViewKeys.SelectedItems)
             {
                 listViewKeys.Items.Remove(zItem);
             }
-            MarkDirty();
-        }
 
-        private void btnStart_Click(object sender, EventArgs e)
-        {
-            if (0 == listViewKeys.Items.Count)
-            {
-                return; // no keys, no point!
-            }
-            if(btnStart.Text.Equals(ActionText.Stop.ToString()))
-            {
-                KeyCaptureLib.Shutdown();
-                ConfigureControls(false);
-            }
-            else if(btnStart.Text.Equals(ActionText.Start.ToString()))
-            {
-                InitSave(false);
-                if (!Dirty)
-                {
-                    ConfigureControls(true);
-                    var eReturn = KeyCaptureLib.LoadFileAndCapture(m_sLoadedFile);
-                    switch (eReturn)
-                    {
-                        case CaptureMessage.HookCreationSuccess:
-                            break;
-                        case CaptureMessage.HookCreationFailure:
-                        case CaptureMessage.InputBad:
-                        case CaptureMessage.InputMissing:
-                        case CaptureMessage.InputZero:
-                        default:
-                            Console.WriteLine("Error: " + eReturn);
-                            ConfigureControls(false);
-                            break;
-                    }
-                }
-            }
+            MarkDirty();
         }
 
         #endregion
 
         #region Input / Output Settings Control Events
 
-        private void checkInputLongPress_CheckedChanged(object sender, EventArgs e)
+        private void checkGenericInputOutput_CheckedChanged(object sender, EventArgs e)
         {
-            ToggleControlsEnabled(m_setInputControls, !checkInputLongPress.Checked, (Control)sender);
-            if (checkInputLongPress.Checked)
+            if (m_bHandlingGenericInputOutputEvent)
             {
-                ToggleCheckboxesChecked(false, checkInputAlt, checkInputControl, checkInputShift);
+                return;
             }
+            m_bHandlingGenericInputOutputEvent = true;
+            m_dictionaryControlActive[(Control)sender].Process(((CheckBox)sender).Checked);
+            m_bHandlingGenericInputOutputEvent = false;
         }
-
-        private void comboBoxMouseOut_SelectedIndexChanged(object sender, EventArgs e)
+        
+        private void numericUpDownOutputParameter_ValueChanged(object sender, EventArgs e)
         {
-            SetOutKeyConfig(comboBoxOutMouse.SelectedIndex == 0 ? null : new OutputConfig(
-                (int)OutputConfig.OutputFlag.MouseOut,
-                (byte)(OutputConfig.MouseButton)comboBoxOutMouse.SelectedItem));
-
-        }
-
-        private void checkOutputDelay_CheckedChanged(object sender, EventArgs e)
-        {
-            ToggleControlsEnabled(m_setOutputControls, !checkOutputDelay.Checked, (Control)sender, numericUpDownOutputParameter);
-            if (checkOutputDelay.Checked)
+            if (checkOutputDelay.Checked || checkOutputRepeat.Checked)
             {
-                numericUpDownDelay_ValueChanged(sender, e);
-                ToggleCheckboxesChecked(false,
-                    checkOutputAlt,
-                    checkOutputShift,
-                    checkOutputControl,
-                    checkOutputCancel,
-                    checkOutputRepeat,
-                    checkOutputNothing
-                );
+                UpdateTextBox(txtKeyOut, null, CreateOutputConfigFromUI());
             }
-        }
-
-        private void numericUpDownDelay_ValueChanged(object sender, EventArgs e)
-        {
-            SetOutKeyConfig(checkOutputDelay.Checked 
-                ? new OutputConfig((int)OutputConfig.OutputFlag.Delay, 0, (int)numericUpDownOutputParameter.Value) 
-                : null);
-        }
-
-        private void checkOutputToggle_CheckedChanged(object sender, EventArgs e)
-        {
-            ToggleControlsEnabled(m_setOutputControls, !checkOutputToggle.Checked, (Control)sender, comboBoxOutMouse);
-            if (checkOutputToggle.Checked)
-            {
-                ToggleCheckboxesChecked(true, checkOutputUp, checkOutputDown);
-                ToggleCheckboxesChecked(false, 
-                    checkOutputAlt, 
-                    checkOutputShift, 
-                    checkOutputControl, 
-                    checkOutputCancel, 
-                    checkOutputRepeat, 
-                    checkOutputDelay, 
-                    checkOutputNothing);
-            }
-        }
-
-        private void checkOutputRepeat_CheckedChanged(object sender, EventArgs e)
-        {
-            ToggleControlsEnabled(m_setOutputControls, !checkOutputRepeat.Checked, 
-                checkOutputRepeat, 
-                checkOutputAlt, 
-                checkOutputControl, 
-                checkOutputShift, 
-                comboBoxOutMouse,
-                numericUpDownOutputParameter);
-            if (checkOutputRepeat.Checked)
-            {
-                ToggleCheckboxesChecked(true, checkOutputUp, checkOutputDown);
-                ToggleCheckboxesChecked(false, checkOutputCancel, checkOutputToggle, checkOutputDelay, checkOutputNothing);
-            }
-        }
-
-        private void checkOutputDoNothing_CheckedChanged(object sender, EventArgs e)
-        {
-            ToggleControlsEnabled(m_setOutputControls, !checkOutputNothing.Checked, (Control)sender);
-            SetOutKeyConfig(checkOutputNothing.Checked
-                ? new OutputConfig((int)OutputConfig.OutputFlag.DoNothing, 0)
-                : null);
-        }
-
-        private void checkOutputCancel_CheckedChanged(object sender, EventArgs e)
-        {
-            ToggleControlsEnabled(m_setOutputControls, !checkOutputCancel.Checked, (Control)sender);
-            SetOutKeyConfig(checkOutputCancel.Checked ? new OutputConfig((int)OutputConfig.OutputFlag.CancelActiveOutputs, 0) : null);
         }
 
         #endregion
 
         #region Support Methods
 
+        private void ResetInputOutputUI()
+        {
+            m_zActiveInputConfig.Reset();
+            m_zActiveOutputConfig.Reset();
+
+            var inputControls = new Control[]
+                { checkInputAlt, checkInputShift, checkInputControl, checkInputLongPress };
+
+            foreach (var c in inputControls)
+            {
+                c.Enabled = true;
+                if (c is CheckBox)
+                {
+                    ((CheckBox)c).Checked = false;
+                }
+            }
+            numericUpDownInputParameter.Enabled = false;
+            numericUpDownInputParameter.Value = numericUpDownInputParameter.Minimum;
+
+            var outputControls = new Control[]
+            { checkOutputAlt, checkOutputShift, checkOutputControl, checkOutputDown, checkOutputUp, checkOutputToggle, checkOutputNothing,
+                checkOutputCancel, checkOutputRepeat, checkOutputDelay };
+
+            foreach (var c in outputControls)
+            {
+                c.Enabled = true;
+                if (c is CheckBox)
+                {
+                    ((CheckBox)c).Checked = false;
+                }
+            }
+
+            checkOutputDown.Checked = true;
+            checkOutputUp.Checked = true;
+            numericUpDownOutputParameter.Enabled = false;
+            numericUpDownOutputParameter.Value = numericUpDownOutputParameter.Minimum;
+        }
+
+        private void AddRemapEntryToListView(RemapEntry zRemapEntry, bool bMarkDirty, ListViewItem zExistingItem = null)
+        {
+            var zItem = zExistingItem ?? new ListViewItem(new string[] {string.Empty, string.Empty});
+            zItem.SubItems[0].Text = zRemapEntry.GetInputString();
+            zItem.SubItems[1].Text = zRemapEntry.GetOutputString();
+            zItem.Tag = zRemapEntry;
+            zItem.ToolTipText = zRemapEntry.GetOutputString();
+            if (zExistingItem == null)
+            {
+                listViewKeys.Items.Add(zItem);
+            }
+            listViewKeys.SelectedItems.Clear();
+            zItem.Selected = true;
+            if (bMarkDirty)
+            {
+                MarkDirty();
+            }
+        }
+
         private void UpdateTextBox<T>(TextBox txtBox, KeyEventArgs e, T config) where T : BaseIOConfig
         {
-            txtBox.Text = config.GetDescription();
-            txtBox.Tag = config;
-            e.Handled = true;
-        }
-
-        private void SetOutKeyConfig(OutputConfig zOutputConfig = null)
-        {
-            if (zOutputConfig == null)
+            txtBox.Text = config.GetActionOnlyDescription();
+            if (e != null)
             {
-                txtKeyOut.Text = string.Empty;
-                txtKeyOut.Tag = null;
-            }
-            else
-            {
-                txtKeyOut.Text = zOutputConfig.GetDescription();
-                txtKeyOut.Tag = zOutputConfig;
-            }
-        }
-
-        private void ToggleControlsEnabled(HashSet<Control> setAllControls, bool bEnabled, params Control[] arrayIgnoredControls)
-        {
-            arrayIgnoredControls = arrayIgnoredControls ?? Array.Empty<Control>();
-            foreach (var zControl in setAllControls.Where(c => -1 == Array.IndexOf(arrayIgnoredControls, c)))
-            {
-                zControl.Enabled = bEnabled;
-            }
-        }
-
-        private void ToggleCheckboxesChecked(bool bChecked, params CheckBox[] arrayCheckBoxes)
-        {
-            foreach (var zControl in arrayCheckBoxes)
-            {
-                zControl.Checked = bChecked;
+                e.Handled = true;
             }
         }
 
@@ -634,13 +791,7 @@ namespace KeyCap.Forms
             }
         }
 
-        /// <summary>
-        /// Gets the flags byte based on the definition and the type of input/output
-        /// </summary>
-        /// <param name="zInputConfig">the io definition</param>
-        /// <param name="eFlag">the type of io</param>
-        /// <returns>New flags value based on the settings of the ui (any prior flags are lost)</returns>
-        private InputConfig UpdateInputFlags(InputConfig zInputConfig)
+        private InputConfig CreateInputConfigFromUI()
         {
             var bAlt = checkInputAlt.Checked;
             var bControl = checkInputControl.Checked;
@@ -648,64 +799,55 @@ namespace KeyCap.Forms
             var bLongPress = checkInputLongPress.Checked;
 
             var nFlags = 0;
-            nFlags = BitUtil.UpdateFlag(nFlags, bAlt, InputConfig.InputFlag.Alt);
-            nFlags = BitUtil.UpdateFlag(nFlags, bControl, InputConfig.InputFlag.Control);
-            nFlags = BitUtil.UpdateFlag(nFlags, bShift, InputConfig.InputFlag.Shift);
-            nFlags = BitUtil.UpdateFlag(nFlags, bLongPress, InputConfig.InputFlag.LongPress);
-            zInputConfig.Flags = nFlags;
-
-            if (bLongPress)
+            nFlags = BitUtil.UpdateFlag(nFlags, InputFlag.Alt, bAlt);
+            nFlags = BitUtil.UpdateFlag(nFlags, InputFlag.Control, bControl);
+            nFlags = BitUtil.UpdateFlag(nFlags, InputFlag.Shift, bShift);
+            nFlags = BitUtil.UpdateFlag(nFlags, InputFlag.LongPress, bLongPress);
+            return new InputConfig(m_zActiveInputConfig.VirtualKey)
             {
-                zInputConfig.Parameter = (int)numericUpDownInputParameter.Value;
-            }
-
-            return zInputConfig;
+                Flags = nFlags,
+                Parameter = bLongPress ? (int)numericUpDownInputParameter.Value : 0
+            };
         }
 
-        private OutputConfig UpdateOutputFlags(OutputConfig zOutputConfig)
+        private OutputConfig CreateOutputConfigFromUI()
         {
-            if (zOutputConfig.IsFlaggedAs(OutputConfig.OutputFlag.DoNothing) 
-                || zOutputConfig.IsFlaggedAs(OutputConfig.OutputFlag.CancelActiveOutputs))
-            {
-                return zOutputConfig;
-            }
-
-
-            // get the flags from the check boxes (always, both mouse and keyboard support them in some fashion)
             var bAlt = checkOutputAlt.Checked;
             var bControl = checkOutputControl.Checked;
             var bShift = checkOutputShift.Checked;
             var bToggle = checkOutputToggle.Checked;
             var bRepeat = checkOutputRepeat.Checked;
+            var bDelay = checkOutputDelay.Checked;
             var bDown = checkOutputDown.Checked;
             var bUp = checkOutputUp.Checked;
+            var bCancelOutputs = checkOutputCancel.Checked;
+            var bNothing = checkOutputNothing.Checked;
 
             var nFlags = 0;
-            nFlags = BitUtil.UpdateFlag(nFlags, bShift, OutputConfig.OutputFlag.Shift);
-            nFlags = BitUtil.UpdateFlag(nFlags, bControl, OutputConfig.OutputFlag.Control);
-            nFlags = BitUtil.UpdateFlag(nFlags, bAlt, OutputConfig.OutputFlag.Alt);
-            nFlags = BitUtil.UpdateFlag(nFlags, zOutputConfig.IsFlaggedAs(OutputConfig.OutputFlag.MouseOut), OutputConfig.OutputFlag.MouseOut);
-            nFlags = BitUtil.UpdateFlag(nFlags, zOutputConfig.IsFlaggedAs(OutputConfig.OutputFlag.Delay), OutputConfig.OutputFlag.Delay);
+            nFlags = BitUtil.UpdateFlag(nFlags, OutputFlag.Shift, bShift);
+            nFlags = BitUtil.UpdateFlag(nFlags, OutputFlag.Control, bControl);
+            nFlags = BitUtil.UpdateFlag(nFlags, OutputFlag.Alt, bAlt);
+            nFlags = BitUtil.UpdateFlag(nFlags, OutputFlag.MouseOut, m_zActiveOutputConfig.MouseClick);
+            nFlags = BitUtil.UpdateFlag(nFlags, OutputFlag.Delay, bDelay);
+            nFlags = BitUtil.UpdateFlag(nFlags, OutputFlag.CancelActiveOutputs, bCancelOutputs);
+            nFlags = BitUtil.UpdateFlag(nFlags, OutputFlag.DoNothing, bNothing);
 
-            nFlags = BitUtil.UpdateFlag(nFlags, bToggle, OutputConfig.OutputFlag.Toggle);
-            nFlags = BitUtil.UpdateFlag(nFlags, bRepeat, OutputConfig.OutputFlag.Repeat);
-            nFlags = BitUtil.UpdateFlag(nFlags, bDown, OutputConfig.OutputFlag.Down);
-            nFlags = BitUtil.UpdateFlag(nFlags, bUp, OutputConfig.OutputFlag.Up);
-            zOutputConfig.Flags = nFlags;
-
-            if (bRepeat)
+            nFlags = BitUtil.UpdateFlag(nFlags, OutputFlag.Toggle, bToggle);
+            nFlags = BitUtil.UpdateFlag(nFlags, OutputFlag.Repeat, bRepeat);
+            nFlags = BitUtil.UpdateFlag(nFlags, OutputFlag.Down, bDown);
+            nFlags = BitUtil.UpdateFlag(nFlags, OutputFlag.Up, bUp);
+            return new OutputConfig(nFlags, (bDelay || bCancelOutputs || bNothing) ? (byte)0 : m_zActiveOutputConfig.VirtualKey)
             {
-                zOutputConfig.Parameter = (int)numericUpDownOutputParameter.Value;
-            }
-
-            return zOutputConfig;
+                Flags = nFlags,
+                Parameter = (bRepeat || bDelay) ? (int)numericUpDownOutputParameter.Value : 0
+            };
         }
 
         /// <summary>
         /// Reconfigures the controls based on the state specified
         /// </summary>
         /// <param name="bCapturing">flag indicating if actively capturing keyboard input</param>
-        private void ConfigureControls(bool bCapturing)
+        private void ConfigureControlsForCapture(bool bCapturing)
         {
             menuStripMain.Enabled = !bCapturing;
             panelKeySetup.Enabled = !bCapturing;
@@ -713,35 +855,6 @@ namespace KeyCap.Forms
             btnStart.Text = bCapturing ? ActionText.Stop.ToString() : ActionText.Start.ToString();
             notifyIcon.Icon = bCapturing? Resources.KeyCapActive : Resources.KeyCapIdle;
             Icon = notifyIcon.Icon;
-        }
-
-        private void ConfigureToolTips()
-        {
-            var zToolTip = new ToolTip()
-            {
-                AutoPopDelay = 10000,
-                InitialDelay = 500,
-                ReshowDelay = 250,
-                ShowAlways = false,
-            };
-
-            zToolTip.SetToolTip(checkInputAlt, "Requires Alt to be pressed");
-            zToolTip.SetToolTip(checkInputControl, "Requires Ctrl to be pressed");
-            zToolTip.SetToolTip(checkInputShift, "Requires Shift to be pressed");
-            zToolTip.SetToolTip(checkInputLongPress, "Require the key to be held for a minimum amount of time");
-            zToolTip.SetToolTip(numericUpDownInputParameter, "The minimum duration of the long press (milliseconds). \n\nNOTE: The 'Repeat Delay' setting in the Windows Keyboard control panel has a direct impact on how low this can be.");
-
-            zToolTip.SetToolTip(checkOutputAlt, "Generates Alt event");
-            zToolTip.SetToolTip(checkOutputControl, "Generates Ctrl event");
-            zToolTip.SetToolTip(checkOutputShift, "Generates Shift event");
-            zToolTip.SetToolTip(checkOutputUp, "Generates key up event (key released)");
-            zToolTip.SetToolTip(checkOutputDown, "Generates key down event (key held)");
-            zToolTip.SetToolTip(checkOutputToggle, "When enabled the same input key will alternate generating key up/down events.\n\n NOTE: Toggle does not support alt/ctrl/shift outputs.");
-            zToolTip.SetToolTip(checkOutputNothing, "Consumes input, generating no events");
-            zToolTip.SetToolTip(checkOutputCancel, "Cancels all active outputs");
-            zToolTip.SetToolTip(checkOutputRepeat, "Generates the specified event perpetually");
-            zToolTip.SetToolTip(checkOutputDelay, "Generates a delay based on the value specified (milliseconds)");
-            zToolTip.SetToolTip(numericUpDownOutputParameter, "The duration of the delay or gap between repetitions (milliseconds)");
         }
 
         /// <summary>
@@ -773,38 +886,29 @@ namespace KeyCap.Forms
             m_zIniManager.FlushIniSettings();
         }
 
-        private bool RetrieveConfigsForAdd(ref InputConfig zInputConfig, ref OutputConfig zOutputConfig, ref RemapEntry zRemapEntry)
+        private bool CreateRemapEntryFromActiveConfigs(ref RemapEntry zRemapEntry, RemapEntry updateEntry = null)
         {
-            var zCurrentInputConfig = (InputConfig)txtKeyIn.Tag;
-            var zCurrentOutputConfig = (OutputConfig)txtKeyOut.Tag;
-            if (null == zCurrentInputConfig || null == zCurrentOutputConfig)
-            {
-                MessageBox.Show(this, "Please specify both an input and output key.", "Error!", MessageBoxButtons.OK, MessageBoxIcon.Error);
-                return false;
-            }
-
-            // build cloned configs based on the ui state
-            zInputConfig = UpdateInputFlags(new InputConfig(zCurrentInputConfig));
-            zOutputConfig = UpdateOutputFlags(new OutputConfig(zCurrentOutputConfig));
-
-            if (!ValidateOutputHasAction(zOutputConfig))
+            var zCurrentInputConfig = CreateInputConfigFromUI();
+            var zCurrentOutputConfig = CreateOutputConfigFromUI();
+            if (0 == zCurrentInputConfig.VirtualKey || !ValidateOutputHasAction(zCurrentOutputConfig))
             {
                 return false;
             }
-
-            zRemapEntry = new RemapEntry(zInputConfig, zOutputConfig);
+            
+            zRemapEntry = new RemapEntry(new InputConfig(zCurrentInputConfig), new OutputConfig(zCurrentOutputConfig));
 
             // flip this result for indicator of a good remap entry
-            return !IsInputAlreadyDefined(zRemapEntry);
+            return !IsInputAlreadyDefined(zRemapEntry, updateEntry);
         }
 
-        private bool IsInputAlreadyDefined(RemapEntry zNewRemapEntry)
+        private bool IsInputAlreadyDefined(RemapEntry zNewRemapEntry, RemapEntry ignoreEntry = null)
         {
             // verify this is not already defined
             foreach (ListViewItem zListItem in listViewKeys.Items)
             {
-                var zKeyOldDef = (RemapEntry)zListItem.Tag;
-                if (zNewRemapEntry.GetHashCode() != zKeyOldDef.GetHashCode())
+                var zExistingEntry = (RemapEntry)zListItem.Tag;
+                if (ignoreEntry == zExistingEntry 
+                    || zNewRemapEntry.GetHashCode() != zExistingEntry.GetHashCode())
                 {
                     continue;
                 }
@@ -816,15 +920,8 @@ namespace KeyCap.Forms
             return false;
         }
 
-        private bool RetrieveAppendConfigs(ref OutputConfig zOutputConfig, RemapEntry zRemapEntry)
+        private bool RetrieveOutputConfigForAppend(RemapEntry zRemapEntry, ref OutputConfig zOutputConfig)
         {
-            var zCurrentOutputConfig = (OutputConfig)txtKeyOut.Tag;
-            if (null == zCurrentOutputConfig)
-            {
-                MessageBox.Show(this, "Please specify an output key.", "Error!", MessageBoxButtons.OK, MessageBoxIcon.Error);
-                return false;
-            }
-
             if (zRemapEntry.OutputConfigCount == KeyCapConstants.MaxOutputs)
             {
                 MessageBox.Show(this, "Failed to append item. The maximum number of outputs allowed is {0}.".FormatString(KeyCapConstants.MaxOutputs),
@@ -833,7 +930,7 @@ namespace KeyCap.Forms
                 return false;
             }
 
-            zOutputConfig = UpdateOutputFlags(new OutputConfig(zCurrentOutputConfig));
+            zOutputConfig = CreateOutputConfigFromUI();
             if (!ValidateOutputHasAction(zOutputConfig))
             {
                 return false;
@@ -841,9 +938,22 @@ namespace KeyCap.Forms
             return true;
         }
 
-        private bool ValidateOutputHasAction(OutputConfig zOutputConfig)
+        private bool ValidateInputHasAction()
         {
-            if (!zOutputConfig.IsAssignedAction())
+            if (0 == m_zActiveInputConfig.VirtualKey)
+            {
+                MessageBox.Show(this, "The input must be configured with a key.",
+                    "Input Configuration Error!",
+                    MessageBoxButtons.OK, MessageBoxIcon.Exclamation);
+                return false;
+            }
+
+            return true;
+        }
+
+        private bool ValidateOutputHasAction(OutputConfig outputConfig)
+        {
+            if (!outputConfig.IsAssignedAction())
             {
                 MessageBox.Show(this, "The output must be configured to perform an action.",
                     "Output Configuration Error!",
@@ -854,100 +964,49 @@ namespace KeyCap.Forms
             return true;
         }
 
-        private OutputConfig CreateOutputConfigFromCharacter(char cInput)
-        {
-            var bShift = false;
-            var byteKey = GetKeysByte(cInput, ref bShift);
-            var nFlags = (bShift ? (int)OutputConfig.OutputFlag.Shift : 0) |
-                (int)OutputConfig.OutputFlag.Down | (int)OutputConfig.OutputFlag.Up;
-            return new OutputConfig(nFlags, byteKey);
-        }
+        #endregion
 
-        private byte GetKeysByte(char cInput, ref bool bShift)
+        #region UIIOConfig
+
+        abstract class UIIOConfig
         {
-            bShift = char.IsUpper(cInput);
-            try
+            public byte VirtualKey { get; set; }
+
+            public UIIOConfig(byte byVirtualKey)
             {
-                return (byte)(Keys)Enum.Parse(typeof(Keys), cInput.ToString(), true);
-            }
-            catch (Exception)
-            {
-                // HACK
-                // ignore and try the switch
-            }
-#warning HACK This is super limited to a very specific keyboard
-            switch (cInput)
-            {
-                case ' ':
-                    return (byte)Keys.Space;
-                case '!':
-                    bShift = true;
-                    return (byte)Keys.D1;
-                case '@':
-                    bShift = true;
-                    return (byte)Keys.D2;
-                case '#':
-                    bShift = true;
-                    return (byte)Keys.D3;
-                case '$':
-                    bShift = true;
-                    return (byte)Keys.D4;
-                case '%':
-                    bShift = true;
-                    return (byte)Keys.D5;
-                case '^':
-                    bShift = true;
-                    return (byte)Keys.D6;
-                case '&':
-                    bShift = true;
-                    return (byte)Keys.D7;
-                case '*':
-                    bShift = true;
-                    return (byte)Keys.D8;
-                case '(':
-                    bShift = true;
-                    return (byte)Keys.D9;
-                case ')':
-                    bShift = true;
-                    return (byte)Keys.D0;
-                case '~':
-                    bShift = true;
-                    return (byte)Keys.Oemtilde;
-                case '{':
-                    bShift = true;
-                    return (byte)Keys.OemOpenBrackets;
-                case '}':
-                    bShift = true;
-                    return (byte)Keys.Oem6;
-                case '|':
-                    bShift = true;
-                    return (byte)Keys.Oem5;
-                case ':':
-                    bShift = true;
-                    return (byte)Keys.Oem1;
-                case '"':
-                    bShift = true;
-                    return (byte)Keys.Oem7;
-                case '<':
-                    bShift = true;
-                    return (byte)Keys.Oemcomma;
-                case '>':
-                    bShift = true;
-                    return (byte)Keys.OemPeriod;
-                case '?':
-                    bShift = true;
-                    return (byte)Keys.OemQuestion;
+                VirtualKey = byVirtualKey;
             }
 
-            throw new Exception("Unsupported character: " + cInput);
+            public virtual void Reset()
+            {
+                VirtualKey = 0;
+            }
         }
 
-        private void ShowKeysNotDefinedError()
+        class UIInputConfig : UIIOConfig
         {
-            MessageBox.Show(this, "Please specify both an input and output key.", "Error!", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            public UIInputConfig(byte byVirtualKey) : base(byVirtualKey)
+            {
+            }
         }
 
+        class UIOutputConfig : UIIOConfig
+        {
+            public bool MouseClick { get; set; }
+
+            public UIOutputConfig(byte byVirtualKey, bool bMouseClick) : base(byVirtualKey)
+            {
+                MouseClick = bMouseClick;
+            }
+
+            public override void Reset()
+            {
+                base.Reset();
+                MouseClick = false;
+            }
+        }
 
         #endregion
+
     }
 }

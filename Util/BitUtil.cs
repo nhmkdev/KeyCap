@@ -40,9 +40,18 @@ namespace KeyCap.Util
             return nEnumFlag == (nFlags & nEnumFlag);
         }
 
-        public static int UpdateFlag(int nFlag, bool bFlagSetting, Enum eFlagBit)
+        /// <summary>
+        /// Gets the flag updated based on the flag bit specified and flag enabled state
+        /// </summary>
+        /// <param name="nFlags">The base flags int</param>
+        /// <param name="bFlagEnabled">Indicator if the bit is to be set or not</param>
+        /// <param name="eFlagBit">The bit to set</param>
+        /// <returns></returns>
+        public static int UpdateFlag(int nFlags, Enum eFlagBit, bool bFlagEnabled)
         {
-            return nFlag | (bFlagSetting ? Convert.ToInt32(eFlagBit) : 0);
+            return bFlagEnabled
+                ? nFlags | Convert.ToInt32(eFlagBit)
+                : nFlags & ~Convert.ToInt32(eFlagBit);
         }
     }
 }
