@@ -187,13 +187,13 @@ namespace Support.IO
 
             try
             {
-                var zWriter = new StreamWriter(Filename, false);
-
-                foreach (var sKey in m_dictionaryItems.Keys)
+                using (var zWriter = new StreamWriter(Filename, false))
                 {
-                    zWriter.WriteLine(sKey + CHAR_SPLITTER + m_dictionaryItems[sKey]);
+                    foreach (var sKey in m_dictionaryItems.Keys)
+                    {
+                        zWriter.WriteLine(sKey + CHAR_SPLITTER + m_dictionaryItems[sKey]);
+                    }
                 }
-                zWriter.Close();
             }
 #warning do nothing?
             catch (Exception)

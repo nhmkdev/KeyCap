@@ -331,8 +331,11 @@ namespace KeyCap.Forms
                         case CaptureMessage.InputMissing:
                         case CaptureMessage.InputZero:
                         default:
-#warning should this show a message box?
-                            Console.WriteLine("Error: " + eReturn);
+                            MessageBox.Show(
+                                "Failed to initialize key capture. Exited with error code: {0}".FormatString(eReturn),
+                                "Key Capture Failed", 
+                                MessageBoxButtons.OK, 
+                                MessageBoxIcon.Error);
                             ConfigureControlsForCapture(false);
                             break;
                     }
