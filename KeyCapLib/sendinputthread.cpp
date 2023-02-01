@@ -181,19 +181,3 @@ DWORD InitiateSendInput(RemapEntry* pRemapEntry, RemapEntryState* pRemapEntrySta
 #endif
 	return 0;
 }
-
-/*
- * Thread entry point for simple keypress (used for longpress configured keys to send the normal input key on key up)
- */
-DWORD WINAPI SendInputKeypress(LPVOID lpParam)
-{
-	InputConfig* inputConfig = static_cast<InputConfig*>(lpParam);
-	int nIndex = 0;
-	INPUT inputBuffer[MAX_KEY_INPUT_PER_STROKE];
-	memset(&inputBuffer, 0, sizeof(INPUT) * MAX_KEY_INPUT_PER_STROKE);
-	AppendSingleKey(inputConfig->virtualKey, &inputBuffer[nIndex++], 0);
-	AppendSingleKey(inputConfig->virtualKey, &inputBuffer[nIndex++], KEYEVENTF_KEYUP);
-	LogDebugMessage("[Sending Input Keypress][virtualKey: %d]", inputConfig->virtualKey);
-	SendInput(nIndex, inputBuffer, sizeof(INPUT));
-	return 0;
-}

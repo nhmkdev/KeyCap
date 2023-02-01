@@ -24,6 +24,18 @@
 
 #include "keycapturestructs.h"
 #include "keycaptureutil.h"
+#include "keyboardinput.h"
+
+UINT SendInputKeypress(const InputConfig* pKeyDef)
+{
+	int nIndex = 0;
+	INPUT inputBuffer[MAX_KEY_INPUT_PER_STROKE];
+	memset(&inputBuffer, 0, sizeof(INPUT) * MAX_KEY_INPUT_PER_STROKE);
+	AppendSingleKey(pKeyDef->virtualKey, &inputBuffer[nIndex++], 0);
+	AppendSingleKey(pKeyDef->virtualKey, &inputBuffer[nIndex++], KEYEVENTF_KEYUP);
+	LogDebugMessage("[Sending Input Keypress][virtualKey: %d]", pKeyDef->virtualKey);
+	return SendInput(nIndex, inputBuffer, sizeof(INPUT));
+}
 
 void ResetRemapEntryState(RemapEntryState* pRemapEntryState, BYTE bToggled)
 {

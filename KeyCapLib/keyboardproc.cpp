@@ -30,6 +30,9 @@ const int KEY_DOWN_EVENT_FIRED = 1; // key is held and already sent output
 // other values stored in g_KeyDownTime are the original key down time as returned by GetTickCount64
 ULONGLONG g_KeyDownTime[WIN_KEY_COUNT];
 
+void ProcessLongPressKeyDown(const InputConfig* pKeyDef, const RemapEntryContainerListItem* pKeyListItem);
+void ProcessLongPressKeyUp(const InputConfig* pKeyDef);
+
 /*
 Implementation of the win32 LowLevelKeyboardProc (see docs for information)
 
@@ -87,50 +90,7 @@ LRESULT CALLBACK LowLevelKeyboardProc(int nCode, WPARAM wParam, LPARAM lParam)
 						&& !bShift
 						&& pKeyDef->inputFlag.bLongPress)
 					{
-						switch(g_KeyDownTime[pKeyDef->virtualKey])
-						{
-						case KEY_DOWN_UNSET:
-						{
-							const ULONGLONG tickCount = GetTickCount64();
-							g_KeyDownTime[pKeyDef->virtualKey] = tickCount;
-#ifdef _DEBUG
-							LogDebugMessage("Detected LONGPRESS Key Down: %d Tick: %d", pKeyDef->virtualKey, tickCount);
-#endif
-						}
-							break;
-
-						case KEY_DOWN_EVENT_FIRED:
-							// nothing for now
-							break;
-						default:
-						{
-							const ULONGLONG tickCount = GetTickCount64();
-							const unsigned int longPressMinimum = max(LONG_PRESS_MIN, pKeyDef->parameter);
-#if false
-							// windows has a built repeat rate limiter so the shortest time is 250ms
-							const ULONGLONG diff = tickCount - g_KeyDownTime[pKeyDef->virtualKey];
-							LogDebugMessage("diff: %d", diff);
-#endif
-							if (tickCount - g_KeyDownTime[pKeyDef->virtualKey] >= longPressMinimum)
-							{
-#ifdef _DEBUG
-								char* pInputConfigDescription = GetInputConfigDescription(*pKeyDef);
-								LogDebugMessage("Detected LONGPRESS [Key Down: %s] [Outputs: %d][longPressMinimum: %d]", 
-									pInputConfigDescription, 
-									pKeyListItem->pEntryContainer->pEntry->outputCount, 
-									longPressMinimum);
-								free(pInputConfigDescription);
-#endif
-								// If there is NOT an existing thread OR the existing thread is running a repeat another key press is allowed
-								if (NULL == pKeyListItem->pEntryContainer->pEntryState->threadHandle || pKeyListItem->pEntryContainer->pEntryState->bRepeating)
-								{
-									pKeyListItem->pEntryContainer->pEntryState->threadHandle = CreateThread(NULL, 0, SendInputThread, pKeyListItem->pEntryContainer, 0, NULL);
-								}
-								g_KeyDownTime[pKeyDef->virtualKey] = KEY_DOWN_EVENT_FIRED;
-							}
-						}
-							break;
-						}
+						ProcessLongPressKeyDown(pKeyDef, pKeyListItem);
 						// block further processing with the inputs
 						bSentInput = true;
 						break;
@@ -161,15 +121,7 @@ LRESULT CALLBACK LowLevelKeyboardProc(int nCode, WPARAM wParam, LPARAM lParam)
 						&& !bShift
 						&& pKeyDef->inputFlag.bLongPress)
 					{
-						if (g_KeyDownTime[pKeyDef->virtualKey] != KEY_DOWN_EVENT_FIRED &&
-							g_KeyDownTime[pKeyDef->virtualKey] != KEY_DOWN_UNSET)
-						{
-							const ULONGLONG tickCount = GetTickCount64();
-							LogDebugMessage("Detected LONGPRESS Key UP (too short): %d Tick: %d (Old Tick: %d)", pKeyDef->virtualKey, tickCount, g_KeyDownTime[pKeyDef->virtualKey]);
-							// when a longpress "fails" just send the normal keypress
-							SendInputKeypress(pKeyDef);
-						}
-						g_KeyDownTime[pKeyDef->virtualKey] = KEY_DOWN_UNSET;
+						ProcessLongPressKeyUp(pKeyDef);
 						// block further processing with the inputs
 						bSentInput = true;
 						break;
@@ -182,4 +134,64 @@ LRESULT CALLBACK LowLevelKeyboardProc(int nCode, WPARAM wParam, LPARAM lParam)
 		LogDebugMessage("LowLevelKeyboardProc Complete");
 	}
 	return bSentInput ? 1 : CallNextHookEx(NULL, nCode, wParam, lParam);
+}
+
+void ProcessLongPressKeyDown(const InputConfig* pKeyDef, const RemapEntryContainerListItem* pKeyListItem)
+{
+	switch (g_KeyDownTime[pKeyDef->virtualKey])
+	{
+	case KEY_DOWN_EVENT_FIRED:
+		// nothing for now
+		break;
+	case KEY_DOWN_UNSET:
+		{
+			const ULONGLONG tickCount = GetTickCount64();
+			g_KeyDownTime[pKeyDef->virtualKey] = tickCount;
+#ifdef _DEBUG
+			LogDebugMessage("Detected LONGPRESS Key Down: %d Tick: %d", pKeyDef->virtualKey, tickCount);
+#endif
+		}
+		break;
+	default:
+		{
+			const ULONGLONG tickCount = GetTickCount64();
+			const unsigned int longPressMinimum = max(LONG_PRESS_MIN, pKeyDef->parameter);
+#if false
+			// windows has a built repeat rate limiter so the shortest time is 250ms
+			const ULONGLONG diff = tickCount - g_KeyDownTime[pKeyDef->virtualKey];
+			LogDebugMessage("diff: %d", diff);
+#endif
+			if (tickCount - g_KeyDownTime[pKeyDef->virtualKey] >= longPressMinimum)
+			{
+#ifdef _DEBUG
+				char* pInputConfigDescription = GetInputConfigDescription(*pKeyDef);
+				LogDebugMessage("Detected LONGPRESS [Key Down: %s] [Outputs: %d][longPressMinimum: %d]",
+					pInputConfigDescription,
+					pKeyListItem->pEntryContainer->pEntry->outputCount,
+					longPressMinimum);
+				free(pInputConfigDescription);
+#endif
+				// If there is NOT an existing thread OR the existing thread is running a repeat another key press is allowed
+				if (NULL == pKeyListItem->pEntryContainer->pEntryState->threadHandle || pKeyListItem->pEntryContainer->pEntryState->bRepeating)
+				{
+					pKeyListItem->pEntryContainer->pEntryState->threadHandle = CreateThread(NULL, 0, SendInputThread, pKeyListItem->pEntryContainer, 0, NULL);
+				}
+				g_KeyDownTime[pKeyDef->virtualKey] = KEY_DOWN_EVENT_FIRED;
+			}
+		}
+		break;
+	}
+}
+
+void ProcessLongPressKeyUp(const InputConfig* pKeyDef)
+{
+	if (g_KeyDownTime[pKeyDef->virtualKey] != KEY_DOWN_EVENT_FIRED &&
+		g_KeyDownTime[pKeyDef->virtualKey] != KEY_DOWN_UNSET)
+	{
+		const ULONGLONG tickCount = GetTickCount64();
+		LogDebugMessage("Detected LONGPRESS Key UP (too short): %d Tick: %d (Old Tick: %d)", pKeyDef->virtualKey, tickCount, g_KeyDownTime[pKeyDef->virtualKey]);
+		// when a longpress "fails" just send the normal keypress
+		SendInputKeypress(pKeyDef);
+	}
+	g_KeyDownTime[pKeyDef->virtualKey] = KEY_DOWN_UNSET;
 }

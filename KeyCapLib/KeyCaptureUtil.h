@@ -40,4 +40,6 @@ void ValidateStructs();
 char* GetBoolString(BYTE nValue);
 char* GetInputConfigDescription(InputConfig inputConfig);
 char* GetOutputConfigDescription(OutputConfig outputConfig);
+
+UINT SendInputKeypress(const InputConfig* pKeyDef);
 #endif
