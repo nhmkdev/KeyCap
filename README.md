@@ -3,7 +3,7 @@
 Download the [Latest Release](https://github.com/nhmkdev/KeyCap/releases/latest)
 
 ## Description
-*Windows only* application for capture keyboard input and remapping it to:
+*Windows only* application for capturing keyboard input and remapping it to:
 * another key or sequence of keys
 * mouse input
 * nothing at all
@@ -81,7 +81,7 @@ This is limited to a single byte despite the use of an int, so 255 maximum.
 
 ## History
 
-This is an old project I used many years ago for remapping input. I still find it useful sometimes.
+Used to be called Key2Key but then I added mouse support so that name needed to change.
 
 ## Disclaimer
 
