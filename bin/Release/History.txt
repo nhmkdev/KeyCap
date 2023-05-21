@@ -1,5 +1,9 @@
 KeyCap Version History
 --------------------------
+2.2.1.0
+- Added logic around updating existing entries with multiple outputs (avoid accidentally losing the outputs!)
+- Added ability to append/remove the output at a specific index.
+
 2.2.0.0
 - Added ability to double click to load up an existing entry for convenience
 - Added ability to update/replace an existing entry (cannot edit items performing multiple outputs at this time)

@@ -57,6 +57,18 @@ namespace KeyCap.Format
         }
 
         /// <summary>
+        /// Constructor based on input/output definitions
+        /// </summary>
+        /// <param name="zInputConfig">the input definition</param>
+        /// <param name="zOutputConfig">the output definition</param>
+        public RemapEntry(InputConfig zInputConfig, List<OutputConfig> listOutputConfigs)
+        {
+            InputConfig = zInputConfig;
+            OutputConfigs = listOutputConfigs;
+            m_nHash = CalculateHashCode(InputConfig);
+        }
+
+        /// <summary>
         /// Constructor based on an input stream
         /// </summary>
         /// <param name="zFileStream">The file stream to read the config from</param>
@@ -92,11 +104,34 @@ namespace KeyCap.Format
         /// <summary>
         /// Appends an output definition
         /// </summary>
-        /// <param name="zOutputConfig"></param>
+        /// <param name="zOutputConfig">The output to append</param>
         /// <returns></returns>
         public bool AppendOutputConfig(OutputConfig zOutputConfig)
         {
             OutputConfigs.Add(zOutputConfig);
+            return true;
+        }
+
+        /// <summary>
+        /// Appends an output definition at a specific index
+        /// </summary>
+        /// <param name="zOutputConfig">The output to append</param>
+        /// <param name="nZeroBasedIndex">The index to append the output at</param>
+        /// <returns></returns>
+        public bool AppendOutputConfigAt(OutputConfig zOutputConfig, int nZeroBasedIndex)
+        {
+            OutputConfigs.Insert(nZeroBasedIndex, zOutputConfig);
+            return true;
+        }
+
+        /// <summary>
+        /// Removes an output definition
+        /// </summary>
+        /// <param name="nZeroBasedIndex">The index to remove the output at</param>
+        /// <returns></returns>
+        public bool RemoveOutputConfigAt(int nZeroBasedIndex)
+        {
+            OutputConfigs.RemoveAt(nZeroBasedIndex);
             return true;
         }
 

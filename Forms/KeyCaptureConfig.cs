@@ -28,6 +28,7 @@ using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Drawing;
+using System.Linq;
 using System.Text;
 using System.Threading;
 using System.Windows.Forms;
@@ -547,9 +548,7 @@ namespace KeyCap.Forms
 
         private void listViewKeys_SelectedIndexChanged(object sender, EventArgs e)
         {
-            btnAppend.Enabled = (1 == listViewKeys.SelectedIndices.Count);
-            btnUpdate.Enabled = (1 == listViewKeys.SelectedIndices.Count);
-            btnRemove.Enabled = (0 < listViewKeys.SelectedIndices.Count);
+            UpdateActionEnableStates();
         }
 
         private void listViewKeys_Resize(object sender, EventArgs e)
@@ -646,10 +645,44 @@ namespace KeyCap.Forms
         {
             if (listViewKeys.SelectedItems.Count == 1)
             {
+                var zSelectedEntry = (RemapEntry)listViewKeys.SelectedItems[0].Tag;
+                if (zSelectedEntry.OutputConfigCount > 1)
+                {
+                    switch (MessageBox.Show(this, "This entry has multiple outputs. Do you want to overwrite the outputs?" +
+                                                  "\nYES - overwrite input & outputs." +
+                                                  "\nNO - overwrite input only.", "Remap has multiple outputs", MessageBoxButtons.YesNoCancel,
+                                MessageBoxIcon.Question, MessageBoxDefaultButton.Button1))
+                    {
+                        case DialogResult.Yes:
+                            // nothing
+                            break;
+                        case DialogResult.No:
+                            btnUpdateInput_Click(sender, e);
+                            return;
+                        case DialogResult.Cancel:
+                            return;
+                    }
+                }
                 RemapEntry zRemapEntry = null;
-                if (!CreateRemapEntryFromActiveConfigs(ref zRemapEntry, (RemapEntry)listViewKeys.SelectedItems[0].Tag)) return;
+                if (!CreateRemapEntryFromActiveConfigs(ref zRemapEntry, (RemapEntry)listViewKeys.SelectedItems[0].Tag))
+                {
+                    MessageBox.Show("Unable to determine remap from configuration.", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    return;
+                }
                 AddRemapEntryToListView(zRemapEntry, true, listViewKeys.SelectedItems[0]);
             }
+        }
+
+        private void btnUpdateInput_Click(object sender, EventArgs e)
+        {
+            RemapEntry zRemapEntry = null;
+            if (!CreateRemapEntryFromActiveConfigs(ref zRemapEntry, (RemapEntry)listViewKeys.SelectedItems[0].Tag,
+                    true))
+            {
+                MessageBox.Show("Unable to determine remap from configuration.", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                return;
+            }
+            AddRemapEntryToListView(zRemapEntry, true, listViewKeys.SelectedItems[0]);
         }
 
         private void btnAppend_Click(object sender, EventArgs e)
@@ -662,12 +695,84 @@ namespace KeyCap.Forms
             var zItem = listViewKeys.SelectedItems[0];
             var zRemapEntry = (RemapEntry)zItem.Tag;
             OutputConfig zOutputConfig = null;
-            if (!RetrieveOutputConfigForAppend(zRemapEntry, ref zOutputConfig)) return;
+            if (!RetrieveOutputConfigForAppend(zRemapEntry, ref zOutputConfig))
+            {
+                MessageBox.Show("Unable to determine remap from configuration.", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                return;
+            }
 
             zRemapEntry.AppendOutputConfig(zOutputConfig);
             zItem.SubItems[1].Text = zRemapEntry.GetOutputString();
             MarkDirty();
             txtKeyOut.Focus(); // restore focus to the output
+            UpdateActionEnableStates();
+        }
+
+        private void btnAppendAt_Click(object sender, EventArgs e)
+        {
+            if (1 != listViewKeys.SelectedItems.Count)
+            {
+                return;
+            }
+
+            var zItem = listViewKeys.SelectedItems[0];
+            var zRemapEntry = (RemapEntry)zItem.Tag;
+            OutputConfig zOutputConfig = null;
+            if (!RetrieveOutputConfigForAppend(zRemapEntry, ref zOutputConfig))
+            {
+                MessageBox.Show("Unable to determine remap from configuration.", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error); 
+                return;
+            }
+
+            const string IDX_QUERY_KEY = "idx";
+            var zQuery = new QueryPanelDialog("Append output config", 450, false);
+            zQuery.SetIcon(Icon);
+            zQuery.AddLabel("Select the index to append the output at (the selected output will be pushed forward to insert the new output).", 48);
+            var arrayOutputs = zRemapEntry.OutputConfigs.Select((zOutput, nIdx) => $"{nIdx}:{zOutput.GetDescription()}").ToArray();
+            zQuery.AddPullDownBox("Output To Append At", arrayOutputs, 0, IDX_QUERY_KEY);
+            if(DialogResult.Cancel == zQuery.ShowDialog(this))
+            {
+                return;
+            }
+
+            zRemapEntry.AppendOutputConfigAt(zOutputConfig, zQuery.GetIndex(IDX_QUERY_KEY));
+            zItem.SubItems[1].Text = zRemapEntry.GetOutputString();
+            MarkDirty();
+            txtKeyOut.Focus(); // restore focus to the output
+            UpdateActionEnableStates();
+        }
+
+        private void btnRemoveAt_Click(object sender, EventArgs e)
+        {
+            if (1 != listViewKeys.SelectedItems.Count)
+            {
+                return;
+            }
+
+            var zItem = listViewKeys.SelectedItems[0];
+            var zRemapEntry = (RemapEntry)zItem.Tag;
+            OutputConfig zOutputConfig = null;
+            if (!RetrieveOutputConfigForAppend(zRemapEntry, ref zOutputConfig))
+            {
+                MessageBox.Show("Unable to determine remap from configuration.", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                return;
+            }
+
+            const string IDX_QUERY_KEY = "idx";
+            var zQuery = new QueryPanelDialog("Remove output config at index", 450, false);
+            zQuery.SetIcon(Icon);
+            zQuery.AddLabel("Select the output to remove.", 24);
+            var arrayOutputs = zRemapEntry.OutputConfigs.Select((zOutput, nIdx) => $"{nIdx}:{zOutput.GetDescription()}").ToArray();
+            zQuery.AddPullDownBox("Output To Remove", arrayOutputs, 0, IDX_QUERY_KEY);
+            if (DialogResult.Cancel == zQuery.ShowDialog(this))
+            {
+                return;
+            }
+
+            zRemapEntry.RemoveOutputConfigAt(zQuery.GetIndex(IDX_QUERY_KEY));
+            zItem.SubItems[1].Text = zRemapEntry.GetOutputString();
+            MarkDirty();
+            UpdateActionEnableStates();
         }
 
         private void btnRemove_Click(object sender, EventArgs e)
@@ -721,6 +826,16 @@ namespace KeyCap.Forms
         #endregion
 
         #region Support Methods
+
+        private void UpdateActionEnableStates()
+        {
+            btnAppend.Enabled = (1 == listViewKeys.SelectedIndices.Count);
+            btnAppendAt.Enabled = (1 == listViewKeys.SelectedIndices.Count);
+            btnUpdate.Enabled = (1 == listViewKeys.SelectedIndices.Count);
+            btnUpdateInput.Enabled = (1 == listViewKeys.SelectedIndices.Count);
+            btnRemoveAt.Enabled = (listViewKeys.SelectedItems.Count == 1) &&
+                                  (((RemapEntry)listViewKeys.SelectedItems[0].Tag).OutputConfigCount > 1);
+        }
 
         private void ResetInputOutputUI()
         {
@@ -897,7 +1012,7 @@ namespace KeyCap.Forms
             m_zIniManager.FlushIniSettings();
         }
 
-        private bool CreateRemapEntryFromActiveConfigs(ref RemapEntry zRemapEntry, RemapEntry updateEntry = null)
+        private bool CreateRemapEntryFromActiveConfigs(ref RemapEntry zRemapEntry, RemapEntry updateEntry = null, bool bKeepOutputs = false)
         {
             var zCurrentInputConfig = CreateInputConfigFromUI();
             var zCurrentOutputConfig = CreateOutputConfigFromUI();
@@ -906,7 +1021,8 @@ namespace KeyCap.Forms
                 return false;
             }
             
-            zRemapEntry = new RemapEntry(new InputConfig(zCurrentInputConfig), new OutputConfig(zCurrentOutputConfig));
+            zRemapEntry = new RemapEntry(new InputConfig(zCurrentInputConfig), 
+                (bKeepOutputs && updateEntry != null) ? updateEntry.OutputConfigs : new List<OutputConfig> {new OutputConfig(zCurrentOutputConfig)});
 
             // flip this result for indicator of a good remap entry
             return !IsInputAlreadyDefined(zRemapEntry, updateEntry);
@@ -1018,6 +1134,5 @@ namespace KeyCap.Forms
         }
 
         #endregion
-
     }
 }

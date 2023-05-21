@@ -76,10 +76,13 @@ namespace KeyCap.Forms
             this.checkOutputToggle = new System.Windows.Forms.CheckBox();
             this.numericUpDownOutputParameter = new System.Windows.Forms.NumericUpDown();
             this.panelKeySetupControls = new System.Windows.Forms.Panel();
+            this.btnUpdateInput = new System.Windows.Forms.Button();
+            this.btnAppendAt = new System.Windows.Forms.Button();
             this.btnUpdate = new System.Windows.Forms.Button();
             this.groupBoxInputKey = new System.Windows.Forms.GroupBox();
             this.numericUpDownInputParameter = new System.Windows.Forms.NumericUpDown();
             this.checkInputLongPress = new System.Windows.Forms.CheckBox();
+            this.btnRemoveAt = new System.Windows.Forms.Button();
             this.menuStripMain.SuspendLayout();
             this.contextMenuStripNotify.SuspendLayout();
             this.panelKeySetup.SuspendLayout();
@@ -205,7 +208,7 @@ namespace KeyCap.Forms
             this.listViewKeys.HideSelection = false;
             this.listViewKeys.Location = new System.Drawing.Point(12, 170);
             this.listViewKeys.Name = "listViewKeys";
-            this.listViewKeys.Size = new System.Drawing.Size(672, 240);
+            this.listViewKeys.Size = new System.Drawing.Size(651, 240);
             this.listViewKeys.TabIndex = 75;
             this.listViewKeys.UseCompatibleStateImageBehavior = false;
             this.listViewKeys.View = System.Windows.Forms.View.Details;
@@ -221,13 +224,15 @@ namespace KeyCap.Forms
             // columnHeaderOutput
             // 
             this.columnHeaderOutput.Text = "Output";
-            this.columnHeaderOutput.Width = 425;
+            this.columnHeaderOutput.Width = 405;
             // 
             // btnRemove
             // 
-            this.btnRemove.Location = new System.Drawing.Point(3, 90);
+            this.btnRemove.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left) 
+            | System.Windows.Forms.AnchorStyles.Right)));
+            this.btnRemove.Location = new System.Drawing.Point(3, 177);
             this.btnRemove.Name = "btnRemove";
-            this.btnRemove.Size = new System.Drawing.Size(75, 23);
+            this.btnRemove.Size = new System.Drawing.Size(96, 23);
             this.btnRemove.TabIndex = 92;
             this.btnRemove.Text = "Remove";
             this.btnRemove.UseVisualStyleBackColor = true;
@@ -235,9 +240,11 @@ namespace KeyCap.Forms
             // 
             // btnAdd
             // 
+            this.btnAdd.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left) 
+            | System.Windows.Forms.AnchorStyles.Right)));
             this.btnAdd.Location = new System.Drawing.Point(3, 3);
             this.btnAdd.Name = "btnAdd";
-            this.btnAdd.Size = new System.Drawing.Size(75, 23);
+            this.btnAdd.Size = new System.Drawing.Size(96, 23);
             this.btnAdd.TabIndex = 90;
             this.btnAdd.Text = "Add";
             this.btnAdd.UseVisualStyleBackColor = true;
@@ -245,10 +252,12 @@ namespace KeyCap.Forms
             // 
             // btnAppend
             // 
+            this.btnAppend.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left) 
+            | System.Windows.Forms.AnchorStyles.Right)));
             this.btnAppend.Enabled = false;
-            this.btnAppend.Location = new System.Drawing.Point(3, 61);
+            this.btnAppend.Location = new System.Drawing.Point(3, 90);
             this.btnAppend.Name = "btnAppend";
-            this.btnAppend.Size = new System.Drawing.Size(75, 23);
+            this.btnAppend.Size = new System.Drawing.Size(96, 23);
             this.btnAppend.TabIndex = 91;
             this.btnAppend.Text = "Append";
             this.btnAppend.UseVisualStyleBackColor = true;
@@ -573,22 +582,54 @@ namespace KeyCap.Forms
             // 
             // panelKeySetupControls
             // 
-            this.panelKeySetupControls.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
+            this.panelKeySetupControls.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom) 
+            | System.Windows.Forms.AnchorStyles.Right)));
+            this.panelKeySetupControls.Controls.Add(this.btnRemoveAt);
+            this.panelKeySetupControls.Controls.Add(this.btnUpdateInput);
+            this.panelKeySetupControls.Controls.Add(this.btnAppendAt);
             this.panelKeySetupControls.Controls.Add(this.btnUpdate);
             this.panelKeySetupControls.Controls.Add(this.btnAdd);
             this.panelKeySetupControls.Controls.Add(this.btnRemove);
             this.panelKeySetupControls.Controls.Add(this.btnAppend);
-            this.panelKeySetupControls.Location = new System.Drawing.Point(690, 170);
+            this.panelKeySetupControls.Location = new System.Drawing.Point(669, 170);
             this.panelKeySetupControls.Name = "panelKeySetupControls";
-            this.panelKeySetupControls.Size = new System.Drawing.Size(82, 121);
+            this.panelKeySetupControls.Size = new System.Drawing.Size(103, 240);
             this.panelKeySetupControls.TabIndex = 18;
+            // 
+            // btnUpdateInput
+            // 
+            this.btnUpdateInput.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left) 
+            | System.Windows.Forms.AnchorStyles.Right)));
+            this.btnUpdateInput.Enabled = false;
+            this.btnUpdateInput.Location = new System.Drawing.Point(3, 61);
+            this.btnUpdateInput.Name = "btnUpdateInput";
+            this.btnUpdateInput.Size = new System.Drawing.Size(96, 23);
+            this.btnUpdateInput.TabIndex = 95;
+            this.btnUpdateInput.Text = "Update Input";
+            this.btnUpdateInput.UseVisualStyleBackColor = true;
+            this.btnUpdateInput.Click += new System.EventHandler(this.btnUpdateInput_Click);
+            // 
+            // btnAppendAt
+            // 
+            this.btnAppendAt.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left) 
+            | System.Windows.Forms.AnchorStyles.Right)));
+            this.btnAppendAt.Enabled = false;
+            this.btnAppendAt.Location = new System.Drawing.Point(3, 119);
+            this.btnAppendAt.Name = "btnAppendAt";
+            this.btnAppendAt.Size = new System.Drawing.Size(96, 23);
+            this.btnAppendAt.TabIndex = 94;
+            this.btnAppendAt.Text = "Append At...";
+            this.btnAppendAt.UseVisualStyleBackColor = true;
+            this.btnAppendAt.Click += new System.EventHandler(this.btnAppendAt_Click);
             // 
             // btnUpdate
             // 
+            this.btnUpdate.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left) 
+            | System.Windows.Forms.AnchorStyles.Right)));
             this.btnUpdate.Enabled = false;
             this.btnUpdate.Location = new System.Drawing.Point(3, 32);
             this.btnUpdate.Name = "btnUpdate";
-            this.btnUpdate.Size = new System.Drawing.Size(75, 23);
+            this.btnUpdate.Size = new System.Drawing.Size(96, 23);
             this.btnUpdate.TabIndex = 93;
             this.btnUpdate.Text = "Update";
             this.btnUpdate.UseVisualStyleBackColor = true;
@@ -650,6 +691,19 @@ namespace KeyCap.Forms
             this.checkInputLongPress.Text = "Long Press";
             this.checkInputLongPress.UseVisualStyleBackColor = true;
             this.checkInputLongPress.CheckedChanged += new System.EventHandler(this.checkGenericInputOutput_CheckedChanged);
+            // 
+            // btnRemoveAt
+            // 
+            this.btnRemoveAt.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left) 
+            | System.Windows.Forms.AnchorStyles.Right)));
+            this.btnRemoveAt.Enabled = false;
+            this.btnRemoveAt.Location = new System.Drawing.Point(3, 148);
+            this.btnRemoveAt.Name = "btnRemoveAt";
+            this.btnRemoveAt.Size = new System.Drawing.Size(96, 23);
+            this.btnRemoveAt.TabIndex = 96;
+            this.btnRemoveAt.Text = "Remove At...";
+            this.btnRemoveAt.UseVisualStyleBackColor = true;
+            this.btnRemoveAt.Click += new System.EventHandler(this.btnRemoveAt_Click);
             // 
             // KeyCaptureConfig
             // 
@@ -735,6 +789,9 @@ namespace KeyCap.Forms
         private System.Windows.Forms.Button btnMouseMiddle;
         private System.Windows.Forms.Label label1;
         private System.Windows.Forms.Button btnMouseLeft;
+        private System.Windows.Forms.Button btnAppendAt;
+        private System.Windows.Forms.Button btnUpdateInput;
+        private System.Windows.Forms.Button btnRemoveAt;
     }
 }
 
