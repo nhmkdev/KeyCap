@@ -42,7 +42,7 @@ extern "C"
 void InitiallizeEntryContainerListItem(RemapEntryContainerListItem* pKeyItem, RemapEntry* pEntry);
 
 // sweet globals
-HHOOK g_hookMain = NULL;
+HHOOK g_hookKeyboard = NULL, g_hookMouse = NULL;
 RemapEntryContainerListItem* g_KeyTranslationTable[WIN_KEY_COUNT];
 RemapEntry* g_KeyTranslationHead = NULL;
 void* g_KeyTranslationEnd = NULL; // pointer indicating the end of the input file data
@@ -129,8 +129,9 @@ __declspec(dllexport) int LoadAndCaptureFromFile(HINSTANCE hInstance, char* sFil
 	if(bValidTranslationSet)
 	{
 		// Note: This fails in VisualStudio if managed debugging is NOT enabled in the project(!)
-		g_hookMain = SetWindowsHookEx( WH_KEYBOARD_LL, LowLevelKeyboardProc, hInstance, NULL);
-		if(NULL != g_hookMain)
+		g_hookKeyboard = SetWindowsHookEx( WH_KEYBOARD_LL, LowLevelKeyboardProc, hInstance, NULL);
+		g_hookMouse = SetWindowsHookEx(WH_MOUSE_LL, LowLevelKeyboardProc, hInstance, NULL);
+		if(g_hookKeyboard && g_hookMouse)
 		{
 			return HOOK_CREATION_SUCCESS;
 		}
@@ -211,12 +212,18 @@ __declspec(dllexport) void ShutdownCapture()
 	// stop any active threads
 	ShutdownInputThreads(true);
 	
-	// disable the hook
-	if(NULL != g_hookMain)
+	// disable the hooks
+	if(g_hookKeyboard)
 	{
-		LogDebugMessage("Unhooked");
-		UnhookWindowsHookEx(g_hookMain);
-		g_hookMain = NULL;
+		LogDebugMessage("Unhooked keyboard");
+		UnhookWindowsHookEx(g_hookKeyboard);
+		g_hookKeyboard = NULL;
+	}
+	if (g_hookMouse)
+	{
+		LogDebugMessage("Unhooked mouse");
+		UnhookWindowsHookEx(g_hookMouse);
+		g_hookMouse = NULL;
 	}
 
 	// memory clean up
