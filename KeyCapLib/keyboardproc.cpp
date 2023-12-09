@@ -41,98 +41,138 @@ messages (as those are the keys being captured). A separate thread is
 created to send out the key(s) to send to the os.
 */
 LRESULT CALLBACK LowLevelKeyboardProc(int nCode, WPARAM wParam, LPARAM lParam)
-{
-	KBDLLHOOKSTRUCT *pHook = reinterpret_cast<KBDLLHOOKSTRUCT*>(lParam);
+{	
+	DWORD vkCode = 0;
 	bool bSentInput = false;
 
 	bool bAlt = 0 != (GetAsyncKeyState(VK_MENU) & 0x8000);
 	bool bControl = 0 != (GetAsyncKeyState(VK_CONTROL) & 0x8000);
 	bool bShift = 0 != (GetAsyncKeyState(VK_SHIFT) & 0x8000);
 
-	// don't catch injected keys
-	if (!(pHook->flags & LLKHF_INJECTED) 
-		&& HC_ACTION == nCode)
+	// get the correct virtual key
+	switch (wParam)
 	{
-		// NOTE: these are in while loops because a key may have multiple mappings due to the flag keys (shift/alt/ctrl)
-		switch (wParam)
-		{
-		case WM_KEYDOWN:
-		case WM_SYSKEYDOWN:
-			// detect a keydown that matches a remaped key (and start the input thread to respond accordingly then indicate to the OS that the key has been handled)
-			{
-				// NOTE: key down events will come in while a key is being held
-
-				const RemapEntryContainerListItem* pKeyListItem = g_KeyTranslationTable[pHook->vkCode];
-				while (NULL != pKeyListItem)
-				{
-					const InputConfig* pKeyDef = &pKeyListItem->pEntryContainer->pEntry->inputConfig;
-					if ((bAlt == pKeyDef->inputFlag.bAlt) &&
-						(bControl == pKeyDef->inputFlag.bControl) &&
-						(bShift == pKeyDef->inputFlag.bShift)
-						&& !pKeyDef->inputFlag.bLongPress)
-					{
-#ifdef _DEBUG
-						char* pInputConfigDescription = GetInputConfigDescription(*pKeyDef);
-						LogDebugMessage("Detected Key Press: %s Outputs: %d", pInputConfigDescription, pKeyListItem->pEntryContainer->pEntry->outputCount);
-						free(pInputConfigDescription);
-#endif
-						// If there is NOT an existing thread OR the existing thread is running a repeat another key press is allowed
-						if (NULL == pKeyListItem->pEntryContainer->pEntryState->threadHandle || pKeyListItem->pEntryContainer->pEntryState->bRepeating)
-						{
-							pKeyListItem->pEntryContainer->pEntryState->threadHandle = CreateThread(NULL, 0, SendInputThread, pKeyListItem->pEntryContainer, 0, NULL);
-						}
-						// block further processing with the inputs
-						bSentInput = true;
-						break;
-					}
-					if(!bAlt
-						&& !bControl
-						&& !bShift
-						&& pKeyDef->inputFlag.bLongPress)
-					{
-						ProcessLongPressKeyDown(pKeyDef, pKeyListItem);
-						// block further processing with the inputs
-						bSentInput = true;
-						break;
-					}
-					pKeyListItem = pKeyListItem->pNext;
-				}
-			}
+	case WM_MBUTTONDOWN:
+	case WM_MBUTTONUP:
+	{
+		// mouse mid
+		vkCode = 0x04;
 		break;
-		case WM_KEYUP:
-		case WM_SYSKEYUP:
-			// detect a keyup that matches a remaped key (and indicate to the OS that the key has been handled)
-			{
-				RemapEntryContainerListItem* pKeyListItem = g_KeyTranslationTable[pHook->vkCode];
-				while (NULL != pKeyListItem)
-				{
-					InputConfig* pKeyDef = &pKeyListItem->pEntryContainer->pEntry->inputConfig;
-					if (bAlt == pKeyDef->inputFlag.bAlt
-						&& bControl == pKeyDef->inputFlag.bControl 
-						&& bShift == pKeyDef->inputFlag.bShift
-						&& !pKeyDef->inputFlag.bLongPress)
-					{
-						// block further processing with the inputs
-						bSentInput = true;
-						break;
-					}
-					if (!bAlt 
-						&& !bControl 
-						&& !bShift
-						&& pKeyDef->inputFlag.bLongPress)
-					{
-						ProcessLongPressKeyUp(pKeyDef);
-						// block further processing with the inputs
-						bSentInput = true;
-						break;
-					}
-					pKeyListItem = pKeyListItem->pNext;
-				}
-			}
-		break;
-		}
-		LogDebugMessage("LowLevelKeyboardProc Complete");
 	}
+	case WM_XBUTTONDOWN:
+	case WM_XBUTTONUP:
+	{
+		// mouse x
+		MSLLHOOKSTRUCT* pMSHook = reinterpret_cast<MSLLHOOKSTRUCT*>(lParam);
+		UINT xBtn = GET_XBUTTON_WPARAM(pMSHook->mouseData);
+		vkCode = xBtn == XBUTTON1 ? 0x05 : 0x06;
+		break;
+
+	}
+	case WM_KEYDOWN:
+	case WM_SYSKEYDOWN:
+	case WM_KEYUP:
+	case WM_SYSKEYUP:
+	{
+		// keyboard
+		KBDLLHOOKSTRUCT* pKBHook = reinterpret_cast<KBDLLHOOKSTRUCT*>(lParam);
+
+		// don't catch injected keys
+		if (pKBHook->flags & LLKHF_INJECTED && HC_ACTION != nCode)
+			return CallNextHookEx(NULL, nCode, wParam, lParam);
+
+		vkCode = pKBHook->vkCode;
+		break;
+	}
+	}
+
+	if (!vkCode)
+		return CallNextHookEx(NULL, nCode, wParam, lParam); // invalid or unsupported event
+
+	// NOTE: these are in while loops because a key may have multiple mappings due to the flag keys (shift/alt/ctrl)
+	switch (wParam)
+	{
+	case WM_KEYDOWN:
+	case WM_SYSKEYDOWN:
+	case WM_MBUTTONDOWN:
+	case WM_XBUTTONDOWN:
+		// detect a keydown that matches a remaped key (and start the input thread to respond accordingly then indicate to the OS that the key has been handled)
+		{
+			// NOTE: key down events will come in while a key is being held
+
+			const RemapEntryContainerListItem* pKeyListItem = g_KeyTranslationTable[vkCode];
+			while (NULL != pKeyListItem)
+			{
+				const InputConfig* pKeyDef = &pKeyListItem->pEntryContainer->pEntry->inputConfig;
+				if ((bAlt == pKeyDef->inputFlag.bAlt) &&
+					(bControl == pKeyDef->inputFlag.bControl) &&
+					(bShift == pKeyDef->inputFlag.bShift)
+					&& !pKeyDef->inputFlag.bLongPress)
+				{
+#ifdef _DEBUG
+					char* pInputConfigDescription = GetInputConfigDescription(*pKeyDef);
+					LogDebugMessage("Detected Key Press: %s Outputs: %d", pInputConfigDescription, pKeyListItem->pEntryContainer->pEntry->outputCount);
+					free(pInputConfigDescription);
+#endif
+					// If there is NOT an existing thread OR the existing thread is running a repeat another key press is allowed
+					if (NULL == pKeyListItem->pEntryContainer->pEntryState->threadHandle || pKeyListItem->pEntryContainer->pEntryState->bRepeating)
+					{
+						pKeyListItem->pEntryContainer->pEntryState->threadHandle = CreateThread(NULL, 0, SendInputThread, pKeyListItem->pEntryContainer, 0, NULL);
+					}
+					// block further processing with the inputs
+					bSentInput = true;
+					break;
+				}
+				if(!bAlt
+					&& !bControl
+					&& !bShift
+					&& pKeyDef->inputFlag.bLongPress)
+				{
+					ProcessLongPressKeyDown(pKeyDef, pKeyListItem);
+					// block further processing with the inputs
+					bSentInput = true;
+					break;
+				}
+				pKeyListItem = pKeyListItem->pNext;
+			}
+		}
+	break;
+	case WM_KEYUP:
+	case WM_SYSKEYUP:
+	case WM_MBUTTONUP:
+	case WM_XBUTTONUP:
+		// detect a keyup that matches a remaped key (and indicate to the OS that the key has been handled)
+		{
+			RemapEntryContainerListItem* pKeyListItem = g_KeyTranslationTable[vkCode];
+			while (NULL != pKeyListItem)
+			{
+				InputConfig* pKeyDef = &pKeyListItem->pEntryContainer->pEntry->inputConfig;
+				if (bAlt == pKeyDef->inputFlag.bAlt
+					&& bControl == pKeyDef->inputFlag.bControl 
+					&& bShift == pKeyDef->inputFlag.bShift
+					&& !pKeyDef->inputFlag.bLongPress)
+				{
+					// block further processing with the inputs
+					bSentInput = true;
+					break;
+				}
+				if (!bAlt 
+					&& !bControl 
+					&& !bShift
+					&& pKeyDef->inputFlag.bLongPress)
+				{
+					ProcessLongPressKeyUp(pKeyDef);
+					// block further processing with the inputs
+					bSentInput = true;
+					break;
+				}
+				pKeyListItem = pKeyListItem->pNext;
+			}
+		}
+	break;
+	}
+	LogDebugMessage("LowLevelKeyboardProc Complete");
+	
 	return bSentInput ? 1 : CallNextHookEx(NULL, nCode, wParam, lParam);
 }
 

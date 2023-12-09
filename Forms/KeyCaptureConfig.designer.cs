@@ -108,6 +108,7 @@ namespace KeyCap.Forms
             this.txtKeyIn.Enter += new System.EventHandler(this.txtKey_Enter);
             this.txtKeyIn.KeyDown += new System.Windows.Forms.KeyEventHandler(this.txtKeyIn_KeyDown);
             this.txtKeyIn.Leave += new System.EventHandler(this.txtKey_Leave);
+            this.txtKeyIn.MouseDown += new System.Windows.Forms.MouseEventHandler(this.txtKeyIn_MouseDown);
             // 
             // txtKeyOut
             // 
@@ -694,7 +695,7 @@ namespace KeyCap.Forms
             // 
             // btnRemoveAt
             // 
-            this.btnRemoveAt.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left) 
+            this.btnRemoveAt.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left)
             | System.Windows.Forms.AnchorStyles.Right)));
             this.btnRemoveAt.Enabled = false;
             this.btnRemoveAt.Location = new System.Drawing.Point(3, 148);
