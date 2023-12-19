@@ -1,3 +1,8 @@
+﻿////////////////////////////////////////////////////////////////////////////////
+// The MIT License (MIT)
+//
+// Copyright (c) 2023 Tim Stair
+//
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
 // in the Software without restriction, including without limitation the rights
@@ -16,33 +21,32 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 ////////////////////////////////////////////////////////////////////////////////
+using System.Collections.Generic;
+using System.Windows.Forms;
 
-#include "inputproc.h"
-#include "keycapturestructs.h"
-#include "keyboardproc.h"
+namespace KeyCap.Format
+{
+    public class MouseMapping
+    {
+        const byte VK_MBUTTON = 0x04;
+        const byte VK_XBUTTON1 = 0x05;
+        const byte VK_XBUTTON2 = 0x06;
 
-#include "keycaptureutil.h"
+        private static Dictionary<MouseButtons, byte> s_mouseButtonsToKeyCode = new Dictionary<MouseButtons, byte>()
+        {
+            {MouseButtons.Middle, VK_MBUTTON },
+            {MouseButtons.XButton1, VK_XBUTTON1 },
+            {MouseButtons.XButton2, VK_XBUTTON2 },
+        };
 
-/*
-Wrapper for LowLevelInputProc
-*/
-LRESULT CALLBACK LowLevelKeyboardProc(int nCode, WPARAM wParam, LPARAM lParam)
-{	
-	// don't catch injected keys
-	const auto pHook = reinterpret_cast<KBDLLHOOKSTRUCT*>(lParam);
+        public static byte MapMouseButtonToKeyCode(MouseButtons eMouseButton)
+        {
+            if(s_mouseButtonsToKeyCode.TryGetValue(eMouseButton, out byte nKeyCode))
+            {
+                return nKeyCode;
+            }
 
-	if(pHook->flags& LLKHF_INJECTED)
-	{
-		LogDebugMessage("LowLevelKeyboardProc Complete - SKIP Processing Key [Injected]");
-		return CallNextHookEx(nullptr, nCode, wParam, lParam); // invalid or unsupported event
-	}
-	if (HC_ACTION == nCode
-		&& pHook->vkCode)
-	{
-		LogDebugMessage("LowLevelKeyboardProc Complete - Processing Key");
-		return LowLevelInputProc(nCode, wParam, lParam, pHook->vkCode);
-	}
-
-	LogDebugMessage("LowLevelKeyboardProc Complete - SKIP Processing Key");
-	return CallNextHookEx(nullptr, nCode, wParam, lParam); // invalid or unsupported event
+            return 0;
+        }
+    }
 }

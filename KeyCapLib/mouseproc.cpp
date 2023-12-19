@@ -19,30 +19,67 @@
 
 #include "inputproc.h"
 #include "keycapturestructs.h"
-#include "keyboardproc.h"
-
 #include "keycaptureutil.h"
 
 /*
 Wrapper for LowLevelInputProc
 */
-LRESULT CALLBACK LowLevelKeyboardProc(int nCode, WPARAM wParam, LPARAM lParam)
-{	
-	// don't catch injected keys
-	const auto pHook = reinterpret_cast<KBDLLHOOKSTRUCT*>(lParam);
+LRESULT CALLBACK LowLevelMouseProc(int nCode, WPARAM wParam, LPARAM lParam)
+{
+	DWORD vkCode = 0;
 
-	if(pHook->flags& LLKHF_INJECTED)
+	MSLLHOOKSTRUCT* pMSHook = reinterpret_cast<MSLLHOOKSTRUCT*>(lParam);
+
+	// map the mouse input to the KeyCap mouse representation
+	switch (wParam)
 	{
-		LogDebugMessage("LowLevelKeyboardProc Complete - SKIP Processing Key [Injected]");
+	case WM_MBUTTONDOWN:
+	case WM_MBUTTONUP:
+		{
+			// https://learn.microsoft.com/en-us/windows/win32/inputdev/wm-mbuttondown
+			// mouse mid
+			vkCode = VK_MBUTTON;
+			break;
+		}
+	case WM_XBUTTONDOWN:
+	case WM_XBUTTONUP:
+		{
+			// mouse x
+			UINT xBtn = GET_XBUTTON_WPARAM(pMSHook->mouseData);
+			vkCode = xBtn == XBUTTON1 ? VK_XBUTTON1 : VK_XBUTTON2;
+			break;
+
+		}
+	default:
+		{
+			// some other mouse activity (like move)
+			return CallNextHookEx(nullptr, nCode, wParam, lParam);
+		}
+	}
+
+// probably need to do something about this... detect already pressed?
+// There's already the thread per input tracking...
+#if false // mouse management apps already are using low-level injection so this would block KeyCap
+	if(pMSHook->flags & LLMHF_INJECTED)
+	{
+		LogDebugMessage("LowLevelMouseProc Complete - SKIP Processing Click [Injected]");
 		return CallNextHookEx(nullptr, nCode, wParam, lParam); // invalid or unsupported event
 	}
-	if (HC_ACTION == nCode
-		&& pHook->vkCode)
+#else
+	if (pMSHook->flags & LLMHF_INJECTED)
 	{
-		LogDebugMessage("LowLevelKeyboardProc Complete - Processing Key");
-		return LowLevelInputProc(nCode, wParam, lParam, pHook->vkCode);
+		LogDebugMessage("LowLevelMouseProc Running - Processing Click [Injected]");
+	}
+#endif
+
+	if(HC_ACTION == nCode
+		&& vkCode)
+	{
+		LogDebugMessage("LowLevelMouseProc Complete - Processing Click");
+		return LowLevelInputProc(nCode, wParam, lParam, vkCode);
 	}
 
-	LogDebugMessage("LowLevelKeyboardProc Complete - SKIP Processing Key");
+	LogDebugMessage("LowLevelMouseProc Complete - SKIP Processing Click");
 	return CallNextHookEx(nullptr, nCode, wParam, lParam); // invalid or unsupported event
+
 }

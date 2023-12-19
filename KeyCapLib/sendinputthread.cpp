@@ -126,7 +126,9 @@ DWORD InitiateSendInput(RemapEntry* pRemapEntry, RemapEntryState* pRemapEntrySta
 					Sleep(100);
 					if (pRemapEntryState->bShutdown)
 					{
+#if _DEBUG
 						LogDebugMessage("Exiting delay loop due to shutdown.");
+#endif
 						break;
 					}
 				}
@@ -156,14 +158,18 @@ DWORD InitiateSendInput(RemapEntry* pRemapEntry, RemapEntryState* pRemapEntrySta
 				Sleep(100);
 				if (pRemapEntryState->bShutdown)
 				{
+#if _DEBUG
 					LogDebugMessage("Exiting repeat loop due to shutdown.");
+#endif
 					break;
 				}
 			}
+#if _DEBUG
 			if (!pRemapEntryState->bShutdown)
 			{
 				LogDebugMessage("SendInputThread Repeating...");
 			}
+#endif
 		}
 	} while (pRemapEntryState->bRepeating);
 
@@ -173,7 +179,7 @@ DWORD InitiateSendInput(RemapEntry* pRemapEntry, RemapEntryState* pRemapEntrySta
 	// reset things on the remap entry
 	pRemapEntryState->bShutdown = false;
 	pRemapEntryState->bRepeating = false;
-	pRemapEntryState->threadHandle = NULL;
+	pRemapEntryState->threadHandle = nullptr;
 #ifdef _DEBUG
 	char* pInputConfigDescription = GetInputConfigDescription(pRemapEntry->inputConfig);
 	LogDebugMessage("SendInputThread Completed: %s", pInputConfigDescription);

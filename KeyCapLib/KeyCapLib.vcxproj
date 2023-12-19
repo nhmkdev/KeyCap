@@ -149,23 +149,27 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClInclude Include="configfile.h" />
+    <ClInclude Include="inputproc.h" />
     <ClInclude Include="keyboardinput.h" />
     <ClInclude Include="keyboardproc.h" />
     <ClInclude Include="keycapture.h" />
     <ClInclude Include="keycapturestructs.h" />
     <ClInclude Include="keycaptureutil.h" />
     <ClInclude Include="mouseinput.h" />
+    <ClInclude Include="mouseproc.h" />
     <ClInclude Include="sendinputthread.h" />
     <ClInclude Include="stdafx.h" />
     <ClInclude Include="targetver.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="configfile.cpp" />
+    <ClCompile Include="inputproc.cpp" />
     <ClCompile Include="keyboardinput.cpp" />
     <ClCompile Include="keyboardproc.cpp" />
     <ClCompile Include="keycapture.cpp" />
     <ClCompile Include="keycaptureutil.cpp" />
     <ClCompile Include="mouseinput.cpp" />
+    <ClCompile Include="mouseproc.cpp" />
     <ClCompile Include="sendinputthread.cpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

@@ -56,7 +56,7 @@ int LoadFile(char* sFile, RemapEntry** ppKeyTranslationHead, void** ppKeyTransla
 		DWORD dwBytesRead = 0;
 		unsigned int headerBuffer[2];
 		// READ THE HEADER
-		if (ReadFile(hFile, headerBuffer, sizeof(headerBuffer), &dwBytesRead, NULL))
+		if (ReadFile(hFile, headerBuffer, sizeof(headerBuffer), &dwBytesRead, nullptr))
 		{
 			if (dwBytesRead == sizeof(headerBuffer))
 			{
@@ -80,7 +80,7 @@ int LoadFile(char* sFile, RemapEntry** ppKeyTranslationHead, void** ppKeyTransla
 
 		// read the entire file into memory
 		// NOTE: This assumes the file is less than DWORD max in size(!)
-		if (ReadFile(hFile, *ppKeyTranslationHead, dwBytesRemaining, &dwBytesRead, NULL))
+		if (ReadFile(hFile, *ppKeyTranslationHead, dwBytesRemaining, &dwBytesRead, nullptr))
 		{
 			if (dwBytesRead == dwBytesRemaining) // verify everything was read in...
 			{

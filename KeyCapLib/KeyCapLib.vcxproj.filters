@@ -8,6 +8,8 @@
     <ClCompile Include="keycaptureutil.cpp" />
     <ClCompile Include="mouseinput.cpp" />
     <ClCompile Include="sendinputthread.cpp" />
+    <ClCompile Include="inputproc.cpp" />
+    <ClCompile Include="mouseproc.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="stdafx.h" />
@@ -20,5 +22,7 @@
     <ClInclude Include="keycaptureutil.h" />
     <ClInclude Include="mouseinput.h" />
     <ClInclude Include="sendinputthread.h" />
+    <ClInclude Include="inputproc.h" />
+    <ClInclude Include="mouseproc.h" />
   </ItemGroup>
 </Project>

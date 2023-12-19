@@ -1,5 +1,8 @@
 KeyCap Version History
 --------------------------
+2.3.0.0
+- Added support for middle/xbutton1/xbutton2 mouse buttons as input [michelematteini]
+
 2.2.1.0
 - Added logic around updating existing entries with multiple outputs (avoid accidentally losing the outputs!)
 - Added ability to append/remove the output at a specific index.

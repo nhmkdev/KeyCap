@@ -98,7 +98,9 @@ void SendInputKeys(RemapEntryState* pRemapEntryState, OutputConfig* pKeyDef)
 
 	if (pKeyDef->outputFlag.bToggle && pKeyDef->virtualKey >= MAX_VKEY)
 	{
+#if _DEBUG
 		LogDebugMessage("---- ERROR Cannot have a vkey value over 255: %d", pKeyDef->virtualKey);
+#endif
 		return;
 	}
 
@@ -121,19 +123,25 @@ void SendInputKeys(RemapEntryState* pRemapEntryState, OutputConfig* pKeyDef)
 	}
 	if (!bSendKeyDown && !bSendKeyUp)
 	{
+#if _DEBUG
 		LogDebugMessage("Nothing to send for this keyout. Misconfigured output.");
+#endif
 		return;
 	}
 
+#if _DEBUG
 	LogDebugMessage("[Sending Inputs]");
 	for (int nTemp = 0; nTemp < nIndex; nTemp++)
 	{
 		// TODO: support Shift+W toggle (the toggle ends up requiring detection of the shift key)
 		LogDebugMessage("%s: %d", GetKeyFlagsString(inputBuffer[nTemp].ki.dwFlags), inputBuffer[nTemp].ki.wVk);
 	}
+#endif
 
 	UINT inputsSent = SendInput(nIndex, inputBuffer, sizeof(INPUT));
+#if _DEBUG
 	LogDebugMessage("[Sent Inputs] (%d/%d)", inputsSent, nIndex);
+#endif
 }
 
 /*

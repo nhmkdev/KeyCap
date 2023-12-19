@@ -401,19 +401,7 @@ namespace KeyCap.Forms
 
         private void txtKeyIn_MouseDown(object sender, MouseEventArgs e)
         {
-            byte keyCode = 0;
-            switch (e.Button)
-            {
-                case MouseButtons.Middle:
-                    keyCode = 0x04; // VK_MBUTTON
-                    break;
-                case MouseButtons.XButton1:
-                    keyCode = 0x05; // VK_XBUTTON1
-                    break;
-                case MouseButtons.XButton2:
-                    keyCode = 0x06; // VK_XBUTTON2
-                    break;
-            }
+            byte keyCode = MouseMapping.MapMouseButtonToKeyCode(e.Button);
 
             if (keyCode == 0)
                 return; // unsupported

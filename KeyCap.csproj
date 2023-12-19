@@ -70,6 +70,7 @@
   <ItemGroup>
     <Compile Include="Format\BaseIOConfig.cs" />
     <Compile Include="Format\ConfigFileManager.cs" />
+    <Compile Include="Format\MouseMapping.cs" />
     <Compile Include="Format\OutputConfig.cs" />
     <Compile Include="Format\InputConfig.cs" />
     <Compile Include="Format\RemapEntry.cs" />

@@ -16,33 +16,13 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 ////////////////////////////////////////////////////////////////////////////////
+#pragma once
+#ifndef INPUT_PROC_H_     // equivalently, #if !defined HEADER_H_
+#define INPUT_PROC_H_
 
-#include "inputproc.h"
-#include "keycapturestructs.h"
-#include "keyboardproc.h"
+#include "stdafx.h"
 
-#include "keycaptureutil.h"
+LRESULT CALLBACK LowLevelInputProc(int nCode, WPARAM wParam, LPARAM lParam, DWORD vkCode);
+#endif
 
-/*
-Wrapper for LowLevelInputProc
-*/
-LRESULT CALLBACK LowLevelKeyboardProc(int nCode, WPARAM wParam, LPARAM lParam)
-{	
-	// don't catch injected keys
-	const auto pHook = reinterpret_cast<KBDLLHOOKSTRUCT*>(lParam);
 
-	if(pHook->flags& LLKHF_INJECTED)
-	{
-		LogDebugMessage("LowLevelKeyboardProc Complete - SKIP Processing Key [Injected]");
-		return CallNextHookEx(nullptr, nCode, wParam, lParam); // invalid or unsupported event
-	}
-	if (HC_ACTION == nCode
-		&& pHook->vkCode)
-	{
-		LogDebugMessage("LowLevelKeyboardProc Complete - Processing Key");
-		return LowLevelInputProc(nCode, wParam, lParam, pHook->vkCode);
-	}
-
-	LogDebugMessage("LowLevelKeyboardProc Complete - SKIP Processing Key");
-	return CallNextHookEx(nullptr, nCode, wParam, lParam); // invalid or unsupported event
-}

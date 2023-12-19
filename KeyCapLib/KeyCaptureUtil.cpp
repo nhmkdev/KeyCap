@@ -42,7 +42,7 @@ void ResetRemapEntryState(RemapEntryState* pRemapEntryState, BYTE bToggled)
 	pRemapEntryState->bToggled = bToggled;
 	pRemapEntryState->bRepeating = false;
 	pRemapEntryState->bShutdown = false;
-	pRemapEntryState->threadHandle = NULL;
+	pRemapEntryState->threadHandle = nullptr;
 }
 
 bool IsButtonDownRequired(RemapEntryState* pRemapEntryState, OutputConfig* pKeyDef)
