@@ -39,6 +39,13 @@ This program does perform keyboard capture and is essentially the first componen
 
 ## Technical Documentation
 
+### Library File Naming and Organization
+
+* configfile - files related to reading the .kfg file format
+* inputproc - files related to interpreting key inputs
+* inputsender - files related to sending key inputs (remapped from those cpatured in inputproc)
+* keycap - entry point and general functionality
+
 ### .kfg File Format
 
 The file is prefixed with two 32-bit ints:
