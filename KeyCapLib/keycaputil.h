@@ -1,3 +1,8 @@
+////////////////////////////////////////////////////////////////////////////////
+// The MIT License (MIT)
+//
+// Copyright (c) 2023 Tim Stair
+//
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
 // in the Software without restriction, including without limitation the rights
@@ -17,12 +22,24 @@
 // SOFTWARE.
 ////////////////////////////////////////////////////////////////////////////////
 #pragma once
-#ifndef KEYBOARD_PROC_H_     // equivalently, #if !defined HEADER_H_
-#define KEYBOARD_PROC_H_
+#ifndef KEY_CAP_UTIL_H_     // equivalently, #if !defined HEADER_H_
+#define KEY_CAP_UTIL_H_
 
 #include "stdafx.h"
+#include "keycapstructs.h"
 
-LRESULT CALLBACK LowLevelKeyboardProc(int nCode, WPARAM wParam, LPARAM lParam);
+const int DESCRIPTION_BUFFER_SIZE = 256;
+
+void ResetRemapEntryState(RemapEntryState* pRemapEntryState, BYTE bToggled);
+bool IsButtonDownRequired(RemapEntryState* pRemapEntryState, OutputConfig* pKeyDef);
+bool IsButtonUpRequired(RemapEntryState* pRemapEntryState, OutputConfig* pKeyDef);
+
+void LogDebugMessage(const char *format, ...);
+void ValidateStructs();
+
+char* GetBoolString(BYTE nValue);
+char* GetInputConfigDescription(InputConfig inputConfig);
+char* GetOutputConfigDescription(OutputConfig outputConfig);
+
+UINT SendInputKeypress(const InputConfig* pKeyDef);
 #endif
-
-

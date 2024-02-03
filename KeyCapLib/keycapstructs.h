@@ -22,8 +22,8 @@
 // SOFTWARE.
 ////////////////////////////////////////////////////////////////////////////////
 #pragma once
-#ifndef KEY_CAPTURE_STRUCTS_H_     // equivalently, #if !defined HEADER_H_
-#define KEY_CAPTURE_STRUCTS_H_
+#ifndef KEY_CAP_STRUCTS_H_     // equivalently, #if !defined HEADER_H_
+#define KEY_CAP_STRUCTS_H_
 
 #include "stdafx.h"
 
@@ -133,4 +133,4 @@ const int MIN_REPEAT_DELAY_MS = 100;
 const int WIN_KEY_COUNT = 256;
 const int MAX_KEY_INPUT_PER_STROKE = 9; // control, alt (OR alt-up alt-down alt-up), shift, key, key-up, shift-up,  alt-up, control-up
 
-#endif // KEY_CAPTURE_STRUCTS_H_
+#endif

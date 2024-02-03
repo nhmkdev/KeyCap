@@ -22,8 +22,8 @@
 // SOFTWARE.
 ////////////////////////////////////////////////////////////////////////////////
 
-#include "keyboardinput.h"
-#include "keycaptureutil.h"
+#include "inputsenderkeyboard.h"
+#include "keycaputil.h"
 
 /*
 Sends the necessary inputs to complete the trigger (modifier keys)

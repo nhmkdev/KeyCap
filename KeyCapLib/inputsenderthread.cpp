@@ -22,12 +22,12 @@
 // SOFTWARE.
 ////////////////////////////////////////////////////////////////////////////////
 
-#include "keycapturestructs.h"
-#include "keycaptureutil.h"
-#include "keycapture.h"
-#include "sendinputthread.h"
-#include "keyboardinput.h"
-#include "mouseinput.h"
+#include "keycapstructs.h"
+#include "keycaputil.h"
+#include "keycap.h"
+#include "inputsenderthread.h"
+#include "inputsenderkeyboard.h"
+#include "inputsendermouse.h"
 
 DWORD InitiateSendInput(RemapEntry* pRemapEntry, RemapEntryState* pRemapEntryState);
 

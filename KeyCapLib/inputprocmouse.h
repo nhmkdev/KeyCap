@@ -1,8 +1,3 @@
-////////////////////////////////////////////////////////////////////////////////
-// The MIT License (MIT)
-//
-// Copyright (c) 2023 Tim Stair
-//
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
 // in the Software without restriction, including without limitation the rights
@@ -22,24 +17,12 @@
 // SOFTWARE.
 ////////////////////////////////////////////////////////////////////////////////
 #pragma once
-#ifndef KEY_CAPTURE_UTIL_H_     // equivalently, #if !defined HEADER_H_
-#define KEY_CAPTURE_UTIL_H_
+#ifndef INPUT_PROC_MOUSE_H_     // equivalently, #if !defined HEADER_H_
+#define INPUT_PROC_MOUSE_H_
 
 #include "stdafx.h"
-#include "keycapturestructs.h"
 
-const int DESCRIPTION_BUFFER_SIZE = 256;
-
-void ResetRemapEntryState(RemapEntryState* pRemapEntryState, BYTE bToggled);
-bool IsButtonDownRequired(RemapEntryState* pRemapEntryState, OutputConfig* pKeyDef);
-bool IsButtonUpRequired(RemapEntryState* pRemapEntryState, OutputConfig* pKeyDef);
-
-void LogDebugMessage(const char *format, ...);
-void ValidateStructs();
-
-char* GetBoolString(BYTE nValue);
-char* GetInputConfigDescription(InputConfig inputConfig);
-char* GetOutputConfigDescription(OutputConfig outputConfig);
-
-UINT SendInputKeypress(const InputConfig* pKeyDef);
+LRESULT CALLBACK LowLevelMouseProc(int nCode, WPARAM wParam, LPARAM lParam);
 #endif
+
+

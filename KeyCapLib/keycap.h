@@ -22,21 +22,14 @@
 // SOFTWARE.
 ////////////////////////////////////////////////////////////////////////////////
 #pragma once
-#ifndef MOUSE_INPUT_H_     // equivalently, #if !defined HEADER_H_
-#define MOUSE_INPUT_H_
+#ifndef KEY_CAP_H_     // equivalently, #if !defined HEADER_H_
+#define KEY_CAP_H_
 
-#include "keycapturestructs.h"
+// shared functions
+void ShutdownInputThreads(bool forceShutdown);
 
-enum MOUSE_BUTTON
-{
-	MOUSE_NONE = 0x00,
-	MOUSE_LEFT = 0x01,
-	MOUSE_RIGHT = 0x02,
-	MOUSE_MIDDLE = 0x03,
-	MOUSE_BUTTON_COUNT
-};
+// === consts and defines
+const int THREAD_SHUTDOWN_MAX_ATTEMPTS = 5;
+const int THREAD_SHUTDOWN_ATTEMPT_DELAY_MS = 100;
 
-void SendInputMouse(RemapEntryState* pRemapEntryState, OutputConfig *pKeyDef);
-void AppendSingleMouse(INPUT* inputChar, unsigned char nVkKey);
-
-#endif // MOUSE_INPUT_H_
+#endif

@@ -22,9 +22,9 @@
 // SOFTWARE.
 ////////////////////////////////////////////////////////////////////////////////
 
-#include "keycapturestructs.h"
-#include "keycaptureutil.h"
-#include "keyboardinput.h"
+#include "keycapstructs.h"
+#include "keycaputil.h"
+#include "inputsenderkeyboard.h"
 
 UINT SendInputKeypress(const InputConfig* pKeyDef)
 {

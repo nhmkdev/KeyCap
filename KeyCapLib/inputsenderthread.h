@@ -22,16 +22,11 @@
 // SOFTWARE.
 ////////////////////////////////////////////////////////////////////////////////
 #pragma once
-#ifndef KEYBOARD_INPUT_H_     // equivalently, #if !defined HEADER_H_
-#define KEYBOARD_INPUT_H_
+#ifndef INPUT_SENDER_THREAD_H_     // equivalently, #if !defined HEADER_H_
+#define INPUT_SENDER_THREAD_H_
 
-#include "keycapturestructs.h"
+#include "stdafx.h"
 
-void SendInputKeys(RemapEntryState* pRemapEntryState, OutputConfig* pKeyDef);
-void SendTriggerEndInputKeys(RemapEntry* pRemapEntry);
-void AppendSingleKey(short keyScan, INPUT* inputChar, DWORD dwFlags);
-void ProcessModifierKeys(OutputConfig* pKeyDef, INPUT* pInput, int* nIndex, DWORD dwFlags);
-char* GetKeyFlagsString(DWORD dwFlags);
+DWORD WINAPI SendInputThread(LPVOID lpParam);
 
-const int MAX_VKEY = 256;
 #endif

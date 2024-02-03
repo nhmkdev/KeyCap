@@ -2,27 +2,27 @@
 <Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup>
     <ClCompile Include="configfile.cpp" />
-    <ClCompile Include="keyboardinput.cpp" />
-    <ClCompile Include="keyboardproc.cpp" />
-    <ClCompile Include="keycapture.cpp" />
-    <ClCompile Include="keycaptureutil.cpp" />
-    <ClCompile Include="mouseinput.cpp" />
-    <ClCompile Include="sendinputthread.cpp" />
+    <ClCompile Include="inputsenderkeyboard.cpp" />
+    <ClCompile Include="inputprockeyboard.cpp" />
+    <ClCompile Include="keycap.cpp" />
+    <ClCompile Include="keycaputil.cpp" />
     <ClCompile Include="inputproc.cpp" />
-    <ClCompile Include="mouseproc.cpp" />
+    <ClCompile Include="inputprocmouse.cpp" />
+    <ClCompile Include="inputsenderthread.cpp" />
+    <ClCompile Include="inputsendermouse.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="stdafx.h" />
     <ClInclude Include="targetver.h" />
     <ClInclude Include="configfile.h" />
-    <ClInclude Include="keyboardinput.h" />
-    <ClInclude Include="keyboardproc.h" />
-    <ClInclude Include="keycapture.h" />
-    <ClInclude Include="keycapturestructs.h" />
-    <ClInclude Include="keycaptureutil.h" />
-    <ClInclude Include="mouseinput.h" />
-    <ClInclude Include="sendinputthread.h" />
+    <ClInclude Include="inputsenderkeyboard.h" />
+    <ClInclude Include="inputprockeyboard.h" />
+    <ClInclude Include="keycap.h" />
+    <ClInclude Include="keycapstructs.h" />
+    <ClInclude Include="keycaputil.h" />
     <ClInclude Include="inputproc.h" />
-    <ClInclude Include="mouseproc.h" />
+    <ClInclude Include="inputprocmouse.h" />
+    <ClInclude Include="inputsenderthread.h" />
+    <ClInclude Include="inputsendermouse.h" />
   </ItemGroup>
 </Project>

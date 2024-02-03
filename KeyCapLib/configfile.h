@@ -20,8 +20,7 @@
 #ifndef CONFIG_FILE_H_     // equivalently, #if !defined HEADER_H_
 #define CONFIG_FILE_H_
 
-#include "stdafx.h"
-#include "keycapturestructs.h"
+#include "keycapstructs.h"
 
 int LoadFile(char* sFile, RemapEntry** g_KeyTranslationHead, void** g_KeyTranslationEnd);
 #endif

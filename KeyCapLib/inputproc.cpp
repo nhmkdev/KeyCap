@@ -17,9 +17,9 @@
 // SOFTWARE.
 ////////////////////////////////////////////////////////////////////////////////
 
-#include "keycapturestructs.h"
-#include "keycaptureutil.h"
-#include "sendinputthread.h"
+#include "keycapstructs.h"
+#include "keycaputil.h"
+#include "inputsenderthread.h"
 
 extern RemapEntryContainerListItem* g_KeyTranslationTable[WIN_KEY_COUNT];
 

@@ -18,8 +18,8 @@
 ////////////////////////////////////////////////////////////////////////////////
 
 #include "inputproc.h"
-#include "keycapturestructs.h"
-#include "keycaptureutil.h"
+#include "keycapstructs.h"
+#include "keycaputil.h"
 
 /*
 Wrapper for LowLevelInputProc

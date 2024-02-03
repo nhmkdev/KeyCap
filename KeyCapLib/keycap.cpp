@@ -22,13 +22,13 @@
 // SOFTWARE.
 ////////////////////////////////////////////////////////////////////////////////
 
-// KeyCapture.cpp : Defines the entry point for key capture and re-map
+// keycap.cpp : Defines the entry point for key capture and re-map
 //
 
-#include "keycapture.h"
-#include "keyboardproc.h"
-#include "mouseproc.h"
-#include "mouseinput.h"
+#include "keycap.h"
+#include "keycaputil.h"
+#include "inputprockeyboard.h"
+#include "inputprocmouse.h"
 #include "configfile.h"
 
 // === prototypes
@@ -94,7 +94,7 @@ __declspec(dllexport) int LoadAndCaptureFromFile(HINSTANCE hInstance, char* sFil
 		// if the entry doesn't exist yet for the given input vkey create a new one with a null next pointer
 		if(nullptr == g_KeyTranslationTable[pEntry->inputConfig.virtualKey])
 		{
-			g_KeyTranslationTable[pEntry->inputConfig.virtualKey] = (RemapEntryContainerListItem*)malloc(sizeof(RemapEntryContainerListItem));
+			g_KeyTranslationTable[pEntry->inputConfig.virtualKey] = static_cast<RemapEntryContainerListItem*>(malloc(sizeof(RemapEntryContainerListItem)));
 			InitiallizeEntryContainerListItem(g_KeyTranslationTable[pEntry->inputConfig.virtualKey], pEntry);
 			g_KeyTranslationTable[pEntry->inputConfig.virtualKey]->pNext = nullptr;
 		}
@@ -146,8 +146,8 @@ __declspec(dllexport) int LoadAndCaptureFromFile(HINSTANCE hInstance, char* sFil
 
 void InitiallizeEntryContainerListItem(RemapEntryContainerListItem* pKeyItem, RemapEntry* pEntry)
 {
-	pKeyItem->pEntryContainer = (RemapEntryContainer*)malloc(sizeof(RemapEntryContainer));
-	pKeyItem->pEntryContainer->pEntryState = (RemapEntryState*)calloc(1, sizeof(RemapEntryState));
+	pKeyItem->pEntryContainer = static_cast<RemapEntryContainer*>(malloc(sizeof(RemapEntryContainer)));
+	pKeyItem->pEntryContainer->pEntryState = static_cast<RemapEntryState*>(calloc(1, sizeof(RemapEntryState)));
 	pKeyItem->pEntryContainer->pEntry = pEntry;
 }
 

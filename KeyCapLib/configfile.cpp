@@ -18,7 +18,7 @@
 ////////////////////////////////////////////////////////////////////////////////
 
 #include "configfile.h"
-#include "keycaptureutil.h"
+#include "keycaputil.h"
 
 const int FILE_DATA_PREFIX = (int)0x0E0CA000;
 const int DATA_FORMAT_VERSION = (int)0x1;

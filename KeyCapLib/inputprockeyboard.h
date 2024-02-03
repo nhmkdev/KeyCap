@@ -17,12 +17,12 @@
 // SOFTWARE.
 ////////////////////////////////////////////////////////////////////////////////
 #pragma once
-#ifndef MOUSE_PROC_H_     // equivalently, #if !defined HEADER_H_
-#define MOUSE_PROC_H_
+#ifndef INPUT_PROC_KEYBOARD_H_     // equivalently, #if !defined HEADER_H_
+#define INPUT_PROC_KEYBOARD_H_
 
 #include "stdafx.h"
 
-LRESULT CALLBACK LowLevelMouseProc(int nCode, WPARAM wParam, LPARAM lParam);
+LRESULT CALLBACK LowLevelKeyboardProc(int nCode, WPARAM wParam, LPARAM lParam);
 #endif
 
 

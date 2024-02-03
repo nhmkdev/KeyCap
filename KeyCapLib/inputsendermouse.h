@@ -22,11 +22,21 @@
 // SOFTWARE.
 ////////////////////////////////////////////////////////////////////////////////
 #pragma once
-#ifndef SEND_INPUT_THREAD_H_     // equivalently, #if !defined HEADER_H_
-#define SEND_INPUT_THREAD_H_
+#ifndef INPUT_SENDER_MOUSE_H_     // equivalently, #if !defined HEADER_H_
+#define INPUT_SENDER_MOUSE_H_
 
-#include "stdafx.h"
+#include "keycapstructs.h"
 
-DWORD WINAPI SendInputThread(LPVOID lpParam);
+enum MOUSE_BUTTON
+{
+	MOUSE_NONE = 0x00,
+	MOUSE_LEFT = 0x01,
+	MOUSE_RIGHT = 0x02,
+	MOUSE_MIDDLE = 0x03,
+	MOUSE_BUTTON_COUNT
+};
+
+void SendInputMouse(RemapEntryState* pRemapEntryState, OutputConfig *pKeyDef);
+void AppendSingleMouse(INPUT* inputChar, unsigned char nVkKey);
 
 #endif

@@ -1,3 +1,8 @@
+////////////////////////////////////////////////////////////////////////////////
+// The MIT License (MIT)
+//
+// Copyright (c) 2023 Tim Stair
+//
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
 // in the Software without restriction, including without limitation the rights
@@ -16,33 +21,17 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 ////////////////////////////////////////////////////////////////////////////////
+#pragma once
+#ifndef INPUT_SENDER_KEYBOARD_H_     // equivalently, #if !defined HEADER_H_
+#define INPUT_SENDER_KEYBOARD_H_
 
-#include "inputproc.h"
-#include "keycapturestructs.h"
-#include "keyboardproc.h"
+#include "keycapstructs.h"
 
-#include "keycaptureutil.h"
+void SendInputKeys(RemapEntryState* pRemapEntryState, OutputConfig* pKeyDef);
+void SendTriggerEndInputKeys(RemapEntry* pRemapEntry);
+void AppendSingleKey(short keyScan, INPUT* inputChar, DWORD dwFlags);
+void ProcessModifierKeys(OutputConfig* pKeyDef, INPUT* pInput, int* nIndex, DWORD dwFlags);
+char* GetKeyFlagsString(DWORD dwFlags);
 
-/*
-Wrapper for LowLevelInputProc
-*/
-LRESULT CALLBACK LowLevelKeyboardProc(int nCode, WPARAM wParam, LPARAM lParam)
-{	
-	// don't catch injected keys
-	const auto pHook = reinterpret_cast<KBDLLHOOKSTRUCT*>(lParam);
-
-	if(pHook->flags& LLKHF_INJECTED)
-	{
-		LogDebugMessage("LowLevelKeyboardProc Complete - SKIP Processing Key [Injected]");
-		return CallNextHookEx(nullptr, nCode, wParam, lParam); // invalid or unsupported event
-	}
-	if (HC_ACTION == nCode
-		&& pHook->vkCode)
-	{
-		LogDebugMessage("LowLevelKeyboardProc Complete - Processing Key");
-		return LowLevelInputProc(nCode, wParam, lParam, pHook->vkCode);
-	}
-
-	LogDebugMessage("LowLevelKeyboardProc Complete - SKIP Processing Key");
-	return CallNextHookEx(nullptr, nCode, wParam, lParam); // invalid or unsupported event
-}
+const int MAX_VKEY = 256;
+#endif

@@ -1,8 +1,3 @@
-////////////////////////////////////////////////////////////////////////////////
-// The MIT License (MIT)
-//
-// Copyright (c) 2023 Tim Stair
-//
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
 // in the Software without restriction, including without limitation the rights
@@ -21,18 +16,33 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 ////////////////////////////////////////////////////////////////////////////////
-#pragma once
-#ifndef KEY_CAPTURE_H_     // equivalently, #if !defined HEADER_H_
-#define KEY_CAPTURE_H_
 
-#include "keycapturestructs.h"
-#include "keycaptureutil.h"
+#include "inputproc.h"
+#include "keycapstructs.h"
+#include "inputprockeyboard.h"
 
-// shared functions
-void ShutdownInputThreads(bool forceShutdown);
+#include "keycaputil.h"
 
-// === consts and defines
-const int THREAD_SHUTDOWN_MAX_ATTEMPTS = 5;
-const int THREAD_SHUTDOWN_ATTEMPT_DELAY_MS = 100;
+/*
+Wrapper for LowLevelInputProc
+*/
+LRESULT CALLBACK LowLevelKeyboardProc(int nCode, WPARAM wParam, LPARAM lParam)
+{	
+	// don't catch injected keys
+	const auto pHook = reinterpret_cast<KBDLLHOOKSTRUCT*>(lParam);
 
-#endif // KEY_CAPTURE_H_
+	if(pHook->flags& LLKHF_INJECTED)
+	{
+		LogDebugMessage("LowLevelKeyboardProc Complete - SKIP Processing Key [Injected]");
+		return CallNextHookEx(nullptr, nCode, wParam, lParam); // invalid or unsupported event
+	}
+	if (HC_ACTION == nCode
+		&& pHook->vkCode)
+	{
+		LogDebugMessage("LowLevelKeyboardProc Complete - Processing Key");
+		return LowLevelInputProc(nCode, wParam, lParam, pHook->vkCode);
+	}
+
+	LogDebugMessage("LowLevelKeyboardProc Complete - SKIP Processing Key");
+	return CallNextHookEx(nullptr, nCode, wParam, lParam); // invalid or unsupported event
+}
