@@ -41,5 +41,7 @@ char* GetBoolString(BYTE nValue);
 char* GetInputConfigDescription(InputConfig inputConfig);
 char* GetOutputConfigDescription(OutputConfig outputConfig);
 
+bool DoesOutputTogglePause(const RemapEntryContainerListItem* pKeyListItem);
+
 UINT SendInputKeypress(const InputConfig* pKeyDef);
 #endif

@@ -29,6 +29,8 @@
 #include "inputsenderkeyboard.h"
 #include "inputsendermouse.h"
 
+extern bool g_InputProcessingPaused;
+
 DWORD InitiateSendInput(RemapEntry* pRemapEntry, RemapEntryState* pRemapEntryState);
 
 /*
@@ -111,6 +113,19 @@ DWORD InitiateSendInput(RemapEntry* pRemapEntry, RemapEntryState* pRemapEntrySta
 			{
 				// NOTE: even this thread might be affected
 				ShutdownInputThreads(false);
+				break;
+			}
+			if (pOutputConfig->outputFlag.bPauseInputHandling)
+			{
+				// toggle the global 
+				g_InputProcessingPaused = !g_InputProcessingPaused;
+#if _DEBUG
+				LogDebugMessage("Pausing Input Handling: %d", g_InputProcessingPaused);
+#endif
+				if (g_InputProcessingPaused) {
+					// NOTE: even this thread might be affected
+					ShutdownInputThreads(false);
+				}
 				break;
 			}
 			else if (pOutputConfig->outputFlag.bMouseOut)

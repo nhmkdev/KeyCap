@@ -22,6 +22,7 @@
 #include "inputsenderthread.h"
 
 extern RemapEntryContainerListItem* g_KeyTranslationTable[WIN_KEY_COUNT];
+extern bool g_InputProcessingPaused;
 
 const int LONG_PRESS_MIN = 100;
 const int KEY_DOWN_UNSET = 0; // key not being held
@@ -31,6 +32,7 @@ ULONGLONG g_KeyDownTime[WIN_KEY_COUNT];
 
 void ProcessLongPressKeyDown(const InputConfig* pKeyDef, const RemapEntryContainerListItem* pKeyListItem);
 void ProcessLongPressKeyUp(const InputConfig* pKeyDef);
+void ProcessEntryForSendInput(const RemapEntryContainerListItem* pKeyListItem);
 
 /*
 Implementation of the win32 LowLevelKeyboardProc (see docs for information)
@@ -71,29 +73,46 @@ LRESULT CALLBACK LowLevelInputProc(int nCode, WPARAM wParam, LPARAM lParam, DWOR
 				(bShift == pKeyDef->inputFlag.bShift)
 				&& !pKeyDef->inputFlag.bLongPress)
 			{
-#ifdef _DEBUG
-				char* pInputConfigDescription = GetInputConfigDescription(*pKeyDef);
-				LogDebugMessage("Detected Key Press: %s Outputs: %d", pInputConfigDescription, pKeyListItem->pEntryContainer->pEntry->outputCount);
-				free(pInputConfigDescription);
-#endif
-				// If there is NOT an existing thread OR the existing thread is running a repeat another key press is allowed
-				if (nullptr == pKeyListItem->pEntryContainer->pEntryState->threadHandle || pKeyListItem->pEntryContainer->pEntryState->bRepeating)
+				if (g_InputProcessingPaused && !DoesOutputTogglePause(pKeyListItem))
 				{
-					pKeyListItem->pEntryContainer->pEntryState->threadHandle = CreateThread(nullptr, 0, SendInputThread, pKeyListItem->pEntryContainer, 0, nullptr);
+#ifdef _DEBUG
+					char* pInputConfigDescription = GetInputConfigDescription(*pKeyDef);
+					LogDebugMessage("Detected Key Press: %s Input Paused.", pInputConfigDescription);
+					free(pInputConfigDescription);
+#endif
 				}
-				// block further processing with the inputs
-				bSentInput = true;
-				break;
+				else {
+#ifdef _DEBUG
+					char* pInputConfigDescription = GetInputConfigDescription(*pKeyDef);
+					LogDebugMessage("Detected Key Press: %s Outputs: %d", pInputConfigDescription, pKeyListItem->pEntryContainer->pEntry->outputCount);
+					free(pInputConfigDescription);
+#endif
+					ProcessEntryForSendInput(pKeyListItem);
+					// block further processing with the inputs
+					bSentInput = true;
+					break;
+				}
 			}
 			if (!bAlt
 				&& !bControl
 				&& !bShift
 				&& pKeyDef->inputFlag.bLongPress)
 			{
-				ProcessLongPressKeyDown(pKeyDef, pKeyListItem);
-				// block further processing with the inputs
-				bSentInput = true;
-				break;
+				if (g_InputProcessingPaused && !DoesOutputTogglePause(pKeyListItem))
+				{
+#ifdef _DEBUG
+					char* pInputConfigDescription = GetInputConfigDescription(*pKeyDef);
+					LogDebugMessage("Detected Key Long Press attempt: %s Input Paused.", pInputConfigDescription);
+					free(pInputConfigDescription);
+#endif
+				}
+				else
+				{
+					ProcessLongPressKeyDown(pKeyDef, pKeyListItem);
+					// block further processing with the inputs
+					bSentInput = true;
+					break;
+				}
 			}
 			pKeyListItem = pKeyListItem->pNext;
 		}
@@ -173,11 +192,7 @@ void ProcessLongPressKeyDown(const InputConfig* pKeyDef, const RemapEntryContain
 				longPressMinimum);
 			free(pInputConfigDescription);
 #endif
-			// If there is NOT an existing thread OR the existing thread is running a repeat another key press is allowed
-			if (nullptr == pKeyListItem->pEntryContainer->pEntryState->threadHandle || pKeyListItem->pEntryContainer->pEntryState->bRepeating)
-			{
-				pKeyListItem->pEntryContainer->pEntryState->threadHandle = CreateThread(nullptr, 0, SendInputThread, pKeyListItem->pEntryContainer, 0, nullptr);
-			}
+			ProcessEntryForSendInput(pKeyListItem);
 			g_KeyDownTime[pKeyDef->virtualKey] = KEY_DOWN_EVENT_FIRED;
 		}
 	}
@@ -196,4 +211,13 @@ void ProcessLongPressKeyUp(const InputConfig* pKeyDef)
 		SendInputKeypress(pKeyDef);
 	}
 	g_KeyDownTime[pKeyDef->virtualKey] = KEY_DOWN_UNSET;
+}
+
+void ProcessEntryForSendInput(const RemapEntryContainerListItem* pKeyListItem)
+{
+	// If there is NOT an existing thread OR the existing thread is running a repeat another key press is allowed
+	if (nullptr == pKeyListItem->pEntryContainer->pEntryState->threadHandle || pKeyListItem->pEntryContainer->pEntryState->bRepeating)
+	{
+		pKeyListItem->pEntryContainer->pEntryState->threadHandle = CreateThread(nullptr, 0, SendInputThread, pKeyListItem->pEntryContainer, 0, nullptr);
+	}
 }

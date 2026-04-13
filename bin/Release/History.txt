@@ -1,5 +1,8 @@
 KeyCap Version History
 --------------------------
+2.3.1.0
+- Added support for pausing input mapping. All input mapping paused until a key that toggles it back on is pressed.
+
 2.3.0.0
 - Added support for middle/xbutton1/xbutton2 mouse buttons as input [michelematteini]
 

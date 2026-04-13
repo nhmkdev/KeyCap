@@ -134,6 +134,25 @@ void ValidateStructs()
 	assert(16 == sizeof(RemapEntry));
 }
 
+bool DoesOutputTogglePause(const RemapEntryContainerListItem* pKeyListItem)
+{
+	RemapEntry* pRemapEntry = pKeyListItem->pEntryContainer->pEntry;
+	// get a pointer to the OutputConfig data that is AFTER the RemapEntry field
+	OutputConfig* pOutputConfig = (OutputConfig*)(pRemapEntry + 1);
+	// get a pointer to the first byte AFTER all the OutputConfig entries
+	OutputConfig* pTerminator = (OutputConfig*)(pOutputConfig + pRemapEntry->outputCount);
+	bool outputTogglesInputProcessingPause = false;
+	while (pOutputConfig < pTerminator)
+	{
+		if (pOutputConfig->outputFlag.bPauseInputHandling)
+		{
+			return true;
+		}
+		pOutputConfig++; // move the pointer forward one KeyDefinition
+	}
+	return false;
+}
+
 
 void LogDebugMessage(const char *format, ...)
 {

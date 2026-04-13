@@ -63,6 +63,7 @@ namespace KeyCap.Forms
             this.exitToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.panelKeySetup = new System.Windows.Forms.Panel();
             this.groupBoxOutputKey = new System.Windows.Forms.GroupBox();
+            this.checkOutputPauseInput = new System.Windows.Forms.CheckBox();
             this.btnMouseRight = new System.Windows.Forms.Button();
             this.btnMouseMiddle = new System.Windows.Forms.Button();
             this.label1 = new System.Windows.Forms.Label();
@@ -76,13 +77,13 @@ namespace KeyCap.Forms
             this.checkOutputToggle = new System.Windows.Forms.CheckBox();
             this.numericUpDownOutputParameter = new System.Windows.Forms.NumericUpDown();
             this.panelKeySetupControls = new System.Windows.Forms.Panel();
+            this.btnRemoveAt = new System.Windows.Forms.Button();
             this.btnUpdateInput = new System.Windows.Forms.Button();
             this.btnAppendAt = new System.Windows.Forms.Button();
             this.btnUpdate = new System.Windows.Forms.Button();
             this.groupBoxInputKey = new System.Windows.Forms.GroupBox();
             this.numericUpDownInputParameter = new System.Windows.Forms.NumericUpDown();
             this.checkInputLongPress = new System.Windows.Forms.CheckBox();
-            this.btnRemoveAt = new System.Windows.Forms.Button();
             this.menuStripMain.SuspendLayout();
             this.contextMenuStripNotify.SuspendLayout();
             this.panelKeySetup.SuspendLayout();
@@ -409,6 +410,7 @@ namespace KeyCap.Forms
             // 
             this.groupBoxOutputKey.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left) 
             | System.Windows.Forms.AnchorStyles.Right)));
+            this.groupBoxOutputKey.Controls.Add(this.checkOutputPauseInput);
             this.groupBoxOutputKey.Controls.Add(this.btnMouseRight);
             this.groupBoxOutputKey.Controls.Add(this.btnMouseMiddle);
             this.groupBoxOutputKey.Controls.Add(this.label1);
@@ -432,6 +434,17 @@ namespace KeyCap.Forms
             this.groupBoxOutputKey.TabIndex = 19;
             this.groupBoxOutputKey.TabStop = false;
             this.groupBoxOutputKey.Text = "Output Key";
+            // 
+            // checkOutputPauseInput
+            // 
+            this.checkOutputPauseInput.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
+            this.checkOutputPauseInput.Location = new System.Drawing.Point(598, 19);
+            this.checkOutputPauseInput.Name = "checkOutputPauseInput";
+            this.checkOutputPauseInput.Size = new System.Drawing.Size(156, 20);
+            this.checkOutputPauseInput.TabIndex = 67;
+            this.checkOutputPauseInput.Text = "Toggle Pause Input";
+            this.checkOutputPauseInput.UseVisualStyleBackColor = true;
+            this.checkOutputPauseInput.CheckedChanged += new System.EventHandler(this.checkGenericInputOutput_CheckedChanged);
             // 
             // btnMouseRight
             // 
@@ -597,6 +610,19 @@ namespace KeyCap.Forms
             this.panelKeySetupControls.Size = new System.Drawing.Size(103, 240);
             this.panelKeySetupControls.TabIndex = 18;
             // 
+            // btnRemoveAt
+            // 
+            this.btnRemoveAt.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left) 
+            | System.Windows.Forms.AnchorStyles.Right)));
+            this.btnRemoveAt.Enabled = false;
+            this.btnRemoveAt.Location = new System.Drawing.Point(3, 148);
+            this.btnRemoveAt.Name = "btnRemoveAt";
+            this.btnRemoveAt.Size = new System.Drawing.Size(96, 23);
+            this.btnRemoveAt.TabIndex = 96;
+            this.btnRemoveAt.Text = "Remove At...";
+            this.btnRemoveAt.UseVisualStyleBackColor = true;
+            this.btnRemoveAt.Click += new System.EventHandler(this.btnRemoveAt_Click);
+            // 
             // btnUpdateInput
             // 
             this.btnUpdateInput.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left) 
@@ -693,19 +719,6 @@ namespace KeyCap.Forms
             this.checkInputLongPress.UseVisualStyleBackColor = true;
             this.checkInputLongPress.CheckedChanged += new System.EventHandler(this.checkGenericInputOutput_CheckedChanged);
             // 
-            // btnRemoveAt
-            // 
-            this.btnRemoveAt.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left)
-            | System.Windows.Forms.AnchorStyles.Right)));
-            this.btnRemoveAt.Enabled = false;
-            this.btnRemoveAt.Location = new System.Drawing.Point(3, 148);
-            this.btnRemoveAt.Name = "btnRemoveAt";
-            this.btnRemoveAt.Size = new System.Drawing.Size(96, 23);
-            this.btnRemoveAt.TabIndex = 96;
-            this.btnRemoveAt.Text = "Remove At...";
-            this.btnRemoveAt.UseVisualStyleBackColor = true;
-            this.btnRemoveAt.Click += new System.EventHandler(this.btnRemoveAt_Click);
-            // 
             // KeyCaptureConfig
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
@@ -793,6 +806,7 @@ namespace KeyCap.Forms
         private System.Windows.Forms.Button btnAppendAt;
         private System.Windows.Forms.Button btnUpdateInput;
         private System.Windows.Forms.Button btnRemoveAt;
+        private System.Windows.Forms.CheckBox checkOutputPauseInput;
     }
 }
 

@@ -56,6 +56,7 @@ namespace KeyCap.Format
             Up = 1 << 8,
             Repeat = 1 << 9,
             CancelActiveOutputs = 1 << 10,
+            PauseInputHandling = 1 << 11,
             // supports up to 32 entries
         }
 
@@ -122,6 +123,11 @@ namespace KeyCap.Format
                 return "[Cancel Active Outputs]";
             }
 
+            if (IsFlaggedAs(OutputFlag.PauseInputHandling))
+            {
+                return "[Toggle Pause Input]";
+            }
+
             if (IsFlaggedAs(OutputFlag.MouseOut))
             {
                 return "[" + (MouseButton)VirtualKey + "]";
@@ -151,6 +157,11 @@ namespace KeyCap.Format
                 return "[Cancel Active Outputs]";
             }
 
+            if (IsFlaggedAs(OutputFlag.PauseInputHandling))
+            {
+                return "[Toggle Pause Input]";
+            }
+
             if (IsFlaggedAs(OutputFlag.MouseOut))
             {
                 return GetOutputDescriptionText((MouseButton)VirtualKey, "Mouse");
@@ -171,7 +182,8 @@ namespace KeyCap.Format
                    || IsFlaggedAs(OutputFlag.MouseOut)
                    || IsFlaggedAs(OutputFlag.Delay)
                    || IsFlaggedAs(OutputFlag.DoNothing)
-                   || IsFlaggedAs(OutputFlag.CancelActiveOutputs);
+                   || IsFlaggedAs(OutputFlag.CancelActiveOutputs)
+                   || IsFlaggedAs(OutputFlag.PauseInputHandling);
         }
 
 # warning full description should not be used for the key in/out textbox

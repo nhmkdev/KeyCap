@@ -47,6 +47,7 @@ HHOOK g_hookKeyboard = nullptr, g_hookMouse = nullptr;
 RemapEntryContainerListItem* g_KeyTranslationTable[WIN_KEY_COUNT];
 RemapEntry* g_KeyTranslationHead = nullptr;
 void* g_KeyTranslationEnd = nullptr; // pointer indicating the end of the input file data
+bool g_InputProcessingPaused = false;
 
 /*
 Performs the load file operation and initiates the keyboard capture process
@@ -129,6 +130,9 @@ __declspec(dllexport) int LoadAndCaptureFromFile(HINSTANCE hInstance, char* sFil
 
 	if(bValidTranslationSet)
 	{
+		// initialize globals
+		g_InputProcessingPaused = false;
+
 		// Note: This fails in VisualStudio if managed debugging is NOT enabled in the project(!)
 		g_hookKeyboard = SetWindowsHookEx( WH_KEYBOARD_LL, LowLevelKeyboardProc, hInstance, NULL);
 		g_hookMouse = SetWindowsHookEx(WH_MOUSE_LL, LowLevelMouseProc, hInstance, NULL);

@@ -139,8 +139,19 @@ namespace KeyCap.Forms
                     [checkOutputCancel] = new ControlActiveProcessor(checkOutputCancel)
                     {
                         disabledControls = new List<Control>{checkOutputAlt, checkOutputControl, checkOutputShift, checkOutputUp, checkOutputDown,
-                            checkOutputToggle, checkOutputNothing, checkOutputRepeat, checkOutputDelay, numericUpDownOutputParameter },
+                            checkOutputToggle, checkOutputNothing, checkOutputRepeat, checkOutputDelay, checkOutputPauseInput, numericUpDownOutputParameter },
                         uncheckedControls = new List<CheckBox> { checkOutputToggle, checkOutputNothing, checkOutputRepeat, checkOutputDelay },
+                        OnActiveChange = (bActive) =>
+                        {
+                            if (bActive) m_zActiveOutputConfig.Reset();
+                            UpdateTextBox(txtKeyOut, null, CreateOutputConfigFromUI());
+                        },
+                    },
+                    [checkOutputPauseInput] = new ControlActiveProcessor(checkOutputPauseInput)
+                    {
+                        disabledControls = new List<Control>{checkOutputAlt, checkOutputControl, checkOutputShift, checkOutputUp, checkOutputDown,
+                            checkOutputToggle, checkOutputNothing, checkOutputRepeat, checkOutputDelay, checkOutputCancel, numericUpDownOutputParameter },
+                        uncheckedControls = new List<CheckBox> { checkOutputToggle, checkOutputNothing, checkOutputRepeat, checkOutputDelay, checkOutputCancel },
                         OnActiveChange = (bActive) =>
                         {
                             if (bActive) m_zActiveOutputConfig.Reset();
@@ -150,7 +161,7 @@ namespace KeyCap.Forms
                     [checkOutputNothing] = new ControlActiveProcessor(checkOutputNothing)
                     {
                         disabledControls = new List<Control>{checkOutputAlt, checkOutputControl, checkOutputShift, checkOutputUp, checkOutputDown,
-                            checkOutputToggle, checkOutputCancel, checkOutputRepeat, checkOutputDelay, numericUpDownOutputParameter, },
+                            checkOutputToggle, checkOutputCancel, checkOutputRepeat, checkOutputDelay, checkOutputPauseInput, numericUpDownOutputParameter, },
                         uncheckedControls = new List<CheckBox> { checkOutputToggle, checkOutputCancel, checkOutputRepeat, checkOutputDelay },
                         OnActiveChange = (bActive) =>
                         {
@@ -161,16 +172,16 @@ namespace KeyCap.Forms
                     [checkOutputToggle] = new ControlActiveProcessor(checkOutputToggle)
                     {
                         disabledControls = new List<Control>{checkOutputAlt, checkOutputControl, checkOutputShift, checkOutputUp, checkOutputDown,
-                            checkOutputNothing, checkOutputCancel, checkOutputRepeat, checkOutputDelay, numericUpDownOutputParameter},
+                            checkOutputNothing, checkOutputCancel, checkOutputRepeat, checkOutputDelay, checkOutputPauseInput, numericUpDownOutputParameter},
                         uncheckedControls = new List<CheckBox> { checkOutputAlt, checkOutputControl, checkOutputShift, checkOutputNothing,
-                            checkOutputCancel, checkOutputRepeat, checkOutputDelay },
+                            checkOutputCancel, checkOutputRepeat, checkOutputDelay, checkOutputPauseInput },
                         checkedControls = new List<CheckBox> { checkOutputDown, checkOutputUp },
                     },
                     [checkOutputRepeat] = new ControlActiveProcessor(checkOutputRepeat)
                     {
-                        disabledControls = new List<Control> { checkOutputUp, checkOutputDown, checkOutputNothing, checkOutputCancel, checkOutputDelay, checkOutputToggle },
+                        disabledControls = new List<Control> { checkOutputUp, checkOutputDown, checkOutputNothing, checkOutputCancel, checkOutputPauseInput, checkOutputDelay, checkOutputToggle },
                         enabledControls = new List<Control> { numericUpDownOutputParameter },
-                        uncheckedControls = new List<CheckBox> { checkOutputToggle, checkOutputNothing, checkOutputCancel, checkOutputDelay },
+                        uncheckedControls = new List<CheckBox> { checkOutputToggle, checkOutputNothing, checkOutputCancel, checkOutputPauseInput, checkOutputDelay },
                         checkedControls = new List<CheckBox> { checkOutputDown, checkOutputUp },
                         OnActiveChange = (bActive) =>
                         {
@@ -180,10 +191,10 @@ namespace KeyCap.Forms
                     },
                     [checkOutputDelay] = new ControlActiveProcessor(checkOutputDelay)
                     {
-                        disabledControls = new List<Control> { checkOutputUp, checkOutputDown, checkOutputNothing, checkOutputCancel, checkOutputRepeat,
+                        disabledControls = new List<Control> { checkOutputUp, checkOutputDown, checkOutputNothing, checkOutputCancel, checkOutputPauseInput, checkOutputRepeat,
                             checkOutputToggle, checkOutputAlt, checkOutputControl, checkOutputShift},
                         enabledControls = new List<Control> { numericUpDownOutputParameter },
-                        uncheckedControls = new List<CheckBox> { checkOutputToggle, checkOutputNothing, checkOutputCancel, checkOutputRepeat },
+                        uncheckedControls = new List<CheckBox> { checkOutputToggle, checkOutputNothing, checkOutputCancel, checkOutputPauseInput, checkOutputRepeat },
                         OnActiveChange = (bActive) =>
                         {
                             numericUpDownOutputParameter_ValueChanged(numericUpDownOutputParameter, null);
@@ -619,6 +630,10 @@ namespace KeyCap.Forms
             {
                 checkOutputCancel.Checked = true;
             }
+            else if (zFirstOutputConfig.IsFlaggedAs(OutputFlag.PauseInputHandling))
+            {
+                checkOutputPauseInput.Checked = true;
+            }
             else if (zFirstOutputConfig.IsFlaggedAs(OutputFlag.DoNothing))
             {
                 checkOutputNothing.Checked = true;
@@ -961,6 +976,7 @@ namespace KeyCap.Forms
             var bDown = checkOutputDown.Checked;
             var bUp = checkOutputUp.Checked;
             var bCancelOutputs = checkOutputCancel.Checked;
+            var bPauseInput = checkOutputPauseInput.Checked;
             var bNothing = checkOutputNothing.Checked;
 
             var nFlags = 0;
@@ -970,6 +986,7 @@ namespace KeyCap.Forms
             nFlags = BitUtil.UpdateFlag(nFlags, OutputFlag.MouseOut, m_zActiveOutputConfig.MouseClick);
             nFlags = BitUtil.UpdateFlag(nFlags, OutputFlag.Delay, bDelay);
             nFlags = BitUtil.UpdateFlag(nFlags, OutputFlag.CancelActiveOutputs, bCancelOutputs);
+            nFlags = BitUtil.UpdateFlag(nFlags, OutputFlag.PauseInputHandling, bPauseInput);
             nFlags = BitUtil.UpdateFlag(nFlags, OutputFlag.DoNothing, bNothing);
 
             nFlags = BitUtil.UpdateFlag(nFlags, OutputFlag.Toggle, bToggle);
@@ -1147,6 +1164,6 @@ namespace KeyCap.Forms
             }
         }
 
-        #endregion        
+        #endregion
     }
 }
