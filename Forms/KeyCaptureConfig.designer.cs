@@ -63,7 +63,7 @@ namespace KeyCap.Forms
             this.exitToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.panelKeySetup = new System.Windows.Forms.Panel();
             this.groupBoxOutputKey = new System.Windows.Forms.GroupBox();
-            this.checkOutputPauseInput = new System.Windows.Forms.CheckBox();
+            this.checkPauseKeyCapture = new System.Windows.Forms.CheckBox();
             this.btnMouseRight = new System.Windows.Forms.Button();
             this.btnMouseMiddle = new System.Windows.Forms.Button();
             this.label1 = new System.Windows.Forms.Label();
@@ -410,7 +410,7 @@ namespace KeyCap.Forms
             // 
             this.groupBoxOutputKey.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left) 
             | System.Windows.Forms.AnchorStyles.Right)));
-            this.groupBoxOutputKey.Controls.Add(this.checkOutputPauseInput);
+            this.groupBoxOutputKey.Controls.Add(this.checkPauseKeyCapture);
             this.groupBoxOutputKey.Controls.Add(this.btnMouseRight);
             this.groupBoxOutputKey.Controls.Add(this.btnMouseMiddle);
             this.groupBoxOutputKey.Controls.Add(this.label1);
@@ -435,16 +435,16 @@ namespace KeyCap.Forms
             this.groupBoxOutputKey.TabStop = false;
             this.groupBoxOutputKey.Text = "Output Key";
             // 
-            // checkOutputPauseInput
+            // checkPauseKeyCapture
             // 
-            this.checkOutputPauseInput.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
-            this.checkOutputPauseInput.Location = new System.Drawing.Point(598, 19);
-            this.checkOutputPauseInput.Name = "checkOutputPauseInput";
-            this.checkOutputPauseInput.Size = new System.Drawing.Size(156, 20);
-            this.checkOutputPauseInput.TabIndex = 67;
-            this.checkOutputPauseInput.Text = "Toggle Pause Input";
-            this.checkOutputPauseInput.UseVisualStyleBackColor = true;
-            this.checkOutputPauseInput.CheckedChanged += new System.EventHandler(this.checkGenericInputOutput_CheckedChanged);
+            this.checkPauseKeyCapture.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
+            this.checkPauseKeyCapture.Location = new System.Drawing.Point(598, 19);
+            this.checkPauseKeyCapture.Name = "checkPauseKeyCapture";
+            this.checkPauseKeyCapture.Size = new System.Drawing.Size(156, 20);
+            this.checkPauseKeyCapture.TabIndex = 67;
+            this.checkPauseKeyCapture.Text = "Pause Key Capture";
+            this.checkPauseKeyCapture.UseVisualStyleBackColor = true;
+            this.checkPauseKeyCapture.CheckedChanged += new System.EventHandler(this.checkGenericInputOutput_CheckedChanged);
             // 
             // btnMouseRight
             // 
@@ -806,7 +806,7 @@ namespace KeyCap.Forms
         private System.Windows.Forms.Button btnAppendAt;
         private System.Windows.Forms.Button btnUpdateInput;
         private System.Windows.Forms.Button btnRemoveAt;
-        private System.Windows.Forms.CheckBox checkOutputPauseInput;
+        private System.Windows.Forms.CheckBox checkPauseKeyCapture;
     }
 }
 

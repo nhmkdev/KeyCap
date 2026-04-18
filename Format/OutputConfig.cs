@@ -56,7 +56,7 @@ namespace KeyCap.Format
             Up = 1 << 8,
             Repeat = 1 << 9,
             CancelActiveOutputs = 1 << 10,
-            PauseInputHandling = 1 << 11,
+            TogglePauseKeyCapture = 1 << 11,
             // supports up to 32 entries
         }
 
@@ -123,9 +123,9 @@ namespace KeyCap.Format
                 return "[Cancel Active Outputs]";
             }
 
-            if (IsFlaggedAs(OutputFlag.PauseInputHandling))
+            if (IsFlaggedAs(OutputFlag.TogglePauseKeyCapture))
             {
-                return "[Toggle Pause Input]";
+                return "[Pause Key Capture]";
             }
 
             if (IsFlaggedAs(OutputFlag.MouseOut))
@@ -157,7 +157,7 @@ namespace KeyCap.Format
                 return "[Cancel Active Outputs]";
             }
 
-            if (IsFlaggedAs(OutputFlag.PauseInputHandling))
+            if (IsFlaggedAs(OutputFlag.TogglePauseKeyCapture))
             {
                 return "[Toggle Pause Input]";
             }
@@ -183,7 +183,7 @@ namespace KeyCap.Format
                    || IsFlaggedAs(OutputFlag.Delay)
                    || IsFlaggedAs(OutputFlag.DoNothing)
                    || IsFlaggedAs(OutputFlag.CancelActiveOutputs)
-                   || IsFlaggedAs(OutputFlag.PauseInputHandling);
+                   || IsFlaggedAs(OutputFlag.TogglePauseKeyCapture);
         }
 
 # warning full description should not be used for the key in/out textbox

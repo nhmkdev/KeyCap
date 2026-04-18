@@ -144,7 +144,7 @@ bool DoesOutputTogglePause(const RemapEntryContainerListItem* pKeyListItem)
 	bool outputTogglesInputProcessingPause = false;
 	while (pOutputConfig < pTerminator)
 	{
-		if (pOutputConfig->outputFlag.bPauseInputHandling)
+		if (pOutputConfig->outputFlag.bPauseKeyCapture)
 		{
 			return true;
 		}

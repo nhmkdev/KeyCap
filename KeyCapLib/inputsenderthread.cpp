@@ -115,12 +115,12 @@ DWORD InitiateSendInput(RemapEntry* pRemapEntry, RemapEntryState* pRemapEntrySta
 				ShutdownInputThreads(false);
 				break;
 			}
-			if (pOutputConfig->outputFlag.bPauseInputHandling)
+			if (pOutputConfig->outputFlag.bPauseKeyCapture)
 			{
 				// toggle the global 
 				g_InputProcessingPaused = !g_InputProcessingPaused;
 #if _DEBUG
-				LogDebugMessage("Pausing Input Handling: %d", g_InputProcessingPaused);
+				LogDebugMessage("Toggling Key Capture Pause: %d", g_InputProcessingPaused);
 #endif
 				if (g_InputProcessingPaused) {
 					// NOTE: even this thread might be affected

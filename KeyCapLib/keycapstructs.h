@@ -59,7 +59,7 @@ struct OutputFlag
 	BYTE bUp : 1;
 	BYTE bRepeat : 1;
 	BYTE bCancelActiveOutputs : 1;
-	BYTE bPauseInputHandling : 1;
+	BYTE bPauseKeyCapture : 1;
 	BYTE padTwo : 4;
 	BYTE padThree : 8;
 	BYTE padFour : 8;
