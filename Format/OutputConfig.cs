@@ -159,7 +159,7 @@ namespace KeyCap.Format
 
             if (IsFlaggedAs(OutputFlag.TogglePauseKeyCapture))
             {
-                return "[Toggle Pause Input]";
+                return "[Pause Key Capture]";
             }
 
             if (IsFlaggedAs(OutputFlag.MouseOut))
